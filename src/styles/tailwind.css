@@ -1,0 +1,211 @@
+/*
+ * Tailwind v4 entry point for the NEW (shadcn/ui) pages only.
+ *
+ * Preflight-scoping decision (see task step 4):
+ * Approach (a) was chosen: Tailwind's Preflight base-reset is disabled
+ * entirely by importing only "tailwindcss/theme.css" + "tailwindcss/utilities.css"
+ * instead of the full "tailwindcss" entry (which also pulls in preflight.css).
+ * This means NO bare-element reset (*, *::before, *::after, h1..h6, button,
+ * input, a, table, ...) is emitted globally, so the existing antd+less pages
+ * are completely unaffected.
+ *
+ * In place of global Preflight, a tiny hand-picked reset is scoped under
+ * `.tw-scope` below and must wrap any new Tailwind/shadcn-built page/subtree.
+ * Tailwind utility classes themselves (bg-primary, flex, p-4, ...) are still
+ * generated globally by design (that's how Tailwind works), but since they
+ * are plain class selectors that antd markup never uses, they cannot leak
+ * into or break existing antd pages.
+ */
+/* Explicit layer order so the base reset below loses to utility classes. */
+@layer theme, base, utilities;
+
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+/* v4 compat shim for the (v3-style) tailwindcss-animate plugin, used by
+   the Radix-based shadcn primitives for their open/close animations. */
+@plugin 'tailwindcss-animate';
+
+/* Explicit content scan, in addition to Tailwind v4's automatic detection,
+   per task step 2. */
+@source '../**/*.{ts,tsx}';
+
+/* Dark mode is driven by a `.dark` class (not OS prefers-color-scheme),
+   matching the standard shadcn/ui v4 convention. Not wired to a toggle yet
+   (no feature pages in this step) but ready for later steps. */
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: #f4f6fb;
+  --foreground: #1f2a44;
+  --card: #ffffff;
+  --card-foreground: #1f2a44;
+  --popover: #ffffff;
+  --popover-foreground: #1f2a44;
+  --border: #e6eaf2;
+  --input: #e6eaf2;
+  --ring: #4a90e2;
+
+  --primary: #4a90e2;
+  --primary-hover: #6fb1f0;
+  --primary-foreground: #ffffff;
+
+  --accent: #e5322d;
+  --accent-foreground: #ffffff;
+
+  --muted: #eef1f8;
+  --muted-foreground: #8a94a8;
+
+  --success: #16a34a;
+  --warning: #f59e0b;
+  --danger: #dc2626;
+  --info: #2563eb;
+
+  --radius-card: 16px;
+  --radius-control: 10px;
+  --radius-badge: 6px;
+
+  --shadow-card: 0 4px 24px rgba(15, 40, 90, 0.06);
+}
+
+/* shortcut: dark values are reasonable inversions of the light palette, not
+   separately specified by the design brief; revisit once a real dark theme
+   is designed. */
+.dark {
+  --background: #0f1629;
+  --foreground: #e8ecf5;
+  --card: #141b30;
+  --card-foreground: #e8ecf5;
+  --popover: #141b30;
+  --popover-foreground: #e8ecf5;
+  --border: #283150;
+  --input: #283150;
+  --ring: #1e5aa8;
+
+  --primary: #1e5aa8;
+  --primary-hover: #2f6ec0;
+  --primary-foreground: #ffffff;
+
+  --accent: #e5322d;
+  --accent-foreground: #ffffff;
+
+  --muted: #1a2238;
+  --muted-foreground: #8a94a8;
+
+  --success: #16a34a;
+  --warning: #f59e0b;
+  --danger: #dc2626;
+  --info: #2563eb;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+
+  --radius-card: var(--radius-card);
+  --radius-control: var(--radius-control);
+  --radius-badge: var(--radius-badge);
+
+  --shadow-card: var(--shadow-card);
+
+  --font-sans: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Minimal hand-picked base styles for new Tailwind/shadcn pages only.
+   Scoped under .tw-scope so they never touch antd markup. Wrapped in
+   @layer base (declared before utilities above) so utility classes still
+   win over this reset. */
+@layer base {
+  .tw-scope {
+    font-family: var(--font-sans);
+    color: var(--foreground);
+  }
+
+  .tw-scope *,
+  .tw-scope *::before,
+  .tw-scope *::after {
+    box-sizing: border-box;
+    border-color: var(--border);
+  }
+
+  .tw-scope h1,
+  .tw-scope h2,
+  .tw-scope h3,
+  .tw-scope h4,
+  .tw-scope h5,
+  .tw-scope h6,
+  .tw-scope p,
+  .tw-scope figure,
+  .tw-scope blockquote,
+  .tw-scope dl,
+  .tw-scope dd {
+    margin: 0;
+  }
+
+  .tw-scope h1,
+  .tw-scope h2,
+  .tw-scope h3,
+  .tw-scope h4,
+  .tw-scope h5,
+  .tw-scope h6 {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+
+  .tw-scope ul,
+  .tw-scope ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tw-scope button,
+  .tw-scope input,
+  .tw-scope select,
+  .tw-scope textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+  .tw-scope button {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    text-align: inherit;
+    cursor: pointer;
+  }
+
+  .tw-scope img,
+  .tw-scope svg {
+    display: block;
+    max-width: 100%;
+  }
+
+  .tw-scope a {
+    color: inherit;
+    text-decoration: inherit;
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "root": true,
+  "env": { "browser": true, "es2022": true, "node": true },
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": { "ecmaVersion": 2022, "sourceType": "module", "ecmaFeatures": { "jsx": true } },
+  "plugins": ["@typescript-eslint", "react-hooks", "react-refresh", "import"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:react-hooks/recommended",
+    "prettier"
+  ],
+  "rules": {
+    "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    "react-refresh/only-export-components": ["warn", { "allowConstantExport": true }],
+    "import/no-restricted-paths": [
+      "error",
+      {
+        "zones": [
+          { "target": "./src/services", "from": "./src/pages" },
+          { "target": "./src/components", "from": "./src/pages" },
+          { "target": "./src/utils", "from": "./src/pages" }
+        ]
+      }
+    ]
+  },
+  "ignorePatterns": ["dist", "node_modules"]
+}
