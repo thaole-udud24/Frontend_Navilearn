@@ -1,7 +1,7 @@
-import type { QuestionBankItemFilters } from '@/services/question-bank/types';
+import type { QuestionFilters } from './types';
 
-export const questionBankItemKeys = {
-  all: ['questionBankItems'] as const,
-  list: (filters: QuestionBankItemFilters) => [...questionBankItemKeys.all, 'list', filters] as const,
-  detail: (id: string) => [...questionBankItemKeys.all, 'detail', id] as const,
+export const questionKeys = {
+  all: ['questions'] as const,
+  list: (filters: QuestionFilters) => [...questionKeys.all, 'list', filters] as const,
+  detail: (id: string) => [...questionKeys.all, 'detail', id] as const,
 };

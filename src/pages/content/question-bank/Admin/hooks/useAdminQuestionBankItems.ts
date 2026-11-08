@@ -1,11 +1,36 @@
-import { useQuery } from '@tanstack/react-query';
-import { listQuestionBankItems } from '@/services/question-bank';
-import { questionBankItemKeys } from '@/services/question-bank/queryKeys';
-import type { QuestionBankItemFilters } from '@/services/question-bank/types';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { archiveQuestion, createQuestion, listQuestions } from '@/services/question-bank';
+import { questionKeys } from '@/services/question-bank/queryKeys';
+import type { CreateQuestionInput, QuestionFilters } from '@/services/question-bank/types';
+import { listConcepts } from '@/services/knowledge';
+import { conceptKeys } from '@/services/knowledge/queryKeys';
 
-export function useAdminQuestionBankItemList(filters: QuestionBankItemFilters) {
+export function useAdminQuestionList(filters: QuestionFilters) {
   return useQuery({
-    queryKey: questionBankItemKeys.list(filters),
-    queryFn: () => listQuestionBankItems(filters),
+    queryKey: questionKeys.list(filters),
+    queryFn: () => listQuestions(filters),
+  });
+}
+
+export function useConceptOptions() {
+  return useQuery({
+    queryKey: conceptKeys.list({ limit: 100 }),
+    queryFn: () => listConcepts({ limit: 100 }),
+  });
+}
+
+export function useCreateQuestion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateQuestionInput) => createQuestion(input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: questionKeys.all }),
+  });
+}
+
+export function useArchiveQuestion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => archiveQuestion(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: questionKeys.all }),
   });
 }

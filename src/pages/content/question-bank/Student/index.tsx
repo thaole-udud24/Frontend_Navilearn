@@ -4,33 +4,30 @@ import { DataTable } from '@/components/CustomTable';
 import { Loading } from '@/components/Loading';
 import { usePagedList } from '@/hooks/usePagedList';
 import { useQueryErrorMessage } from '@/hooks/useQueryErrorMessage';
-import { useCreateQuestionBankItem, useQuestionBankItemList } from './hooks/useQuestionBankItems';
-import { CreateItemForm } from './components/CreateItemForm';
-import type { QuestionBankItem } from '@/services/question-bank/types';
+import { useQuestionList } from './hooks/useQuestionBankItems';
+import type { Question } from '@/services/question-bank/types';
 
-// index.tsx only composes layout and calls hooks — no business logic here.
+// Browse-only: answers/correct options are stripped by the backend for students.
 export default function QuestionBankItemsPage() {
   const { paging, setPage } = usePagedList();
-  const { data, isLoading, error } = useQuestionBankItemList(paging);
-  const createMutation = useCreateQuestionBankItem();
+  const { data, isLoading, error } = useQuestionList(paging);
   const errorMessage = useQueryErrorMessage(error);
 
   if (isLoading) return <Loading />;
 
   return (
     <div>
-      <PageHeader title="Question bank items (scaffold – business logic pending)" />
-      <CreateItemForm loading={createMutation.isPending} onSubmit={(values) => createMutation.mutate(values)} />
+      <PageHeader title="Ngân hàng câu hỏi (tham khảo)" />
       {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
-      <DataTable<QuestionBankItem>
+      <DataTable<Question>
         rowKey="_id"
         dataSource={data?.data ?? []}
         meta={data?.meta}
         onPageChange={setPage}
         columns={[
-          { title: 'Tiêu đề', dataIndex: 'title' },
-          { title: 'Nội dung', dataIndex: 'content' },
-          { title: 'Trạng thái', dataIndex: 'status', render: (s: string) => <Tag>{s}</Tag> },
+          { title: 'Nội dung', dataIndex: 'text' },
+          { title: 'Loại', dataIndex: 'type', render: (t: string) => <Tag>{t === 'mcq' ? 'Trắc nghiệm' : 'Tự luận'}</Tag> },
+          { title: 'Độ khó', dataIndex: 'difficulty' },
         ]}
       />
     </div>

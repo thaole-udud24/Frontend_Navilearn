@@ -1,22 +1,41 @@
-export type QuestionBankItemStatus = 'open' | 'in_progress' | 'resolved';
+export type QuestionType = 'mcq' | 'essay';
+export type QuestionDifficulty = 'easy' | 'medium' | 'hard';
+export type QuestionStatus = 'active' | 'archived';
 
-export interface QuestionBankItem {
+export interface QuestionOption {
+  text: string;
+  isCorrect?: boolean;
+}
+
+export interface Question {
   _id: string;
-  owner: string;
-  title: string;
-  content: string;
-  status: QuestionBankItemStatus;
+  concept: string;
+  type: QuestionType;
+  text: string;
+  options: QuestionOption[];
+  referenceAnswer?: string;
+  difficulty: QuestionDifficulty;
+  points: number;
+  status: QuestionStatus;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface QuestionBankItemFilters {
+export interface QuestionFilters {
   page?: number;
   limit?: number;
-  status?: QuestionBankItemStatus;
+  concept?: string;
+  type?: QuestionType;
+  difficulty?: QuestionDifficulty;
+  status?: QuestionStatus;
 }
 
-export interface CreateQuestionBankItemInput {
-  title: string;
-  content: string;
+export interface CreateQuestionInput {
+  concept: string;
+  type?: QuestionType;
+  text: string;
+  options?: QuestionOption[];
+  referenceAnswer?: string;
+  difficulty?: QuestionDifficulty;
+  points?: number;
 }
