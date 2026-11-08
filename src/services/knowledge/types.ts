@@ -1,22 +1,23 @@
-export type KnowledgeItemStatus = 'open' | 'in_progress' | 'resolved';
+export type ConceptStatus = 'active' | 'archived';
 
-export interface KnowledgeItem {
+export interface Concept {
   _id: string;
-  owner: string;
-  title: string;
-  content: string;
-  status: KnowledgeItemStatus;
+  name: string;
+  description: string;
+  order: number;
+  status: ConceptStatus;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface KnowledgeItemFilters {
+export interface ConceptFilters {
   page?: number;
   limit?: number;
-  status?: KnowledgeItemStatus;
+  status?: ConceptStatus;
 }
 
-export interface CreateKnowledgeItemInput {
-  title: string;
-  content: string;
+export interface CreateConceptInput {
+  name: string;
+  description?: string;
+  order?: number;
 }

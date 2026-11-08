@@ -1,19 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createKnowledgeItem, listKnowledgeItems } from '@/services/knowledge';
-import { knowledgeItemKeys } from '@/services/knowledge/queryKeys';
-import type { CreateKnowledgeItemInput, KnowledgeItemFilters } from '@/services/knowledge/types';
+import { useQuery } from '@tanstack/react-query';
+import { listConcepts } from '@/services/knowledge';
+import { conceptKeys } from '@/services/knowledge/queryKeys';
+import type { ConceptFilters } from '@/services/knowledge/types';
 
-export function useKnowledgeItemList(filters: KnowledgeItemFilters) {
+export function useConceptList(filters: ConceptFilters) {
   return useQuery({
-    queryKey: knowledgeItemKeys.list(filters),
-    queryFn: () => listKnowledgeItems(filters),
-  });
-}
-
-export function useCreateKnowledgeItem() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (input: CreateKnowledgeItemInput) => createKnowledgeItem(input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: knowledgeItemKeys.all }),
+    queryKey: conceptKeys.list(filters),
+    queryFn: () => listConcepts(filters),
   });
 }
