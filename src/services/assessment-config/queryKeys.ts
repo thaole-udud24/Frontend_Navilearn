@@ -1,7 +1,7 @@
-import type { AssessmentConfigItemFilters } from '@/services/assessment-config/types';
+import type { AssessmentConfigFilters } from './types';
 
-export const assessmentConfigItemKeys = {
-  all: ['assessmentConfigItems'] as const,
-  list: (filters: AssessmentConfigItemFilters) => [...assessmentConfigItemKeys.all, 'list', filters] as const,
-  detail: (id: string) => [...assessmentConfigItemKeys.all, 'detail', id] as const,
+export const assessmentConfigKeys = {
+  all: ['assessmentConfigs'] as const,
+  list: (filters: AssessmentConfigFilters) => [...assessmentConfigKeys.all, 'list', filters] as const,
+  detail: (id: string) => [...assessmentConfigKeys.all, 'detail', id] as const,
 };

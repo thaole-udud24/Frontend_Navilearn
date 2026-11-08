@@ -1,19 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createAssessmentConfigItem, listAssessmentConfigItems } from '@/services/assessment-config';
-import { assessmentConfigItemKeys } from '@/services/assessment-config/queryKeys';
-import type { CreateAssessmentConfigItemInput, AssessmentConfigItemFilters } from '@/services/assessment-config/types';
+import { listAssessmentConfigs } from '@/services/assessment-config';
+import { assessmentConfigKeys } from '@/services/assessment-config/queryKeys';
+import type { AssessmentConfigFilters } from '@/services/assessment-config/types';
+import { startAssessment } from '@/services/assessment';
+import { assessmentKeys } from '@/services/assessment/queryKeys';
 
-export function useAssessmentConfigItemList(filters: AssessmentConfigItemFilters) {
+export function useAssessmentConfigList(filters: AssessmentConfigFilters) {
   return useQuery({
-    queryKey: assessmentConfigItemKeys.list(filters),
-    queryFn: () => listAssessmentConfigItems(filters),
+    queryKey: assessmentConfigKeys.list(filters),
+    queryFn: () => listAssessmentConfigs(filters),
   });
 }
 
-export function useCreateAssessmentConfigItem() {
+export function useStartAssessment() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: CreateAssessmentConfigItemInput) => createAssessmentConfigItem(input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: assessmentConfigItemKeys.all }),
+    mutationFn: (assessmentConfigId: string) => startAssessment(assessmentConfigId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: assessmentKeys.all }),
   });
 }

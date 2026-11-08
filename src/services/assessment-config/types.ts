@@ -1,22 +1,28 @@
-export type AssessmentConfigItemStatus = 'open' | 'in_progress' | 'resolved';
+export type AssessmentConfigStatus = 'active' | 'archived';
 
-export interface AssessmentConfigItem {
+export interface AssessmentConfig {
   _id: string;
-  owner: string;
   title: string;
-  content: string;
-  status: AssessmentConfigItemStatus;
+  concept: string;
+  questions: string[];
+  passScore: number;
+  timeLimitMinutes: number;
+  status: AssessmentConfigStatus;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface AssessmentConfigItemFilters {
+export interface AssessmentConfigFilters {
   page?: number;
   limit?: number;
-  status?: AssessmentConfigItemStatus;
+  concept?: string;
+  status?: AssessmentConfigStatus;
 }
 
-export interface CreateAssessmentConfigItemInput {
+export interface CreateAssessmentConfigInput {
   title: string;
-  content: string;
+  concept: string;
+  questions: string[];
+  passScore?: number;
+  timeLimitMinutes?: number;
 }
