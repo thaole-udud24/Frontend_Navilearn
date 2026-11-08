@@ -1,6 +1,8 @@
 import { ROLES, type Role } from '@/constants/enums';
 
 // Single source of role -> permission. UI and route guards both read from here.
+// Knw/Qbk/Acf: shared content, admin-write/everyone-read. Asm/Mst: personal learning data (BR-02/BR-35),
+// no admin access. Aia: admin-only AI assist.
 export const ACCESS = {
   [ROLES.STUDENT]: {
     canManageOwnTemplateItems: true,
@@ -8,18 +10,18 @@ export const ACCESS = {
     canManageOwnAccItems: true,
     canManageOwnAcfItems: true,
     canManageOwnAdpItems: true,
-    canManageOwnAiaItems: true,
+    canManageOwnAiaItems: false,
     canManageOwnAicItems: true,
     canManageOwnArpItems: true,
     canManageOwnAsmItems: true,
     canManageOwnBrlItems: true,
     canManageOwnDatItems: true,
-    canManageOwnKnwItems: true,
+    canManageOwnKnwItems: false,
     canManageOwnMonItems: true,
-    canManageOwnMstItems: true,
+    canManageOwnMstItems: false,
     canManageOwnNtfItems: true,
     canManageOwnPlnItems: true,
-    canManageOwnQbkItems: true,
+    canManageOwnQbkItems: false,
     canManageOwnRbacItems: true,
     canManageOwnRevItems: true,
     canManageOwnRptItems: true,
@@ -36,12 +38,12 @@ export const ACCESS = {
     canModerateAiaItems: true,
     canModerateAicItems: true,
     canModerateArpItems: true,
-    canModerateAsmItems: true,
+    canModerateAsmItems: false,
     canModerateBrlItems: true,
     canModerateDatItems: true,
     canModerateKnwItems: true,
     canModerateMonItems: true,
-    canModerateMstItems: true,
+    canModerateMstItems: false,
     canModerateNtfItems: true,
     canModeratePlnItems: true,
     canModerateQbkItems: true,

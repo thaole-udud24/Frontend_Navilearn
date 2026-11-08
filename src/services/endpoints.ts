@@ -35,6 +35,7 @@ export const ENDPOINTS = {
     create: '/ai-assist-items',
     detail: (id: string) => `/ai-assist-items/${id}`,
     updateStatus: (id: string) => `/ai-assist-items/${id}/status`,
+    generateQuestion: '/ai-assist-items/generate-question',
   },
   aiConfigItems: {
     list: '/ai-config-items',
@@ -53,6 +54,7 @@ export const ENDPOINTS = {
     create: '/assessment-items',
     detail: (id: string) => `/assessment-items/${id}`,
     updateStatus: (id: string) => `/assessment-items/${id}/status`,
+    submit: (id: string) => `/assessment-items/${id}/submit`,
   },
   businessRuleItems: {
     list: '/business-rule-items',
