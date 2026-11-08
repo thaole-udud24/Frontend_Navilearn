@@ -1,22 +1,19 @@
-export type MasteryItemStatus = 'open' | 'in_progress' | 'resolved';
+export type MasteryLevel = 'novice' | 'developing' | 'proficient' | 'mastered';
 
-export interface MasteryItem {
+export interface Mastery {
   _id: string;
-  owner: string;
-  title: string;
-  content: string;
-  status: MasteryItemStatus;
+  concept: { _id: string; name: string } | string;
+  score: number;
+  level: MasteryLevel;
+  attemptsCount: number;
+  correctCount: number;
+  lastAttemptAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface MasteryItemFilters {
+export interface MasteryFilters {
   page?: number;
   limit?: number;
-  status?: MasteryItemStatus;
-}
-
-export interface CreateMasteryItemInput {
-  title: string;
-  content: string;
+  concept?: string;
 }
