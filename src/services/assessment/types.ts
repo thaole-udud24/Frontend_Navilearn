@@ -1,22 +1,34 @@
-export type AssessmentItemStatus = 'open' | 'in_progress' | 'resolved';
+export type AssessmentStatus = 'in_progress' | 'submitted';
 
-export interface AssessmentItem {
+export interface AssessmentAnswer {
+  question: string;
+  selectedOptionIndex?: number;
+  essayText?: string;
+  isCorrect?: boolean;
+  earnedPoints?: number;
+  feedback?: string;
+}
+
+export interface Assessment {
   _id: string;
-  owner: string;
-  title: string;
-  content: string;
-  status: AssessmentItemStatus;
+  assessmentConfig: string;
+  concept: string;
+  answers: AssessmentAnswer[];
+  status: AssessmentStatus;
+  score: number;
+  passed: boolean;
+  startedAt: string;
+  submittedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface AssessmentItemFilters {
+export interface AssessmentFilters {
   page?: number;
   limit?: number;
-  status?: AssessmentItemStatus;
+  status?: AssessmentStatus;
 }
 
-export interface CreateAssessmentItemInput {
-  title: string;
-  content: string;
+export interface SubmitAssessmentInput {
+  answers: { question: string; selectedOptionIndex?: number; essayText?: string }[];
 }
