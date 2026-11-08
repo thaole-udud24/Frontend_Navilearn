@@ -10,6 +10,24 @@ npm install
 npm run dev              # http://localhost:5173
 ```
 
+### Docker (chạy cả backend + frontend + MongoDB local)
+
+Cần clone repo này làm thư mục **anh em** cạnh `backend_navilearn` (`docker-compose.yml` nằm trong `backend_navilearn`):
+
+```text
+some-folder/
+├── backend_navilearn/
+└── frontend_navilearn/   (repo này)
+```
+
+```bash
+cd ../backend_navilearn
+cp .env.example .env    # điền MONGODB_URI, JWT secrets, ... của riêng bạn
+docker compose up --build
+```
+
+Frontend: http://localhost:3000, Backend: http://localhost:5000.
+
 ## Script
 
 | Script | Việc |
