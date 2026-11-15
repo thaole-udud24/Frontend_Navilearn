@@ -16,9 +16,20 @@
  * are plain class selectors that antd markup never uses, they cannot leak
  * into or break existing antd pages.
  */
-/* Explicit layer order so the base reset below loses to utility classes. */
-@layer theme, base, utilities;
+/*
+ * Root cause of buttons silently rendering the wrong text color (e.g. the
+ * auth "Đăng nhập" submit button): antd/dist/reset.css was imported as a
+ * plain, unlayered stylesheet in main.tsx. Per the CSS Cascade Layers spec,
+ * ANY unlayered rule always beats ANY layered rule regardless of selector
+ * specificity or source order — so antd's unscoped `button{color:inherit}`
+ * reset was silently overriding every `.text-*` utility class on every
+ * plain <button> in the app, no matter how specific. Moving it into its own
+ * lowest-priority layer here (and removing the bare import from main.tsx)
+ * makes it lose to Tailwind's base/utilities layers like it always should.
+ */
+@layer antd-reset, theme, base, utilities;
 
+@import 'antd/dist/reset.css' layer(antd-reset);
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/utilities.css' layer(utilities);
 
@@ -36,36 +47,42 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #f4f6fb;
-  --foreground: #1f2a44;
-  --card: #ffffff;
-  --card-foreground: #1f2a44;
-  --popover: #ffffff;
-  --popover-foreground: #1f2a44;
-  --border: #e6eaf2;
-  --input: #e6eaf2;
-  --ring: #4a90e2;
+  /* NaviLearn brand palette: soft blue + peach (see docs/BRAND.md). */
+  --background: #f7f8fc;
+  --foreground: #203b70;
+  --card: #fffefc;
+  --card-foreground: #203b70;
+  --popover: #fffefc;
+  --popover-foreground: #203b70;
+  --border: #e3ecfb;
+  --input: #e3ecfb;
+  --ring: #4e88d9;
 
-  --primary: #4a90e2;
-  --primary-hover: #6fb1f0;
+  --primary: #4e88d9;
+  --primary-hover: #8fb8f5;
   --primary-foreground: #ffffff;
+  --primary-soft: #eaf2ff;
 
-  --accent: #e5322d;
-  --accent-foreground: #ffffff;
+  --accent: #f5a477;
+  --accent-soft: #fff3ea;
+  --accent-foreground: #203b70;
 
-  --muted: #eef1f8;
-  --muted-foreground: #8a94a8;
+  --mint: #bdeedc;
+  --mint-foreground: #1c7a5c;
 
-  --success: #16a34a;
-  --warning: #f59e0b;
+  --muted: #eef3fc;
+  --muted-foreground: #6b7a99;
+
+  --success: #52c99a;
+  --warning: #e8954a;
   --danger: #dc2626;
-  --info: #2563eb;
+  --info: #4e88d9;
 
-  --radius-card: 16px;
+  --radius-card: 12px;
   --radius-control: 10px;
-  --radius-badge: 6px;
+  --radius-badge: 8px;
 
-  --shadow-card: 0 4px 24px rgba(15, 40, 90, 0.06);
+  --shadow-card: 0 8px 20px rgba(32, 59, 112, 0.16);
 }
 
 /* shortcut: dark values are reasonable inversions of the light palette, not
@@ -82,12 +99,17 @@
   --input: #283150;
   --ring: #1e5aa8;
 
-  --primary: #1e5aa8;
-  --primary-hover: #2f6ec0;
+  --primary: #4e88d9;
+  --primary-hover: #6fa3e8;
   --primary-foreground: #ffffff;
+  --primary-soft: #1c2b4a;
 
-  --accent: #e5322d;
-  --accent-foreground: #ffffff;
+  --accent: #f5a477;
+  --accent-soft: #3a2c20;
+  --accent-foreground: #0f1629;
+
+  --mint: #52c99a;
+  --mint-foreground: #e8ecf5;
 
   --muted: #1a2238;
   --muted-foreground: #8a94a8;
@@ -112,9 +134,14 @@
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
 
   --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
   --color-accent-foreground: var(--accent-foreground);
+
+  --color-mint: var(--mint);
+  --color-mint-foreground: var(--mint-foreground);
 
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);

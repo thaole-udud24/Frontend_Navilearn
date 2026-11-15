@@ -1,14 +1,14 @@
 import { createElement } from 'react';
 import AdminDashboard from '@/pages/admin/Dashboard';
+import QuestionBankAdmin from '@/pages/admin/QuestionBankAdmin';
+import IssueReportsAdmin from '@/pages/admin/IssueReportsAdmin';
+import AssessmentConfigAdmin from '@/pages/admin/AssessmentConfigAdmin';
+import RubricAdmin from '@/pages/admin/RubricAdmin';
 import TemplateItemsPage from '@/pages/_template/Admin';
 import AdminAccountItemsPage from '@/pages/accounts/account/Admin';
 import AdminRbacItemsPage from '@/pages/accounts/rbac/Admin';
 import AdminSubjectItemsPage from '@/pages/accounts/subject/Admin';
 import AdminKnowledgeItemsPage from '@/pages/content/knowledge/Admin';
-import AdminAssessmentItemsPage from '@/pages/content/assessment/Admin';
-import AdminQuestionBankItemsPage from '@/pages/content/question-bank/Admin';
-import AdminAssessmentConfigItemsPage from '@/pages/content/assessment-config/Admin';
-import AdminMasteryItemsPage from '@/pages/content/mastery/Admin';
 import AdminPlanningItemsPage from '@/pages/planning/planning/Admin';
 import AdminAdaptiveItemsPage from '@/pages/planning/adaptive/Admin';
 import AdminReviewItemsPage from '@/pages/planning/review/Admin';
@@ -23,17 +23,25 @@ import AdminAdminReportItemsPage from '@/pages/ops/admin-report/Admin';
 import AdminNotificationItemsPage from '@/pages/ops/notification/Admin';
 import AdminSupportItemsPage from '@/pages/ops/support/Admin';
 
-export const adminRoutes = [
-  { index: true, element: createElement(AdminDashboard) },
+// The dashboard and the new QBK/ACF screens bring their own full AppShell (dark-navy sidebar +
+// header), so they must render as AdminLayout siblings, not nested inside its antd Sider — same
+// pattern as routes/studentRoutes.ts.
+export const adminIndexRoute = { index: true, element: createElement(AdminDashboard) };
+
+export const adminNewRoutes = [
+  { path: 'questions', element: createElement(QuestionBankAdmin) },
+  { path: 'questions/issue-reports', element: createElement(IssueReportsAdmin) },
+  { path: 'exam-configs', element: createElement(AssessmentConfigAdmin) },
+  { path: 'exam-configs/rubrics', element: createElement(RubricAdmin) },
+];
+
+// Legacy CRUD-scaffold pages: bare content, they rely on AdminLayout for navigation/chrome.
+export const adminLegacyRoutes = [
   { path: 'template-items', element: createElement(TemplateItemsPage) },
   { path: 'account-items', element: createElement(AdminAccountItemsPage) },
   { path: 'rbac-items', element: createElement(AdminRbacItemsPage) },
   { path: 'subject-items', element: createElement(AdminSubjectItemsPage) },
   { path: 'knowledge-items', element: createElement(AdminKnowledgeItemsPage) },
-  { path: 'assessment-items', element: createElement(AdminAssessmentItemsPage) },
-  { path: 'question-bank-items', element: createElement(AdminQuestionBankItemsPage) },
-  { path: 'assessment-config-items', element: createElement(AdminAssessmentConfigItemsPage) },
-  { path: 'mastery-items', element: createElement(AdminMasteryItemsPage) },
   { path: 'planning-items', element: createElement(AdminPlanningItemsPage) },
   { path: 'adaptive-items', element: createElement(AdminAdaptiveItemsPage) },
   { path: 'review-items', element: createElement(AdminReviewItemsPage) },

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { ChevronDown, ChevronLeft, ChevronRight, GraduationCap } from 'lucide-react';
+import { ChevronDown, GraduationCap, LogOut } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -11,9 +11,15 @@ import type { MenuGroup, MenuItem } from './types';
 interface SidebarProps {
   groups: MenuGroup[];
   collapsed: boolean;
-  onToggleCollapsed: () => void;
   mobileOpen: boolean;
   onMobileClose: () => void;
+  tagline?: string;
+  userName?: string;
+  roleLabel?: string;
+  onLogout?: () => void;
+  /** 'dark' reuses the app's existing `.dark` (navy) palette, scoped to just the sidebar — used
+   * to tell the Admin area apart from the Student area at a glance. */
+  variant?: 'light' | 'dark';
 }
 
 function isActive(pathname: string, item: MenuItem): boolean {
@@ -27,13 +33,19 @@ function MenuLeaf({ item, collapsed, active }: { item: MenuItem; collapsed: bool
     <Link
       to={item.path ?? '#'}
       className={cn(
-        'relative flex h-11 items-center gap-3 rounded-control px-3 text-[15px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+        'flex h-11 items-center gap-3 rounded-control px-3 text-[15px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
         collapsed && 'justify-center px-0',
-        active ? 'bg-primary/10 font-semibold text-primary' : 'text-foreground hover:bg-muted',
+        active ? 'bg-primary font-semibold text-primary-foreground shadow-card' : 'text-foreground hover:bg-muted',
       )}
     >
-      {active && <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-primary" />}
-      {Icon && <Icon className="h-5 w-5 shrink-0" />}
+      {Icon &&
+        (active ? (
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-control bg-white/20">
+            <Icon className="h-4 w-4" />
+          </span>
+        ) : (
+          <Icon className="h-5 w-5 shrink-0" />
+        ))}
       {!collapsed && <span className="truncate">{item.label}</span>}
     </Link>
   );
@@ -62,7 +74,7 @@ function MenuParent({ item, collapsed, pathname }: { item: MenuItem; collapsed: 
             aria-label={item.label}
             className={cn(
               'flex h-11 w-full items-center justify-center rounded-control',
-              active ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-muted',
+              active ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-muted',
             )}
           >
             {Icon && <Icon className="h-5 w-5" />}
@@ -136,11 +148,11 @@ function MenuParent({ item, collapsed, pathname }: { item: MenuItem; collapsed: 
 
 function SidebarBody({ groups, collapsed, pathname }: { groups: MenuGroup[]; collapsed: boolean; pathname: string }) {
   return (
-    <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-3 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-border">
+    <nav className="min-h-0 flex-1 space-y-4 overflow-y-auto px-3 py-3 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-border">
       {groups.map((group, gi) => (
         <div key={group.label ?? gi}>
           {group.label && !collapsed && (
-            <div className="px-3 pb-1 text-xs font-bold uppercase text-muted-foreground">{group.label}</div>
+            <div className="px-3 pb-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">{group.label}</div>
           )}
           <div className="space-y-1">
             {group.items.map((item) =>
@@ -157,15 +169,81 @@ function SidebarBody({ groups, collapsed, pathname }: { groups: MenuGroup[]; col
   );
 }
 
-export function Sidebar({ groups, collapsed, onToggleCollapsed, mobileOpen, onMobileClose }: SidebarProps) {
+function ProfileFooter({
+  collapsed,
+  userName,
+  roleLabel,
+  onLogout,
+}: {
+  collapsed: boolean;
+  userName: string;
+  roleLabel: string;
+  onLogout?: () => void;
+}) {
+  const initial = userName.trim().charAt(0).toUpperCase();
+
+  if (collapsed) {
+    return (
+      <div className="flex flex-col items-center gap-2 px-2 pb-3">
+        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-hover text-sm font-bold text-primary-foreground">
+          {initial}
+        </span>
+        <button
+          type="button"
+          aria-label="Đăng xuất"
+          onClick={onLogout}
+          className="flex h-8 w-8 items-center justify-center rounded-control text-muted-foreground hover:bg-muted hover:text-danger"
+        >
+          <LogOut className="h-4 w-4" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-1 mb-3 flex items-center gap-3 rounded-card border border-border bg-card p-3 shadow-card">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-hover text-sm font-bold text-primary-foreground">
+        {initial}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-bold text-foreground">{userName}</div>
+        <div className="truncate text-xs text-muted-foreground">{roleLabel}</div>
+      </div>
+      <button
+        type="button"
+        aria-label="Đăng xuất"
+        onClick={onLogout}
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control text-muted-foreground hover:bg-muted hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <LogOut className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+export function Sidebar({
+  groups,
+  collapsed,
+  mobileOpen,
+  onMobileClose,
+  tagline,
+  userName = 'Người dùng',
+  roleLabel = '',
+  onLogout,
+  variant = 'light',
+}: SidebarProps) {
   const { pathname } = useLocation();
+  const dark = variant === 'dark';
 
   const header = (collapsedMode: boolean) => (
-    <div className="flex h-[72px] shrink-0 items-center gap-2 border-b border-border px-4">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary text-primary-foreground">
-        <GraduationCap className="h-5 w-5" />
+    <div className={cn('flex h-[72px] shrink-0 flex-col justify-center gap-1.5 border-b border-border px-4', collapsedMode && 'items-center')}>
+      <div className="flex items-center gap-2 overflow-hidden">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary text-primary-foreground">
+          <GraduationCap className="h-5 w-5" />
+        </span>
+        {!collapsedMode && <span className="truncate text-lg font-extrabold text-foreground">NaviLearn</span>}
       </div>
-      {!collapsedMode && <span className="truncate text-[20px] font-bold text-foreground">NAVILEARN</span>}
+      {!collapsedMode && tagline && <span className="pl-11 text-[11px] text-muted-foreground">{tagline}</span>}
     </div>
   );
 
@@ -175,19 +253,13 @@ export function Sidebar({ groups, collapsed, onToggleCollapsed, mobileOpen, onMo
       <aside
         className={cn(
           'relative hidden shrink-0 flex-col border-r border-border bg-card transition-[width] duration-[250ms] ease-in-out lg:sticky lg:top-0 lg:flex lg:h-screen',
-          collapsed ? 'w-[72px]' : 'w-[260px]',
+          collapsed ? 'w-[76px]' : 'w-[264px]',
+          dark && 'dark',
         )}
       >
         {header(collapsed)}
         <SidebarBody groups={groups} collapsed={collapsed} pathname={pathname} />
-        <button
-          type="button"
-          aria-label={collapsed ? 'Mở rộng sidebar' : 'Thu gọn sidebar'}
-          onClick={onToggleCollapsed}
-          className="absolute -right-3.5 bottom-10 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-card hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        >
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-        </button>
+        <ProfileFooter collapsed={collapsed} userName={userName} roleLabel={roleLabel} onLogout={onLogout} />
       </aside>
 
       {/* Mobile drawer */}
@@ -207,10 +279,11 @@ export function Sidebar({ groups, collapsed, onToggleCollapsed, mobileOpen, onMo
               animate={{ x: 0 }}
               exit={{ x: -280 }}
               transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-              className="fixed left-0 top-0 z-50 flex h-screen w-[260px] flex-col border-r border-border bg-card lg:hidden"
+              className={cn('fixed left-0 top-0 z-50 flex h-screen w-[264px] flex-col border-r border-border bg-card lg:hidden', dark && 'dark')}
             >
               {header(false)}
               <SidebarBody groups={groups} collapsed={false} pathname={pathname} />
+              <ProfileFooter collapsed={false} userName={userName} roleLabel={roleLabel} onLogout={onLogout} />
             </motion.aside>
           </>
         )}

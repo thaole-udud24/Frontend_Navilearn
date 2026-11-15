@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { APP_FOOTER_TEXT } from '@/constants/app';
 import { formStagger, textLineReveal } from '@/lib/motion';
 import { AuthIllustration } from './AuthIllustration';
 
@@ -61,9 +62,7 @@ export function OtpOverlayPanel({
         )}
       </motion.div>
 
-      <p className="absolute bottom-6 left-0 right-0 text-xs text-white/60">
-        © 2025 NaviLearn. Nền tảng học tập thông minh.
-      </p>
+      <p className="absolute bottom-6 left-0 right-0 text-center text-xs text-white/60">{APP_FOOTER_TEXT}</p>
     </div>
   );
 }

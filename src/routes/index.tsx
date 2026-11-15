@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import NotFound from '@/pages/exception/404';
 import { StudentLayout } from '@/layouts/StudentLayout';
 import { AdminLayout } from '@/layouts/AdminLayout';
@@ -7,11 +7,12 @@ import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { PATHS } from '@/routes/paths';
 import { ROLES } from '@/constants/enums';
 import { authRoutes } from '@/routes/authRoutes';
-import { studentRoutes } from '@/routes/studentRoutes';
-import { adminRoutes } from '@/routes/adminRoutes';
+import { studentComingSoonRoutes, studentIndexRoute, studentLegacyRoutes } from '@/routes/studentRoutes';
+import { adminIndexRoute, adminLegacyRoutes, adminNewRoutes } from '@/routes/adminRoutes';
 
 // Every link in the app resolves through PATHS, never a raw string.
 export const router = createBrowserRouter([
+  { path: '/', element: <Navigate to={PATHS.login} replace /> },
   {
     element: <AuthLayout />,
     children: authRoutes,
@@ -21,8 +22,11 @@ export const router = createBrowserRouter([
     children: [
       {
         path: PATHS.student.root,
-        element: <StudentLayout />,
-        children: studentRoutes,
+        children: [
+          studentIndexRoute,
+          ...studentComingSoonRoutes,
+          { element: <StudentLayout />, children: studentLegacyRoutes },
+        ],
       },
     ],
   },
@@ -31,8 +35,11 @@ export const router = createBrowserRouter([
     children: [
       {
         path: PATHS.admin.root,
-        element: <AdminLayout />,
-        children: adminRoutes,
+        children: [
+          adminIndexRoute,
+          ...adminNewRoutes,
+          { element: <AdminLayout />, children: adminLegacyRoutes },
+        ],
       },
     ],
   },
