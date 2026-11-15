@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Bell, Grid3x3, LogOut, Menu, Moon, User } from 'lucide-react';
+import { Bell, ChevronDown, Grid3x3, LogOut, Menu, Moon, Search, User } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import {
@@ -18,6 +18,12 @@ interface HeaderProps {
   roleLabel: string;
   notificationCount?: number;
   onMobileMenuClick: () => void;
+  /** Compact single-row topbar (hamburger + inline breadcrumb + search + bell + avatar) with
+   * no colored heading band — used by pages whose own content already carries the greeting
+   * (e.g. the student dashboard's HeroBanner). Default keeps the original banner-style header. */
+  compact?: boolean;
+  onToggleSidebar?: () => void;
+  onLogout?: () => void;
 }
 
 const LANGUAGES = [
@@ -25,10 +31,135 @@ const LANGUAGES = [
   { code: 'en', flag: '🇬🇧', label: 'English' },
 ];
 
-export function Header({ title, breadcrumb, userName, roleLabel, notificationCount = 0, onMobileMenuClick }: HeaderProps) {
+function AvatarMenu({ userName, roleLabel, onLogout, light }: { userName: string; roleLabel: string; onLogout?: () => void; light?: boolean }) {
+  const initial = userName.trim().charAt(0).toUpperCase();
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            'flex items-center gap-1.5 rounded-control px-1.5 py-1 focus-visible:outline-none focus-visible:ring-2',
+            light ? 'hover:bg-muted focus-visible:ring-ring' : 'hover:bg-white/10 focus-visible:ring-white',
+          )}
+        >
+          <span
+            className={cn(
+              'flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold',
+              light ? 'bg-gradient-to-br from-primary to-primary-hover text-primary-foreground' : 'bg-white/20',
+            )}
+          >
+            {initial}
+          </span>
+          <span className="hidden text-left sm:block">
+            <span className={cn('block text-sm font-semibold leading-tight', light ? 'text-foreground' : 'text-white')}>
+              {userName}
+            </span>
+            {!light && <span className="block text-xs leading-tight text-white/80">{roleLabel}</span>}
+          </span>
+          <ChevronDown className={cn('h-4 w-4', light ? 'text-muted-foreground' : 'text-white/80')} />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="tw-scope w-48" align="end">
+        <DropdownMenuItem>
+          <User className="h-4 w-4" /> Hồ sơ
+        </DropdownMenuItem>
+        <DropdownMenuItem>
+          <User className="h-4 w-4" /> Đổi mật khẩu
+        </DropdownMenuItem>
+        <DropdownMenuItem>
+          <Moon className="h-4 w-4" /> Giao diện sáng/tối
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className="text-danger" onSelect={onLogout}>
+          <LogOut className="h-4 w-4" /> Đăng xuất
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+export function Header({
+  title,
+  breadcrumb,
+  userName,
+  roleLabel,
+  notificationCount = 0,
+  onMobileMenuClick,
+  compact,
+  onToggleSidebar,
+  onLogout,
+}: HeaderProps) {
   const [lang, setLang] = useState(LANGUAGES[0]);
   const reduced = useReducedMotion();
-  const initial = userName.trim().charAt(0).toUpperCase();
+
+  if (compact) {
+    return (
+      <header className="sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur-sm">
+        <div className="flex h-[72px] items-center gap-3 px-4 sm:px-6">
+          <button
+            type="button"
+            aria-label="Thu gọn / mở rộng thanh điều hướng"
+            onClick={onToggleSidebar}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+
+          <button
+            type="button"
+            aria-label="Mở menu"
+            onClick={onMobileMenuClick}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control text-muted-foreground hover:bg-muted lg:hidden"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+
+          <nav aria-label="Breadcrumb" className="hidden min-w-0 items-center gap-1.5 truncate text-sm md:flex">
+            {breadcrumb?.map((crumb, i) => (
+              <span key={crumb} className="flex items-center gap-1.5">
+                {i > 0 && <span className="text-muted-foreground">›</span>}
+                <span className={i === (breadcrumb.length ?? 0) - 1 ? 'font-bold text-foreground' : 'text-muted-foreground'}>
+                  {crumb}
+                </span>
+              </span>
+            ))}
+          </nav>
+
+          <div className="flex-1" />
+
+          <label className="relative hidden w-full max-w-md md:block">
+            <span className="sr-only">Tìm kiếm</span>
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="search"
+              placeholder="Tìm kiếm..."
+              className="h-11 w-full rounded-control border border-input bg-background pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </label>
+
+          <div className="flex-1" />
+
+          <motion.button
+            type="button"
+            aria-label="Thông báo"
+            animate={notificationCount > 0 && !reduced ? { rotate: [0, -8, 8, -8, 0] } : undefined}
+            transition={{ duration: 0.5, repeat: notificationCount > 0 ? Infinity : 0, repeatDelay: 3 }}
+            className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Bell className="h-5 w-5" />
+            {notificationCount > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[10px] font-bold text-white">
+                {notificationCount}
+              </span>
+            )}
+          </motion.button>
+
+          <AvatarMenu userName={userName} roleLabel={roleLabel} onLogout={onLogout} light />
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header
@@ -41,6 +172,14 @@ export function Header({ title, breadcrumb, userName, roleLabel, notificationCou
           aria-label="Mở menu"
           onClick={onMobileMenuClick}
           className="flex h-10 w-10 items-center justify-center rounded-control hover:bg-white/10 lg:hidden"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+        <button
+          type="button"
+          aria-label="Thu gọn / mở rộng thanh điều hướng"
+          onClick={onToggleSidebar}
+          className="hidden h-10 w-10 items-center justify-center rounded-control hover:bg-white/10 lg:flex"
         >
           <Menu className="h-5 w-5" />
         </button>
@@ -90,37 +229,7 @@ export function Header({ title, breadcrumb, userName, roleLabel, notificationCou
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className="flex items-center gap-2 rounded-control px-2 py-1 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-            >
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-sm font-bold">
-                {initial}
-              </span>
-              <span className="hidden text-left sm:block">
-                <span className="block text-sm font-semibold leading-tight">{userName}</span>
-                <span className="block text-xs leading-tight text-white/80">{roleLabel}</span>
-              </span>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="tw-scope w-48" align="end">
-            <DropdownMenuItem>
-              <User className="h-4 w-4" /> Hồ sơ
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <User className="h-4 w-4" /> Đổi mật khẩu
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Moon className="h-4 w-4" /> Giao diện sáng/tối
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-danger">
-              <LogOut className="h-4 w-4" /> Đăng xuất
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <AvatarMenu userName={userName} roleLabel={roleLabel} onLogout={onLogout} />
       </div>
 
       <div className="px-4 pb-6 pt-1 sm:px-6">

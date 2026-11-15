@@ -13,6 +13,7 @@ import { GraduationCap, Moon, Sun } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { cardEntrance, popIn, springTransition, textLineReveal } from '@/lib/motion';
 import { STORAGE_KEYS } from '@/constants/storageKeys';
+import { APP_FOOTER_TEXT } from '@/constants/app';
 import { ROLES } from '@/constants/enums';
 import { PATHS } from '@/routes/paths';
 import { useAuthStore } from '@/hooks/useAuth';
@@ -240,7 +241,7 @@ export default function AuthPage() {
         </AnimatePresence>
 
         {(view === 'login' || view === 'register') && (
-          <p className="text-center text-xs text-muted-foreground">© 2025 NaviLearn. Nền tảng học tập thông minh.</p>
+          <p className="text-center text-xs text-muted-foreground">{APP_FOOTER_TEXT}</p>
         )}
       </div>
 

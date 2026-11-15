@@ -2,9 +2,12 @@ import { useState, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { Wrench, HelpCircle, Bug, BookOpen } from 'lucide-react';
 
+import { cn } from '@/lib/utils';
+import { APP_FOOTER_TEXT } from '@/constants/app';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
+import { MascotWidget } from './MascotWidget';
 import type { MenuGroup } from './types';
 
 interface AppShellProps {
@@ -14,10 +17,31 @@ interface AppShellProps {
   userName: string;
   roleLabel: string;
   notificationCount?: number;
+  /** Shown under the NaviLearn wordmark in the expanded sidebar. */
+  tagline?: string;
+  /** Use the compact single-row topbar instead of the colored heading banner — for pages whose
+   * own content (e.g. a hero section) already carries the greeting/title. */
+  compactHeader?: boolean;
+  onLogout?: () => void;
+  /** 'admin' gives the sidebar the dark-navy palette so the Admin area reads as visually distinct
+   * from the Student area at a glance. */
+  area?: 'student' | 'admin';
   children: ReactNode;
 }
 
-export function AppShell({ menu, title, breadcrumb, userName, roleLabel, notificationCount, children }: AppShellProps) {
+export function AppShell({
+  menu,
+  title,
+  breadcrumb,
+  userName,
+  roleLabel,
+  notificationCount,
+  tagline,
+  compactHeader,
+  onLogout,
+  area = 'student',
+  children,
+}: AppShellProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -26,9 +50,13 @@ export function AppShell({ menu, title, breadcrumb, userName, roleLabel, notific
       <Sidebar
         groups={menu}
         collapsed={collapsed}
-        onToggleCollapsed={() => setCollapsed((c) => !c)}
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
+        tagline={tagline}
+        userName={userName}
+        roleLabel={roleLabel}
+        onLogout={onLogout}
+        variant={area === 'admin' ? 'dark' : 'light'}
       />
 
       <div className="flex min-h-screen flex-1 flex-col">
@@ -39,11 +67,16 @@ export function AppShell({ menu, title, breadcrumb, userName, roleLabel, notific
           roleLabel={roleLabel}
           notificationCount={notificationCount}
           onMobileMenuClick={() => setMobileOpen(true)}
+          compact={compactHeader}
+          onToggleSidebar={() => setCollapsed((c) => !c)}
+          onLogout={onLogout}
         />
 
-        <main className="-mt-10 flex-1 rounded-card bg-card p-4 shadow-card sm:p-6">
+        <main className={cn('flex-1 p-4 sm:p-6', !compactHeader && '-mt-10 rounded-card bg-card shadow-card')}>
           {children}
         </main>
+
+        <footer className="px-4 pb-24 pt-6 text-center text-xs text-muted-foreground sm:px-6">{APP_FOOTER_TEXT}</footer>
       </div>
 
       <DropdownMenu>
@@ -70,6 +103,8 @@ export function AppShell({ menu, title, breadcrumb, userName, roleLabel, notific
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {area === 'student' && <MascotWidget />}
     </div>
   );
 }

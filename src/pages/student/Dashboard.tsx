@@ -1,23 +1,44 @@
 import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { ColumnDef } from '@tanstack/react-table';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
-import { BookOpenCheck, Flame, GraduationCap, Sparkles, Star } from 'lucide-react';
+import { Award, CheckCircle2, Sun } from 'lucide-react';
 
 import { AppShell } from '@/layouts/AppShell';
+import { useAuthStore } from '@/hooks/useAuth';
+import { PATHS } from '@/routes/paths';
 import { studentMenu } from '@/config/menu.student';
 import { StatCard } from '@/components/StatCard';
 import { StatusBadge } from '@/components/StatusBadge';
 import { DataTablePage } from '@/components/DataTablePage';
 import { fadeUp, pickVariants, staggerContainer } from '@/lib/motion';
-import { generateWeeklyPlan, studentMasteryByTopic, studentOverallProgress, type WeeklyPlanRow } from '@/mocks/dashboardMocks';
+import {
+  classWeeklyStats,
+  generateWeeklyPlan,
+  novemberEventDays,
+  studentCourses,
+  studentGoalBreakdown,
+  studentOverallProgress,
+  studentRecentActivity,
+  upcomingSchedule,
+  weeklyActivitySeries,
+  type WeeklyPlanRow,
+} from '@/mocks/dashboardMocks';
+
+import { HeroBanner } from './components/HeroBanner';
+import { ActivityChartCard } from './components/ActivityChartCard';
+import { CourseCard } from './components/CourseCard';
+import { ClassStatsCard } from './components/ClassStatsCard';
+import { RecentActivityCard } from './components/RecentActivityCard';
+import { CalendarScheduleCard } from './components/CalendarScheduleCard';
 
 const mockUser = { name: 'Minh Anh' };
 
-const DONUT_COLORS = ['#0b3a82', '#e6eaf2'];
-
 export default function StudentDashboard() {
   const reduced = useReducedMotion();
+  const navigate = useNavigate();
+  const logout = useAuthStore((s) => s.logout);
   const weeklyPlan = useMemo(() => generateWeeklyPlan(16), []);
 
   const columns: ColumnDef<WeeklyPlanRow>[] = useMemo(
@@ -51,48 +72,101 @@ export default function StudentDashboard() {
     <AppShell
       menu={studentMenu}
       title="Trang chủ"
-      breadcrumb={['Trang chủ']}
+      breadcrumb={['Trang chủ', 'Tổng quan']}
       userName={mockUser.name}
-      roleLabel="Học sinh"
+      roleLabel="Sinh viên năm 2"
       notificationCount={3}
+      tagline="Explore. Learn. Master."
+      compactHeader
+      onLogout={() => {
+        logout();
+        navigate(PATHS.login);
+      }}
     >
-      <motion.div initial="hidden" animate="visible" variants={containerVariants} className="flex flex-col gap-6">
+      <motion.div initial="hidden" animate="visible" variants={containerVariants} className="flex flex-col gap-5">
         <motion.div variants={itemVariants}>
-          <h2 className="text-xl font-bold text-foreground">Xin chào, {mockUser.name}</h2>
-          <p className="text-sm text-muted-foreground">Chào mừng quay lại</p>
+          <HeroBanner name={mockUser.name} onStart={() => navigate(PATHS.student.courses)} />
         </motion.div>
 
-        <motion.div variants={itemVariants} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <motion.div variants={itemVariants} className="grid gap-4 sm:grid-cols-3">
           <StatCard
-            icon={GraduationCap}
-            label="Môn đang học"
-            value={6}
-            iconClassName="bg-gradient-to-br from-accent to-warning"
+            icon={Sun}
+            label="Đang học"
+            value={11}
+            tone="blue"
+            trend={{ direction: 'up', label: '12% so với tuần trước' }}
+            onViewMore={() => navigate(PATHS.student.courses)}
           />
-          <StatCard icon={BookOpenCheck} label="Bài cần ôn hôm nay" value={4} sparkline={[2, 5, 3, 6, 4]} />
-          <StatCard icon={Star} label="Điểm trung bình" value={8} sparkline={[7, 8, 7, 9, 8]} />
-          <StatCard icon={Flame} label="Chuỗi ngày học" value={12} sparkline={[3, 5, 8, 10, 12]} />
+          <StatCard
+            icon={Award}
+            label="Cần ôn lại"
+            value={3}
+            tone="peach"
+            trend={{ direction: 'down', label: '24% so với tuần trước' }}
+            onViewMore={() => navigate(PATHS.student.planner)}
+          />
+          <StatCard
+            icon={CheckCircle2}
+            label="Đã hoàn thành"
+            value={8}
+            tone="mint"
+            trend={{ direction: 'up', label: '12% so với tuần trước' }}
+            onViewMore={() => navigate(PATHS.student.courses)}
+          />
+        </motion.div>
+
+        <motion.div variants={itemVariants}>
+          <CalendarScheduleCard
+            year={2026}
+            month={10}
+            today={11}
+            events={novemberEventDays}
+            schedule={upcomingSchedule}
+          />
         </motion.div>
 
         <motion.div variants={itemVariants} className="grid gap-4 lg:grid-cols-3">
-          <div className="rounded-card border border-border bg-card p-5 shadow-card lg:col-span-2">
-            <h3 className="mb-4 font-semibold text-foreground">Mức độ thành thạo theo chủ đề</h3>
-            <div className="flex flex-col gap-3">
-              {studentMasteryByTopic.map((t, i) => (
-                <div key={t.topic} className="flex items-center gap-3">
-                  <span className="w-24 shrink-0 truncate text-sm text-muted-foreground">{t.topic}</span>
-                  <div className="h-3 flex-1 overflow-hidden rounded-full bg-muted">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${t.value}%` }}
-                      transition={{ duration: 0.6, delay: i * 0.05 }}
-                      className="h-full rounded-full bg-primary"
-                    />
-                  </div>
-                  <span className="w-10 shrink-0 text-right text-sm font-semibold text-foreground">{t.value}%</span>
-                </div>
+          <div className="lg:col-span-2">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="font-semibold text-foreground">Môn học gần đây ({studentCourses.length})</h3>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {studentCourses.map((course) => (
+                <CourseCard key={course.id} course={course} />
               ))}
             </div>
+          </div>
+          <ClassStatsCard
+            data={classWeeklyStats}
+            total={126}
+            changePercent={15}
+          />
+        </motion.div>
+
+        <motion.div variants={itemVariants}>
+          <RecentActivityCard items={studentRecentActivity} />
+        </motion.div>
+
+        <motion.div variants={itemVariants}>
+          <h3 className="mb-3 font-semibold text-foreground">Kế hoạch học tuần này</h3>
+          <DataTablePage
+            columns={columns}
+            data={weeklyPlan}
+            getRowId={(r) => r.id}
+            queryKeyPrefix="plan_"
+            searchPlaceholder="Tìm theo: Môn, Hoạt động…"
+            rowActions={[
+              { key: 'view', label: 'Xem chi tiết', onSelect: (r) => console.log('view', r) },
+              { key: 'edit', label: 'Chỉnh sửa', onSelect: (r) => console.log('edit', r) },
+              { key: 'duplicate', label: 'Nhân bản', onSelect: (r) => console.log('duplicate', r) },
+              { key: 'delete', label: 'Xoá', danger: true, onSelect: (r) => console.log('delete', r) },
+            ]}
+          />
+        </motion.div>
+
+        <motion.div variants={itemVariants} className="grid gap-4 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <ActivityChartCard data={weeklyActivitySeries} />
           </div>
 
           <div className="flex flex-col items-center justify-center rounded-card border border-border bg-card p-5 shadow-card">
@@ -101,7 +175,7 @@ export default function StudentDashboard() {
               <ResponsiveContainer>
                 <PieChart>
                   <Pie
-                    data={[{ value: studentOverallProgress }, { value: 100 - studentOverallProgress }]}
+                    data={studentGoalBreakdown}
                     dataKey="value"
                     innerRadius="70%"
                     outerRadius="100%"
@@ -109,8 +183,8 @@ export default function StudentDashboard() {
                     endAngle={-270}
                     isAnimationActive={!reduced}
                   >
-                    {DONUT_COLORS.map((color) => (
-                      <Cell key={color} fill={color} stroke="none" />
+                    {studentGoalBreakdown.map((seg) => (
+                      <Cell key={seg.label} fill={seg.color} stroke="none" />
                     ))}
                   </Pie>
                 </PieChart>
@@ -119,64 +193,17 @@ export default function StudentDashboard() {
                 {studentOverallProgress}%
               </div>
             </div>
-          </div>
-        </motion.div>
 
-        <motion.div variants={itemVariants} className="grid gap-4 lg:grid-cols-[1fr_320px]">
-          <div>
-            <h3 className="mb-3 font-semibold text-foreground">Kế hoạch học tuần này</h3>
-            <DataTablePage
-              columns={columns}
-              data={weeklyPlan}
-              getRowId={(r) => r.id}
-              queryKeyPrefix="plan_"
-              searchPlaceholder="Tìm theo: Môn, Hoạt động…"
-              rowActions={[
-                { key: 'view', label: 'Xem chi tiết', onSelect: (r) => console.log('view', r) },
-                { key: 'edit', label: 'Chỉnh sửa', onSelect: (r) => console.log('edit', r) },
-                { key: 'duplicate', label: 'Nhân bản', onSelect: (r) => console.log('duplicate', r) },
-                { key: 'delete', label: 'Xoá', danger: true, onSelect: (r) => console.log('delete', r) },
-              ]}
-            />
-          </div>
-
-          <div className="hidden flex-col gap-4 lg:flex">
-            <div className="rounded-card border border-border bg-card p-4 shadow-card">
-              <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-                  {mockUser.name.charAt(0)}
-                </span>
-                <div>
-                  <div className="text-sm font-semibold text-foreground">{mockUser.name}</div>
-                  <div className="text-xs text-muted-foreground">Học sinh lớp 12A1</div>
+            <div className="mt-4 flex w-full flex-col gap-1.5">
+              {studentGoalBreakdown.map((seg) => (
+                <div key={seg.label} className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full" style={{ background: seg.color }} />
+                    {seg.label}
+                  </span>
+                  <span className="font-semibold text-foreground">{seg.value}%</span>
                 </div>
-              </div>
-            </div>
-
-            <div className="rounded-card border border-border bg-card p-4 shadow-card">
-              <h4 className="mb-2 text-sm font-semibold text-foreground">Nhắc việc</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>Hoàn thành bài kiểm tra Toán trước 18h</li>
-                <li>Ôn lại từ vựng tiếng Anh chương 5</li>
-                <li>Nộp báo cáo thí nghiệm Hoá học</li>
-              </ul>
-            </div>
-
-            <div className="rounded-card border border-border bg-card p-4 shadow-card">
-              <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
-                <Sparkles className="h-4 w-4 text-primary" /> Trợ lý AI
-              </h4>
-              <div className="flex flex-col gap-2 text-sm">
-                <div className="self-start rounded-control bg-muted px-3 py-2">Chào bạn, mình có thể giúp gì hôm nay?</div>
-                <div className="self-end rounded-control bg-primary/10 px-3 py-2 text-primary">
-                  Gợi ý kế hoạch ôn tập tuần này nhé.
-                </div>
-              </div>
-              <input
-                disabled
-                placeholder="Nhập câu hỏi… (demo)"
-                className="mt-3 h-10 w-full rounded-control border border-input bg-background px-3 text-sm text-muted-foreground"
-              />
+              ))}
             </div>
           </div>
         </motion.div>
