@@ -43,25 +43,9 @@ export function Pagination({ page, pageSize, total, onPageChange, onPageSizeChan
   };
 
   return (
-    <div className="flex h-14 flex-col items-center justify-between gap-2 border-t border-border px-4 py-2 text-sm sm:flex-row">
-      <div className="hidden text-muted-foreground sm:block">
+    <div className="flex min-h-14 flex-col items-center justify-center gap-2 border-t border-border px-4 py-2 text-sm sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center sm:gap-3 sm:pr-32">
+      <div className="hidden justify-self-start text-muted-foreground sm:block">
         Hiển thị {start}–{end} / {total} bản ghi
-      </div>
-
-      <div className="hidden items-center gap-2 sm:flex">
-        <span className="text-muted-foreground">Số dòng/trang</span>
-        <Select value={String(pageSize)} onValueChange={(v) => onPageSizeChange(Number(v))}>
-          <SelectTrigger className="h-9 w-20">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="tw-scope">
-            {PAGE_SIZE_OPTIONS.map((size) => (
-              <SelectItem key={size} value={String(size)}>
-                {size}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
 
       {/* Responsive <768px: collapsed "‹ 2 / 9 ›" form */}
@@ -89,7 +73,7 @@ export function Pagination({ page, pageSize, total, onPageChange, onPageSizeChan
         </button>
       </div>
 
-      <div className="hidden items-center gap-1 sm:flex">
+      <div className="hidden items-center justify-self-center gap-1 sm:flex">
         <button
           type="button"
           onClick={() => goTo(page - 1)}
@@ -127,6 +111,22 @@ export function Pagination({ page, pageSize, total, onPageChange, onPageSizeChan
         >
           Sau ›
         </button>
+      </div>
+
+      <div className="hidden flex-wrap items-center justify-self-end gap-2 sm:flex">
+        <span className="text-muted-foreground">Số dòng/trang</span>
+        <Select value={String(pageSize)} onValueChange={(v) => onPageSizeChange(Number(v))}>
+          <SelectTrigger className="h-9 w-20">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="tw-scope">
+            {PAGE_SIZE_OPTIONS.map((size) => (
+              <SelectItem key={size} value={String(size)}>
+                {size}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <input
           type="number"
           min={1}
@@ -136,7 +136,7 @@ export function Pagination({ page, pageSize, total, onPageChange, onPageSizeChan
           onKeyDown={handleJump}
           placeholder="Đến trang"
           aria-label="Đến trang"
-          className="ml-2 h-9 w-20 rounded-control border border-input bg-card px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="h-9 w-28 shrink-0 rounded-control border border-input bg-card px-2 text-center text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         />
       </div>
     </div>

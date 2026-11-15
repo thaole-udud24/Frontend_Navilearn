@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis } from 'recharts';
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis } from 'recharts';
 import { AlertTriangle, UserPlus, Users, FileCheck2 } from 'lucide-react';
 
 import { AppShell } from '@/layouts/AppShell';
@@ -15,6 +15,15 @@ import { generateUsers, masteryDistribution, recentActivityLog, systemActivity30
 export default function AdminDashboard() {
   const reduced = useReducedMotion();
   const users = useMemo(() => generateUsers(81), []);
+
+  // Re-triggers the entrance animation every few seconds instead of once-on-mount, so the charts
+  // visibly keep "running" rather than drawing once and sitting static.
+  const [replayTick, setReplayTick] = useState(0);
+  useEffect(() => {
+    if (reduced) return;
+    const id = setInterval(() => setReplayTick((t) => t + 1), 6000);
+    return () => clearInterval(id);
+  }, [reduced]);
 
   const columns: ColumnDef<MockUser>[] = useMemo(
     () => [
@@ -46,7 +55,9 @@ export default function AdminDashboard() {
       breadcrumb={['Trang chủ']}
       userName="Administrator"
       roleLabel="Quản trị viên"
+      compactHeader
       notificationCount={5}
+      area="admin"
     >
       <motion.div initial="hidden" animate="visible" variants={containerVariants} className="flex flex-col gap-6">
         <motion.div variants={itemVariants}>
@@ -55,35 +66,74 @@ export default function AdminDashboard() {
         </motion.div>
 
         <motion.div variants={itemVariants} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard icon={Users} label="Tổng người dùng" value={2480} />
-          <StatCard icon={UserPlus} label="Tài khoản mới 7 ngày" value={57} sparkline={[10, 18, 14, 22, 20, 26, 31]} />
-          <StatCard icon={FileCheck2} label="Bài đánh giá đang mở" value={16} />
-          <StatCard icon={AlertTriangle} label="Cảnh báo rủi ro" value={9} iconClassName="bg-gradient-to-br from-danger to-warning" />
+          <StatCard
+            icon={Users}
+            label="Tổng người dùng"
+            value={2480}
+            tone="blue"
+            trend={{ direction: 'up', label: '8% so với tháng trước' }}
+          />
+          <StatCard
+            icon={UserPlus}
+            label="Tài khoản mới 7 ngày"
+            value={57}
+            tone="mint"
+            trend={{ direction: 'up', label: '12% so với tuần trước' }}
+          />
+          <StatCard
+            icon={FileCheck2}
+            label="Bài đánh giá đang mở"
+            value={16}
+            tone="peach"
+            trend={{ direction: 'up', label: '3 bài so với hôm qua' }}
+          />
+          <StatCard
+            icon={AlertTriangle}
+            label="Cảnh báo rủi ro"
+            value={9}
+            iconClassName="bg-gradient-to-br from-danger to-warning"
+            trend={{ direction: 'down', label: '2 cảnh báo so với hôm qua' }}
+          />
         </motion.div>
 
         <motion.div variants={itemVariants} className="grid gap-4 lg:grid-cols-2">
           <div className="rounded-card border border-border bg-card p-5 shadow-card">
             <h3 className="mb-4 font-semibold text-foreground">Hoạt động hệ thống 30 ngày</h3>
             <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={systemActivity30Days}>
+              <AreaChart key={`activity-${replayTick}`} data={systemActivity30Days}>
+                <defs>
+                  <linearGradient id="adminActivityFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="day" tick={{ fontSize: 11 }} interval={4} />
                 <YAxis tick={{ fontSize: 11 }} />
                 <RTooltip />
-                <Line type="monotone" dataKey="value" stroke="var(--primary)" strokeWidth={2} dot={false} isAnimationActive={!reduced} />
-              </LineChart>
+                <Area
+                  type="monotone"
+                  dataKey="value"
+                  stroke="var(--primary)"
+                  strokeWidth={2}
+                  fill="url(#adminActivityFill)"
+                  dot={false}
+                  isAnimationActive={!reduced}
+                  animationDuration={1800}
+                />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
 
           <div className="rounded-card border border-border bg-card p-5 shadow-card">
             <h3 className="mb-4 font-semibold text-foreground">Phân bố mức thành thạo</h3>
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={masteryDistribution}>
+              <BarChart key={`mastery-${replayTick}`} data={masteryDistribution}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="level" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
                 <RTooltip />
-                <Bar dataKey="value" fill="var(--primary)" radius={[6, 6, 0, 0]} isAnimationActive={!reduced} />
+                <Bar dataKey="value" fill="var(--primary)" radius={[6, 6, 0, 0]} isAnimationActive={!reduced} animationDuration={1200} />
               </BarChart>
             </ResponsiveContainer>
           </div>
