@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 
 import { fadeUp } from '@/lib/motion';
 import { forgotPasswordSchema, type ForgotPasswordFormValues } from '@/schemas/auth';
-import { requestPasswordReset } from '@/services/account/account.auth.client';
+import { requestPasswordReset } from '@/services/account/account.auth.api';
 import { AuthStepper } from './AuthStepper';
 import { FloatingInput } from './FloatingInput';
 import { SubmitButton, type SubmitStatus } from './SubmitButton';

@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AnimatePresence,
   motion,
@@ -9,6 +9,7 @@ import {
   useTransform,
 } from 'framer-motion';
 import { GraduationCap, Moon, Sun } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
 import { cardEntrance, popIn, springTransition, textLineReveal } from '@/lib/motion';
@@ -18,7 +19,11 @@ import { ROLES } from '@/constants/enums';
 import { PATHS } from '@/routes/paths';
 import { useAuthStore } from '@/hooks/useAuth';
 import { toApiError } from '@/services/apiError';
-import { login, register as registerClient } from '@/services/account/account.auth.client';
+import {
+  login,
+  register as registerApi,
+  resendOtp,
+} from '@/services/account/account.auth.api';
 import type { LoginResponse } from '@/services/account/account.auth.types';
 import type { LoginFormValues, RegisterFormValues } from '@/schemas/auth';
 import { LoginForm } from './LoginForm';
@@ -35,7 +40,8 @@ import { OtpOverlayPanel } from './OtpOverlayPanel';
 const AnimatedBackground = lazy(() => import('./AnimatedBackground'));
 
 type Mode = 'login' | 'register';
-type View = Mode | 'forgot' | 'otp' | 'reset';
+// 'verify' = confirm the email of a freshly registered account; 'otp' = confirm the code of "forgot password".
+type View = Mode | 'forgot' | 'otp' | 'reset' | 'verify';
 
 function useIsMobile(): boolean {
   const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 1023px)').matches);
@@ -48,11 +54,17 @@ function useIsMobile(): boolean {
   return isMobile;
 }
 
-/** Login message is always this generic phrase, regardless of what the backend/mock said,
- * so a wrong email reveals nothing about whether the account exists (spec step 8). */
+/** A wrong email/password always gets the same generic phrase, so it reveals nothing about whether the
+ * account exists (spec step 8). Account-state errors (temporary lock, admin lock) are safe to explain
+ * because they are only returned after the password was correct or after repeated failures. */
 function toFriendlyMessage(error: unknown, kind: 'login' | 'register'): string {
-  if (kind === 'login') return 'Email hoặc mật khẩu không đúng';
   const apiErr = toApiError(error);
+  if (apiErr.code === 'NETWORK_ERROR') return 'Không kết nối được máy chủ, vui lòng thử lại';
+  if (apiErr.code === 'RATE_LIMITED') return 'Bạn thao tác quá nhanh, vui lòng thử lại sau';
+  if (kind === 'login') {
+    if (apiErr.code === 'ACCOUNT_TEMP_LOCKED' || apiErr.code === 'ACCOUNT_LOCKED') return apiErr.message;
+    return 'Email hoặc mật khẩu không đúng';
+  }
   if (apiErr.code === 'EMAIL_EXISTS') return 'Email này đã được sử dụng';
   return apiErr.message || 'Có lỗi xảy ra, vui lòng thử lại';
 }
@@ -67,6 +79,19 @@ export default function AuthPage() {
   const [dark, setDark] = useState(false);
   const [revealing, setRevealing] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
+  const [verifyEmailAddress, setVerifyEmailAddress] = useState('');
+  const [resetToken, setResetToken] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // An admin-sent reset link looks like /login?resetToken=...: jump straight to the new-password step.
+  useEffect(() => {
+    const token = searchParams.get('resetToken');
+    if (!token) return;
+    setResetToken(token);
+    setResetEmail('');
+    setView('reset');
+    setSearchParams({}, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const cardRef = useRef<HTMLDivElement>(null);
   const rotateX = useMotionValue(0);
@@ -118,17 +143,27 @@ export default function AuthPage() {
       const result = await login({ email: values.identifier, password: values.password });
       await completeAuth(result);
     } catch (error) {
+      if (toApiError(error).code === 'EMAIL_NOT_VERIFIED') {
+        // The password was right but the email was never confirmed: send a fresh code and continue there.
+        const email = values.identifier;
+        await resendOtp(email, 'verify').catch(() => undefined);
+        setVerifyEmailAddress(email);
+        setView('verify');
+        toast.info('Email chưa được xác minh. Chúng tôi đã gửi mã xác minh mới.');
+        return;
+      }
       throw new Error(toFriendlyMessage(error, 'login'));
     }
   }
 
   async function handleRegisterSubmit(values: RegisterFormValues) {
     try {
-      const result = await registerClient({ email: values.email, password: values.password, fullName: values.fullName });
-      await completeAuth(result);
+      await registerApi({ email: values.email, password: values.password, fullName: values.fullName });
     } catch (error) {
       throw new Error(toFriendlyMessage(error, 'register'));
     }
+    setVerifyEmailAddress(values.email);
+    setView('verify');
   }
 
   const mode: Mode = view === 'register' ? 'register' : 'login';
@@ -191,7 +226,7 @@ export default function AuthPage() {
                 </div>
               </motion.div>
             </motion.div>
-          ) : view === 'otp' ? (
+          ) : view === 'otp' || view === 'verify' ? (
             <motion.div
               key="otp-view"
               initial={{ opacity: 0, y: 16 }}
@@ -203,10 +238,19 @@ export default function AuthPage() {
               <div className="flex h-full items-center overflow-y-auto p-8 lg:p-10">
                 <div className="mx-auto flex w-full max-w-sm flex-col gap-6">
                   <OtpView
-                    email={resetEmail}
+                    email={view === 'verify' ? verifyEmailAddress : resetEmail}
                     onBack={() => setView('login')}
-                    onChangeEmail={() => setView('forgot')}
-                    onVerified={() => setView('reset')}
+                    onChangeEmail={() => setView(view === 'verify' ? 'register' : 'forgot')}
+                    purpose={view === 'verify' ? 'verify' : 'reset'}
+                    onVerified={(token) => {
+                      if (view === 'verify') {
+                        toast.success('Xác minh email thành công. Bạn có thể đăng nhập.');
+                        setView('login');
+                      } else {
+                        setResetToken(token ?? '');
+                        setView('reset');
+                      }
+                    }}
                   />
                 </div>
               </div>
@@ -232,7 +276,9 @@ export default function AuthPage() {
                       }}
                     />
                   )}
-                  {view === 'reset' && <ResetPasswordView onBack={() => setView('otp')} onDone={() => setView('login')} />}
+                  {view === 'reset' && (
+                    <ResetPasswordView resetToken={resetToken} onBack={() => setView('otp')} onDone={() => setView('login')} />
+                  )}
                 </div>
               </div>
               <OtpOverlayPanel onBackToLogin={() => setView('login')} />

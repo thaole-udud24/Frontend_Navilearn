@@ -5,6 +5,7 @@ export interface User {
   email: string;
   fullName: string;
   role: Role;
+  avatarUrl?: string | null;
 }
 
 export interface AuthTokens {
@@ -26,4 +27,27 @@ export interface RegisterPayload {
 
 export interface LoginResponse extends AuthTokens {
   user: User;
+}
+
+/** Register no longer logs in: the email must be verified with an OTP first. */
+export interface RegisterResult {
+  email: string;
+  requiresVerification: true;
+}
+
+export interface VerifyEmailPayload {
+  email: string;
+  otp: string;
+}
+
+export type OtpPurpose = 'verify' | 'reset';
+
+export interface VerifyResetOtpPayload {
+  email: string;
+  otp: string;
+}
+
+export interface ResetPasswordPayload {
+  resetToken: string;
+  password: string;
 }
