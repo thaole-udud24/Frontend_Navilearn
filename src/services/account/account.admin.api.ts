@@ -4,6 +4,7 @@ import type { ApiSuccess } from '@/types/api.d';
 import type {
   AdminUser,
   AdminUserFilters,
+  AuditLogEntry,
   CreateAdminUserInput,
   LoginLogEntry,
   UpdateAdminUserInput,
@@ -45,6 +46,13 @@ export async function sendResetLink(id: string): Promise<void> {
 export async function listLoginLogs(id: string, page = 1): Promise<ApiSuccess<LoginLogEntry[]>> {
   const { data } = await request.get<ApiSuccess<LoginLogEntry[]>>(ENDPOINTS.adminUsers.loginLogs(id), {
     params: { page, limit: 10 },
+  });
+  return data;
+}
+
+export async function listAuditLogs(page = 1, action?: string): Promise<ApiSuccess<AuditLogEntry[]>> {
+  const { data } = await request.get<ApiSuccess<AuditLogEntry[]>>(ENDPOINTS.adminUsers.auditLogs, {
+    params: { page, limit: 10, action: action || undefined },
   });
   return data;
 }

@@ -44,3 +44,13 @@ export interface LoginLogEntry {
   userAgent: string;
   createdAt: string;
 }
+
+export interface AuditLogEntry {
+  id: string;
+  action: string;
+  targetType: string;
+  targetId: string | null;
+  meta: Record<string, unknown>;
+  actor: { id: string; email: string; fullName: string } | null;
+  createdAt: string;
+}
