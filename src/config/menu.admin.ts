@@ -21,7 +21,7 @@ export const adminMenu: MenuGroup[] = [
     items: [{ label: 'Trang chủ', icon: Home, path: PATHS.admin.root, roles: ['admin'] }],
   },
   {
-    label: 'Nội dung',
+    label: 'Quản trị nội dung',
     items: [
       {
         label: 'Tài khoản & phân quyền',
@@ -43,7 +43,7 @@ export const adminMenu: MenuGroup[] = [
         ],
       },
       {
-        label: 'Cấu hình bài kiểm tra',
+        label: 'Cấu hình đánh giá',
         icon: ClipboardList,
         roles: ['admin'],
         children: [
@@ -54,7 +54,7 @@ export const adminMenu: MenuGroup[] = [
     ],
   },
   {
-    label: 'Hệ thống',
+    label: 'Vận hành hệ thống',
     items: [
       {
         label: 'Cấu hình hệ thống',
@@ -73,7 +73,7 @@ export const adminMenu: MenuGroup[] = [
     ],
   },
   {
-    label: 'Khác',
+    label: 'Danh mục',
     items: [{ label: 'Môn học', icon: Settings, path: PATHS.admin.subjectItems, roles: ['admin'] }],
   },
 ];
