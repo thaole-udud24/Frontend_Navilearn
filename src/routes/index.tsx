@@ -1,7 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import NotFound from '@/pages/exception/404';
 import { StudentLayout } from '@/layouts/StudentLayout';
-import { AdminLayout } from '@/layouts/AdminLayout';
+import { AdminAppShellLayout } from '@/layouts/AdminAppShellLayout';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { PATHS } from '@/routes/paths';
@@ -38,7 +38,7 @@ export const router = createBrowserRouter([
         children: [
           adminIndexRoute,
           ...adminNewRoutes,
-          { element: <AdminLayout />, children: adminLegacyRoutes },
+          { element: <AdminAppShellLayout />, children: adminLegacyRoutes },
         ],
       },
     ],

@@ -29,6 +29,7 @@ import AdminSupportItemsPage from '@/pages/ops/support/Admin';
 export const adminIndexRoute = { index: true, element: createElement(AdminDashboard) };
 
 export const adminNewRoutes = [
+  { path: 'account-items', element: createElement(AdminAccountItemsPage) },
   { path: 'questions', element: createElement(QuestionBankAdmin) },
   { path: 'questions/issue-reports', element: createElement(IssueReportsAdmin) },
   { path: 'exam-configs', element: createElement(AssessmentConfigAdmin) },
@@ -38,7 +39,6 @@ export const adminNewRoutes = [
 // Legacy CRUD-scaffold pages: bare content, they rely on AdminLayout for navigation/chrome.
 export const adminLegacyRoutes = [
   { path: 'template-items', element: createElement(TemplateItemsPage) },
-  { path: 'account-items', element: createElement(AdminAccountItemsPage) },
   { path: 'rbac-items', element: createElement(AdminRbacItemsPage) },
   { path: 'subject-items', element: createElement(AdminSubjectItemsPage) },
   { path: 'knowledge-items', element: createElement(AdminKnowledgeItemsPage) },

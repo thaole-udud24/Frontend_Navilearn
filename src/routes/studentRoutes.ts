@@ -43,7 +43,7 @@ export const studentComingSoonRoutes = [
   { path: 'course-resources', element: createElement(StudentComingSoon, { label: 'Tài nguyên khoá' }) },
   { path: 'ai-assist', element: createElement(AiAssistPage) },
   { path: 'notifications', element: createElement(StudentComingSoon, { label: 'Thông báo' }) },
-  { path: 'settings', element: createElement(StudentComingSoon, { label: 'Cài đặt' }) },
+  { path: 'settings', element: createElement(StudentAccountItemsPage) },
 ];
 
 // Legacy CRUD-scaffold pages: bare content, they rely on StudentLayout for navigation/chrome.

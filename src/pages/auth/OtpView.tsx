@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { ArrowLeft, GraduationCap, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { requestPasswordReset, verifyOtp } from '@/services/account/account.auth.client';
+import { resendOtp, verifyEmail, verifyResetOtp } from '@/services/account/account.auth.api';
 import { AuthStepper } from './AuthStepper';
 import { OtpInput } from './OtpInput';
 import { FORGOT_PASSWORD_STEPS } from './steps';
@@ -14,10 +14,11 @@ interface OtpViewProps {
   email: string;
   onBack: () => void;
   onChangeEmail: () => void;
-  onVerified: () => void;
+  onVerified: (resetToken?: string) => void;
+  purpose?: 'verify' | 'reset';
 }
 
-export function OtpView({ email, onBack, onChangeEmail, onVerified }: OtpViewProps) {
+export function OtpView({ email, onBack, onChangeEmail, onVerified, purpose = 'reset' }: OtpViewProps) {
   const [otp, setOtp] = useState('');
   const [error, setError] = useState<string>();
   const [status, setStatus] = useState<SubmitStatus>('idle');
@@ -37,9 +38,14 @@ export function OtpView({ email, onBack, onChangeEmail, onVerified }: OtpViewPro
     }
     setStatus('loading');
     try {
-      await verifyOtp(otp);
+      if (purpose === 'verify') {
+        await verifyEmail({ email, otp });
+        onVerified();
+      } else {
+        const result = await verifyResetOtp({ email, otp });
+        onVerified(result.resetToken);
+      }
       setStatus('success');
-      onVerified();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Mã OTP không hợp lệ');
       toast.error('Mã OTP không hợp lệ');
@@ -50,7 +56,7 @@ export function OtpView({ email, onBack, onChangeEmail, onVerified }: OtpViewPro
   async function resend() {
     if (cooldown > 0) return;
     try {
-      await requestPasswordReset(email);
+      await resendOtp(email, purpose);
       toast.success('Đã gửi lại mã OTP');
       setCooldown(RESEND_COOLDOWN_SECONDS);
     } catch (err) {
