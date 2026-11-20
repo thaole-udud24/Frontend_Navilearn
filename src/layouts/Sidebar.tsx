@@ -33,7 +33,7 @@ function MenuLeaf({ item, collapsed, active }: { item: MenuItem; collapsed: bool
     <Link
       to={item.path ?? '#'}
       className={cn(
-        'flex h-11 items-center gap-3 rounded-control px-3 text-[15px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+        'flex min-h-11 items-center gap-3 rounded-control px-3 py-2 text-[15px] leading-snug transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
         collapsed && 'justify-center px-0',
         active ? 'bg-primary font-semibold text-primary-foreground shadow-card' : 'text-foreground hover:bg-muted',
       )}
@@ -46,7 +46,7 @@ function MenuLeaf({ item, collapsed, active }: { item: MenuItem; collapsed: bool
         ) : (
           <Icon className="h-5 w-5 shrink-0" />
         ))}
-      {!collapsed && <span className="truncate">{item.label}</span>}
+      {!collapsed && <span className="min-w-0 break-words">{item.label}</span>}
     </Link>
   );
 
@@ -106,12 +106,12 @@ function MenuParent({ item, collapsed, pathname }: { item: MenuItem; collapsed: 
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         className={cn(
-          'flex h-11 w-full items-center gap-3 rounded-control px-3 text-[15px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-          active ? 'font-semibold text-primary' : 'text-foreground hover:bg-muted',
+          'flex min-h-11 w-full items-center gap-3 rounded-control px-3 py-2 text-[15px] leading-snug transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+          active ? 'bg-muted/60 font-semibold text-foreground' : 'text-foreground hover:bg-muted',
         )}
       >
         {Icon && <Icon className="h-5 w-5 shrink-0" />}
-        <span className="flex-1 truncate text-left">{item.label}</span>
+        <span className="min-w-0 flex-1 break-words text-left">{item.label}</span>
         <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: reduced ? 0 : 0.2 }}>
           <ChevronDown className="h-4 w-4" />
         </motion.span>
@@ -125,17 +125,18 @@ function MenuParent({ item, collapsed, pathname }: { item: MenuItem; collapsed: 
             transition={{ duration: reduced ? 0 : 0.25, ease: [0.22, 1, 0.36, 1] }}
             className="overflow-hidden"
           >
-            <div className="flex flex-col gap-1 pl-4 pt-1">
+            <div className="relative ml-5 mt-1 flex flex-col gap-1 border-l border-border pl-3">
               {item.children?.map((child) => (
                 <Link
                   key={child.label}
                   to={child.path ?? '#'}
                   className={cn(
-                    'rounded-control py-2 pl-4 text-sm text-foreground hover:bg-muted',
-                    isActive(pathname, child) && 'font-semibold text-primary',
+                    'relative flex min-h-10 items-center rounded-control px-3 py-2 text-sm leading-snug text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
+                    isActive(pathname, child) && 'bg-primary/15 font-semibold text-foreground before:absolute before:-left-[13px] before:h-6 before:w-0.5 before:rounded-full before:bg-primary',
                   )}
                 >
-                  {child.label}
+                  <span className={cn('mr-2 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/40', isActive(pathname, child) && 'bg-primary')} />
+                  <span className="break-words">{child.label}</span>
                 </Link>
               ))}
             </div>
@@ -148,11 +149,11 @@ function MenuParent({ item, collapsed, pathname }: { item: MenuItem; collapsed: 
 
 function SidebarBody({ groups, collapsed, pathname }: { groups: MenuGroup[]; collapsed: boolean; pathname: string }) {
   return (
-    <nav className="min-h-0 flex-1 space-y-4 overflow-y-auto px-3 py-3 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-border">
+    <nav className="min-h-0 flex-1 space-y-5 overflow-y-auto px-3 py-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-border">
       {groups.map((group, gi) => (
-        <div key={group.label ?? gi}>
+        <div key={group.label ?? gi} className={cn(gi > 0 && 'border-t border-border/70 pt-4')}>
           {group.label && !collapsed && (
-            <div className="px-3 pb-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">{group.label}</div>
+            <div className="px-3 pb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">{group.label}</div>
           )}
           <div className="space-y-1">
             {group.items.map((item) =>
@@ -201,12 +202,12 @@ function ProfileFooter({
   }
 
   return (
-    <div className="mx-1 mb-3 flex items-center gap-3 rounded-card border border-border bg-card p-3 shadow-card">
+    <div className="mx-2 mb-3 flex items-center gap-3 rounded-card border border-border bg-card p-3 shadow-card">
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-hover text-sm font-bold text-primary-foreground">
         {initial}
       </span>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-bold text-foreground">{userName}</div>
+        <div className="truncate text-sm font-bold text-foreground" title={userName}>{userName}</div>
         <div className="truncate text-xs text-muted-foreground">{roleLabel}</div>
       </div>
       <button
@@ -253,7 +254,7 @@ export function Sidebar({
       <aside
         className={cn(
           'relative hidden shrink-0 flex-col border-r border-border bg-card transition-[width] duration-[250ms] ease-in-out lg:sticky lg:top-0 lg:flex lg:h-screen',
-          collapsed ? 'w-[76px]' : 'w-[264px]',
+          collapsed ? 'w-[76px]' : 'w-[288px]',
           dark && 'dark',
         )}
       >
@@ -279,7 +280,7 @@ export function Sidebar({
               animate={{ x: 0 }}
               exit={{ x: -280 }}
               transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-              className={cn('fixed left-0 top-0 z-50 flex h-screen w-[264px] flex-col border-r border-border bg-card lg:hidden', dark && 'dark')}
+              className={cn('fixed left-0 top-0 z-50 flex h-screen w-[288px] flex-col border-r border-border bg-card lg:hidden', dark && 'dark')}
             >
               {header(false)}
               <SidebarBody groups={groups} collapsed={false} pathname={pathname} />

@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 
 import { resetPasswordSchema, type ResetPasswordFormValues } from '@/schemas/auth';
-import { resetPassword } from '@/services/account/account.auth.client';
+import { resetPassword } from '@/services/account/account.auth.api';
 import { AuthStepper } from './AuthStepper';
 import { FloatingInput } from './FloatingInput';
 import { FORGOT_PASSWORD_STEPS } from './steps';
@@ -14,9 +14,10 @@ import { SubmitButton, type SubmitStatus } from './SubmitButton';
 interface ResetPasswordViewProps {
   onBack: () => void;
   onDone: () => void;
+  resetToken: string;
 }
 
-export function ResetPasswordView({ onBack, onDone }: ResetPasswordViewProps) {
+export function ResetPasswordView({ onBack, onDone, resetToken }: ResetPasswordViewProps) {
   const [status, setStatus] = useState<SubmitStatus>('idle');
   const {
     register,
@@ -29,7 +30,7 @@ export function ResetPasswordView({ onBack, onDone }: ResetPasswordViewProps) {
   async function submit(values: ResetPasswordFormValues) {
     setStatus('loading');
     try {
-      await resetPassword(values.password);
+      await resetPassword({ resetToken, password: values.password });
       setStatus('success');
       window.setTimeout(onDone, 600);
     } catch (error) {

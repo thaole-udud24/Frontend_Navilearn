@@ -1,7 +1,7 @@
-import type { BusinessRuleItemFilters } from '@/services/business-rule/types';
+import type { BusinessRuleFilters } from '@/services/business-rule/types';
 
 export const businessRuleItemKeys = {
   all: ['businessRuleItems'] as const,
-  list: (filters: BusinessRuleItemFilters) => [...businessRuleItemKeys.all, 'list', filters] as const,
+  list: (filters: BusinessRuleFilters) => [...businessRuleItemKeys.all, 'list', filters] as const,
   detail: (id: string) => [...businessRuleItemKeys.all, 'detail', id] as const,
 };

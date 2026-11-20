@@ -15,13 +15,13 @@ import AdminReviewItemsPage from '@/pages/planning/review/Admin';
 import AdminRiskItemsPage from '@/pages/planning/risk/Admin';
 import AdminAiAssistItemsPage from '@/pages/ai/ai-assist/Admin';
 import AdminAiConfigItemsPage from '@/pages/ai/ai-config/Admin';
-import AdminBusinessRuleItemsPage from '@/pages/ops/business-rule/Admin';
 import AdminMonitoringItemsPage from '@/pages/ops/monitoring/Admin';
 import AdminDataRetentionItemsPage from '@/pages/ops/data-retention/Admin';
 import AdminReportItemsPage from '@/pages/ops/report/Admin';
 import AdminAdminReportItemsPage from '@/pages/ops/admin-report/Admin';
 import AdminNotificationItemsPage from '@/pages/ops/notification/Admin';
 import AdminSupportItemsPage from '@/pages/ops/support/Admin';
+import BusinessRuleAdmin from '@/pages/admin/BusinessRuleAdmin';
 
 // The dashboard and the new QBK/ACF screens bring their own full AppShell (dark-navy sidebar +
 // header), so they must render as AdminLayout siblings, not nested inside its antd Sider — same
@@ -29,16 +29,17 @@ import AdminSupportItemsPage from '@/pages/ops/support/Admin';
 export const adminIndexRoute = { index: true, element: createElement(AdminDashboard) };
 
 export const adminNewRoutes = [
+  { path: 'account-items', element: createElement(AdminAccountItemsPage) },
   { path: 'questions', element: createElement(QuestionBankAdmin) },
   { path: 'questions/issue-reports', element: createElement(IssueReportsAdmin) },
   { path: 'exam-configs', element: createElement(AssessmentConfigAdmin) },
   { path: 'exam-configs/rubrics', element: createElement(RubricAdmin) },
+  { path: 'business-rule-items', element: createElement(BusinessRuleAdmin) },
 ];
 
 // Legacy CRUD-scaffold pages: bare content, they rely on AdminLayout for navigation/chrome.
 export const adminLegacyRoutes = [
   { path: 'template-items', element: createElement(TemplateItemsPage) },
-  { path: 'account-items', element: createElement(AdminAccountItemsPage) },
   { path: 'rbac-items', element: createElement(AdminRbacItemsPage) },
   { path: 'subject-items', element: createElement(AdminSubjectItemsPage) },
   { path: 'knowledge-items', element: createElement(AdminKnowledgeItemsPage) },
@@ -48,7 +49,6 @@ export const adminLegacyRoutes = [
   { path: 'risk-items', element: createElement(AdminRiskItemsPage) },
   { path: 'ai-assist-items', element: createElement(AdminAiAssistItemsPage) },
   { path: 'ai-config-items', element: createElement(AdminAiConfigItemsPage) },
-  { path: 'business-rule-items', element: createElement(AdminBusinessRuleItemsPage) },
   { path: 'monitoring-items', element: createElement(AdminMonitoringItemsPage) },
   { path: 'data-retention-items', element: createElement(AdminDataRetentionItemsPage) },
   { path: 'report-items', element: createElement(AdminReportItemsPage) },
