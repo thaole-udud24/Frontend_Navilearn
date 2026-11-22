@@ -31,8 +31,6 @@ import { Input } from '@/components/ui/input';
 import { exportMasteryReport, getMasteryTrend, listMasteries, setMasteryGoal } from '@/services/mastery';
 import type { Mastery } from '@/services/mastery/types';
 
-const mockUser = { name: 'Minh Anh' };
-
 const LEVEL_LABEL: Record<Mastery['level'], string> = {
   novice: 'Mới bắt đầu',
   developing: 'Đang tiến bộ',
@@ -54,6 +52,7 @@ function conceptName(concept: Mastery['concept']) {
 export default function MasteryPage() {
   const navigate = useNavigate();
   const logout = useAuthStore((s) => s.logout);
+  const user = useAuthStore((s) => s.user);
   const [goalTarget, setGoalTarget] = useState<Mastery | null>(null);
   const [goalValue, setGoalValue] = useState('');
   const [trendTarget, setTrendTarget] = useState<Mastery | null>(null);
@@ -101,8 +100,8 @@ export default function MasteryPage() {
       menu={studentMenu}
       title="Mức độ thành thạo"
       breadcrumb={['Trang chủ', 'Mastery']}
-      userName={mockUser.name}
-      roleLabel="Sinh viên năm 2"
+      userName={user?.fullName ?? ''}
+      roleLabel="Sinh viên"
       compactHeader
       onLogout={() => {
         logout();

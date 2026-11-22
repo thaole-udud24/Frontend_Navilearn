@@ -22,8 +22,6 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { createRubric, listRubrics, updateRubric, updateRubricStatus } from '@/services/assessment-config';
 import type { Rubric, RubricCriterion } from '@/services/assessment-config/types';
 
-const mockUser = { name: 'Administrator' };
-
 function RubricFormDialog({
   open,
   onClose,
@@ -107,6 +105,7 @@ function RubricFormDialog({
 export default function RubricAdmin() {
   const navigate = useNavigate();
   const logout = useAuthStore((s) => s.logout);
+  const user = useAuthStore((s) => s.user);
   const [tableKey, setTableKey] = useState(0);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Rubric | null>(null);
@@ -134,7 +133,7 @@ export default function RubricAdmin() {
       menu={adminMenu}
       title="Rubric chấm tự luận"
       breadcrumb={['Trang chủ', 'Cấu hình bài kiểm tra', 'Rubric']}
-      userName={mockUser.name}
+      userName={user?.fullName ?? ''}
       roleLabel="Quản trị viên"
       compactHeader
       area="admin"
@@ -148,7 +147,6 @@ export default function RubricAdmin() {
         key={tableKey}
         columns={columns}
         getRowId={(r) => r._id}
-        queryKeyPrefix="rubric_admin_"
         searchPlaceholder="Tìm rubric…"
         emptyLabel="Chưa có rubric nào"
         fetcher={async ({ page, pageSize, search }) => {

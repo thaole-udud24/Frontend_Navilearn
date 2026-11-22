@@ -89,7 +89,7 @@ export const ENDPOINTS = {
     list: '/business-rule-items',
     create: '/business-rule-items',
     detail: (id: string) => `/business-rule-items/${id}`,
-    update: (id: string) => `/business-rule-items/${id}/status`,
+    update: (id: string) => `/business-rule-items/${id}`,
     reset: (id: string) => `/business-rule-items/${id}/reset`,
     history: (id: string) => `/business-rule-items/${id}/history`,
     byCode: (code: string) => `/business-rule-items/code/${code}`,

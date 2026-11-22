@@ -40,8 +40,6 @@ import {
 } from '@/services/question-bank';
 import type { Question, QuestionDifficulty, QuestionOption, QuestionType } from '@/services/question-bank/types';
 
-const mockUser = { name: 'Administrator' };
-
 interface QuestionFormState {
   concept: string;
   type: QuestionType;
@@ -292,7 +290,6 @@ function QualityStatsPanel() {
     <DataTablePage
       columns={columns}
       getRowId={(r) => r.question}
-      queryKeyPrefix="qstats_"
       emptyLabel="Chưa có dữ liệu thống kê"
       fetcher={async () => {
         const res = await getQualityStats();
@@ -305,6 +302,7 @@ function QualityStatsPanel() {
 export default function QuestionBankAdmin() {
   const navigate = useNavigate();
   const logout = useAuthStore((s) => s.logout);
+  const user = useAuthStore((s) => s.user);
   const [tableKey, setTableKey] = useState(0);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Question | null>(null);
@@ -330,7 +328,7 @@ export default function QuestionBankAdmin() {
       menu={adminMenu}
       title="Ngân hàng câu hỏi"
       breadcrumb={['Trang chủ', 'Ngân hàng câu hỏi']}
-      userName={mockUser.name}
+      userName={user?.fullName ?? ''}
       roleLabel="Quản trị viên"
       compactHeader
       area="admin"
@@ -352,7 +350,6 @@ export default function QuestionBankAdmin() {
             key={tableKey}
             columns={columns}
             getRowId={(r) => r._id}
-            queryKeyPrefix="qbk_admin_"
             searchPlaceholder="Tìm câu hỏi…"
             emptyLabel="Chưa có câu hỏi nào"
             fetcher={async ({ page, pageSize, search }) => {

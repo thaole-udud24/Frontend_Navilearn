@@ -236,3 +236,14 @@
     text-decoration: inherit;
   }
 }
+
+/* Browser autofill fires no React onChange event, so uncontrolled inputs (FloatingInput) never
+   learn a value was filled in. This no-op animation only runs while :-webkit-autofill is active,
+   letting FloatingInput listen for onAnimationStart to detect it and re-sync. */
+@keyframes onAutoFillStart {
+  from {}
+  to {}
+}
+input:-webkit-autofill {
+  animation-name: onAutoFillStart;
+}

@@ -61,8 +61,6 @@ export interface DataTablePageProps<T> {
   rowActions?: RowAction<T>[];
   toolbarActions?: ToolbarAction[];
   bulkActions?: BulkAction<T>[];
-  /** Namespaces the query-string keys so multiple tables on one page don't collide. */
-  queryKeyPrefix?: string;
   searchPlaceholder?: string;
   emptyLabel?: string;
 }
