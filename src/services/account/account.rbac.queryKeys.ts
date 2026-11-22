@@ -1,7 +1,9 @@
-import type { RbacItemFilters } from '@/services/account/account.rbac.types';
+import type { DeniedLogFilters, MatrixFilters } from '@/services/account/account.rbac.types';
 
 export const rbacItemKeys = {
   all: ['rbacItems'] as const,
-  list: (filters: RbacItemFilters) => [...rbacItemKeys.all, 'list', filters] as const,
-  detail: (id: string) => [...rbacItemKeys.all, 'detail', id] as const,
+  roles: () => [...rbacItemKeys.all, 'roles'] as const,
+  matrix: (filters: MatrixFilters) => [...rbacItemKeys.all, 'matrix', filters] as const,
+  effective: (id: string) => [...rbacItemKeys.all, 'effective', id] as const,
+  denied: (filters: DeniedLogFilters) => [...rbacItemKeys.all, 'denied', filters] as const,
 };

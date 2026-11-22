@@ -151,10 +151,11 @@ export const ENDPOINTS = {
     confirmRegrade: (id: string) => `/question-bank-items/${id}/confirm-regrade`,
   },
   rbacItems: {
-    list: '/rbac-items',
-    create: '/rbac-items',
-    detail: (id: string) => `/rbac-items/${id}`,
-    updateStatus: (id: string) => `/rbac-items/${id}/status`,
+    roles: '/rbac-items/roles',
+    matrix: '/rbac-items/matrix',
+    export: '/rbac-items/matrix/export',
+    effective: (userId: string) => `/rbac-items/effective/${userId}`,
+    deniedLogs: '/rbac-items/denied-logs',
   },
   reviewItems: {
     list: '/review-items',
