@@ -35,13 +35,13 @@ export const adminNewRoutes = [
   { path: 'exam-configs', element: createElement(AssessmentConfigAdmin) },
   { path: 'exam-configs/rubrics', element: createElement(RubricAdmin) },
   { path: 'business-rule-items', element: createElement(BusinessRuleAdmin) },
+  { path: 'subject-items', element: createElement(AdminSubjectItemsPage) },
 ];
 
 // Legacy CRUD-scaffold pages: bare content, they rely on AdminLayout for navigation/chrome.
 export const adminLegacyRoutes = [
   { path: 'template-items', element: createElement(TemplateItemsPage) },
   { path: 'rbac-items', element: createElement(AdminRbacItemsPage) },
-  { path: 'subject-items', element: createElement(AdminSubjectItemsPage) },
   { path: 'knowledge-items', element: createElement(AdminKnowledgeItemsPage) },
   { path: 'planning-items', element: createElement(AdminPlanningItemsPage) },
   { path: 'adaptive-items', element: createElement(AdminAdaptiveItemsPage) },
