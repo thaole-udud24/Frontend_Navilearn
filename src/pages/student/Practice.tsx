@@ -11,8 +11,6 @@ import { listQuestions } from '@/services/question-bank';
 import type { Question } from '@/services/question-bank/types';
 import { ReportQuestionIssueButton } from './components/ReportQuestionIssueButton';
 
-const mockUser = { name: 'Minh Anh' };
-
 const DIFFICULTY_LABEL: Record<Question['difficulty'], string> = {
   easy: 'Dễ',
   medium: 'Trung bình',
@@ -41,14 +39,15 @@ const columns: ColumnDef<Question>[] = [
 export default function PracticePage() {
   const navigate = useNavigate();
   const logout = useAuthStore((s) => s.logout);
+  const user = useAuthStore((s) => s.user);
 
   return (
     <AppShell
       menu={studentMenu}
       title="Luyện tập"
       breadcrumb={['Trang chủ', 'Luyện tập']}
-      userName={mockUser.name}
-      roleLabel="Sinh viên năm 2"
+      userName={user?.fullName ?? ''}
+      roleLabel="Sinh viên"
       compactHeader
       onLogout={() => {
         logout();
@@ -59,7 +58,6 @@ export default function PracticePage() {
       <DataTablePage<Question>
         columns={columns}
         getRowId={(r) => r._id}
-        queryKeyPrefix="practice_"
         searchPlaceholder="Tìm câu hỏi…"
         emptyLabel="Chưa có câu hỏi tham khảo nào"
         fetcher={async ({ page, pageSize }) => {

@@ -11,8 +11,6 @@ import { listAssessmentConfigs } from '@/services/assessment-config';
 import { startAssessment } from '@/services/assessment';
 import type { AssessmentConfig } from '@/services/assessment-config/types';
 
-const mockUser = { name: 'Minh Anh' };
-
 const columns: ColumnDef<AssessmentConfig>[] = [
   { accessorKey: 'title', header: 'Tên đề bài' },
   { id: 'questionCount', header: 'Số câu hỏi', cell: ({ row }) => row.original.questions.length },
@@ -30,6 +28,7 @@ const columns: ColumnDef<AssessmentConfig>[] = [
 export default function ExamLibraryPage() {
   const navigate = useNavigate();
   const logout = useAuthStore((s) => s.logout);
+  const user = useAuthStore((s) => s.user);
   const startMutation = useMutation({ mutationFn: (assessmentConfigId: string) => startAssessment(assessmentConfigId) });
 
   return (
@@ -37,8 +36,8 @@ export default function ExamLibraryPage() {
       menu={studentMenu}
       title="Thư viện đề thi"
       breadcrumb={['Trang chủ', 'Thư viện đề thi']}
-      userName={mockUser.name}
-      roleLabel="Sinh viên năm 2"
+      userName={user?.fullName ?? ''}
+      roleLabel="Sinh viên"
       compactHeader
       onLogout={() => {
         logout();
@@ -49,7 +48,6 @@ export default function ExamLibraryPage() {
       <DataTablePage<AssessmentConfig>
         columns={columns}
         getRowId={(r) => r._id}
-        queryKeyPrefix="exam_lib_"
         searchPlaceholder="Tìm theo tên đề bài…"
         emptyLabel="Chưa có đề thi/luyện tập nào khả dụng"
         fetcher={async ({ page, pageSize, search }) => {

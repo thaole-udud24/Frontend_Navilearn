@@ -12,8 +12,6 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { listIssueReports, resolveIssueReport } from '@/services/question-bank';
 import type { QuestionIssueReport } from '@/services/question-bank/types';
 
-const mockUser = { name: 'Administrator' };
-
 const REASON_LABEL: Record<string, string> = {
   wrong_answer: 'Đáp án sai',
   unclear: 'Đề bài không rõ',
@@ -25,6 +23,7 @@ const REASON_LABEL: Record<string, string> = {
 export default function IssueReportsAdmin() {
   const navigate = useNavigate();
   const logout = useAuthStore((s) => s.logout);
+  const user = useAuthStore((s) => s.user);
   const [tableKey, setTableKey] = useState(0);
 
   const columns: ColumnDef<QuestionIssueReport>[] = [
@@ -55,7 +54,7 @@ export default function IssueReportsAdmin() {
       menu={adminMenu}
       title="Báo lỗi câu hỏi"
       breadcrumb={['Trang chủ', 'Ngân hàng câu hỏi', 'Báo lỗi']}
-      userName={mockUser.name}
+      userName={user?.fullName ?? ''}
       roleLabel="Quản trị viên"
       compactHeader
       area="admin"
@@ -69,7 +68,6 @@ export default function IssueReportsAdmin() {
         key={tableKey}
         columns={columns}
         getRowId={(r) => r._id}
-        queryKeyPrefix="qbk_issues_"
         searchPlaceholder="Tìm trong báo lỗi…"
         emptyLabel="Chưa có báo lỗi nào từ sinh viên"
         fetcher={async ({ page, pageSize }) => {

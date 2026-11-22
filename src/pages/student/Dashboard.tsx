@@ -33,12 +33,11 @@ import { ClassStatsCard } from './components/ClassStatsCard';
 import { RecentActivityCard } from './components/RecentActivityCard';
 import { CalendarScheduleCard } from './components/CalendarScheduleCard';
 
-const mockUser = { name: 'Minh Anh' };
-
 export default function StudentDashboard() {
   const reduced = useReducedMotion();
   const navigate = useNavigate();
   const logout = useAuthStore((s) => s.logout);
+  const user = useAuthStore((s) => s.user);
   const weeklyPlan = useMemo(() => generateWeeklyPlan(16), []);
 
   const columns: ColumnDef<WeeklyPlanRow>[] = useMemo(
@@ -73,8 +72,8 @@ export default function StudentDashboard() {
       menu={studentMenu}
       title="Trang chủ"
       breadcrumb={['Trang chủ', 'Tổng quan']}
-      userName={mockUser.name}
-      roleLabel="Sinh viên năm 2"
+      userName={user?.fullName ?? ''}
+      roleLabel="Sinh viên"
       notificationCount={3}
       tagline="Explore. Learn. Master."
       compactHeader
@@ -85,7 +84,7 @@ export default function StudentDashboard() {
     >
       <motion.div initial="hidden" animate="visible" variants={containerVariants} className="flex flex-col gap-5">
         <motion.div variants={itemVariants}>
-          <HeroBanner name={mockUser.name} onStart={() => navigate(PATHS.student.courses)} />
+          <HeroBanner name={user?.fullName ?? ''} onStart={() => navigate(PATHS.student.courses)} />
         </motion.div>
 
         <motion.div variants={itemVariants} className="grid gap-4 sm:grid-cols-3">
@@ -153,7 +152,6 @@ export default function StudentDashboard() {
             columns={columns}
             data={weeklyPlan}
             getRowId={(r) => r.id}
-            queryKeyPrefix="plan_"
             searchPlaceholder="Tìm theo: Môn, Hoạt động…"
             rowActions={[
               { key: 'view', label: 'Xem chi tiết', onSelect: (r) => console.log('view', r) },

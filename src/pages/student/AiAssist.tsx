@@ -24,8 +24,6 @@ import {
 } from '@/services/ai-assist';
 import type { AiAssistLog } from '@/services/ai-assist/types';
 
-const mockUser = { name: 'Minh Anh' };
-
 const KIND_LABEL: Record<string, string> = {
   generate_question: 'Sinh câu hỏi (admin)',
   practice_question: 'Sinh câu hỏi luyện tập',
@@ -44,6 +42,7 @@ type ChatMessage =
 export default function AiAssistPage() {
   const navigate = useNavigate();
   const logout = useAuthStore((s) => s.logout);
+  const user = useAuthStore((s) => s.user);
   const [historyKey, setHistoryKey] = useState(0);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -109,8 +108,8 @@ export default function AiAssistPage() {
       menu={studentMenu}
       title="AI Trợ lý học tập"
       breadcrumb={['Trang chủ', 'AI Trợ lý học tập']}
-      userName={mockUser.name}
-      roleLabel="Sinh viên năm 2"
+      userName={user?.fullName ?? ''}
+      roleLabel="Sinh viên"
       compactHeader
       onLogout={() => {
         logout();
@@ -122,7 +121,7 @@ export default function AiAssistPage() {
         <div className="flex items-center justify-between gap-4 rounded-card bg-gradient-to-r from-primary to-indigo-500 p-5 text-primary-foreground shadow-card">
           <div>
             <h1 className="flex items-center gap-2 text-lg font-bold">
-              <Sparkles className="h-5 w-5" /> Chào {mockUser.name}! Hôm nay mình cùng giải quyết môn học nào?
+              <Sparkles className="h-5 w-5" /> Chào {user?.fullName ?? 'bạn'}! Hôm nay mình cùng giải quyết môn học nào?
             </h1>
             <p className="mt-1 text-sm text-primary-foreground/80">
               Đặt câu hỏi, xin AI tạo câu luyện tập, hoặc nhờ nhận xét bài tự luận — ngay trong khung chat bên dưới.
@@ -210,7 +209,6 @@ export default function AiAssistPage() {
             key={historyKey}
             columns={columns}
             getRowId={(r) => r._id}
-            queryKeyPrefix="aia_"
             searchPlaceholder="Tìm trong lịch sử…"
             emptyLabel="Chưa có tương tác nào với AI"
             fetcher={async ({ page, pageSize }) => {
