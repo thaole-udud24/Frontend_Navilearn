@@ -10,21 +10,20 @@ interface ComingSoonProps {
   label: string;
 }
 
-const mockUser = { name: 'Minh Anh' };
-
 /** Placeholder for sidebar items whose real feature isn't built yet, so a click never shows a
  * blank page — swap for the real page under the same route once it ships. */
 export default function StudentComingSoon({ label }: ComingSoonProps) {
   const navigate = useNavigate();
   const logout = useAuthStore((s) => s.logout);
+  const user = useAuthStore((s) => s.user);
 
   return (
     <AppShell
       menu={studentMenu}
       title={label}
       breadcrumb={['Trang chủ', label]}
-      userName={mockUser.name}
-      roleLabel="Sinh viên năm 2"
+      userName={user?.fullName ?? ''}
+      roleLabel="Sinh viên"
       compactHeader
       onLogout={() => {
         logout();

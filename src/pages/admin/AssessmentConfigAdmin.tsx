@@ -34,8 +34,6 @@ import type {
   ShowAnswersPolicy,
 } from '@/services/assessment-config/types';
 
-const mockUser = { name: 'Administrator' };
-
 const KIND_LABEL: Record<AssessmentConfigKind, string> = {
   placement: 'Bài kiểm tra đầu vào',
   practice: 'Luyện tập theo kiến thức',
@@ -195,6 +193,7 @@ function PolicyDialog({
 export default function AssessmentConfigAdmin() {
   const navigate = useNavigate();
   const logout = useAuthStore((s) => s.logout);
+  const user = useAuthStore((s) => s.user);
   const [tableKey, setTableKey] = useState(0);
   const [formOpen, setFormOpen] = useState(false);
   const [policyOpen, setPolicyOpen] = useState(false);
@@ -220,7 +219,7 @@ export default function AssessmentConfigAdmin() {
       menu={adminMenu}
       title="Cấu hình bài kiểm tra"
       breadcrumb={['Trang chủ', 'Cấu hình bài kiểm tra']}
-      userName={mockUser.name}
+      userName={user?.fullName ?? ''}
       roleLabel="Quản trị viên"
       compactHeader
       area="admin"
@@ -234,7 +233,6 @@ export default function AssessmentConfigAdmin() {
         key={tableKey}
         columns={columns}
         getRowId={(r) => r._id}
-        queryKeyPrefix="acf_admin_"
         searchPlaceholder="Tìm đề bài…"
         emptyLabel="Chưa có cấu hình bài kiểm tra nào"
         fetcher={async ({ page, pageSize, search }) => {

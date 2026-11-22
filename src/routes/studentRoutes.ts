@@ -8,7 +8,6 @@ import AiAssistPage from '@/pages/student/AiAssist';
 import PracticePage from '@/pages/student/Practice';
 import TemplateItemsPage from '@/pages/_template/Student';
 import StudentAccountItemsPage from '@/pages/accounts/account/Student';
-import StudentRbacItemsPage from '@/pages/accounts/rbac/Student';
 import StudentSubjectItemsPage from '@/pages/accounts/subject/Student';
 import StudentKnowledgeItemsPage from '@/pages/content/knowledge/Student';
 import StudentPlanningItemsPage from '@/pages/planning/planning/Student';
@@ -50,7 +49,6 @@ export const studentComingSoonRoutes = [
 export const studentLegacyRoutes = [
   { path: 'template-items', element: createElement(TemplateItemsPage) },
   { path: 'account-items', element: createElement(StudentAccountItemsPage) },
-  { path: 'rbac-items', element: createElement(StudentRbacItemsPage) },
   { path: 'subject-items', element: createElement(StudentSubjectItemsPage) },
   { path: 'knowledge-items', element: createElement(StudentKnowledgeItemsPage) },
   { path: 'planning-items', element: createElement(StudentPlanningItemsPage) },

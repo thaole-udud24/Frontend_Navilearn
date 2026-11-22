@@ -59,6 +59,14 @@ export const FloatingInput = React.forwardRef<HTMLInputElement, FloatingInputPro
               setHasValue(e.target.value.length > 0);
               onChange?.(e);
             }}
+            onAnimationStart={(e) => {
+              // Browser/password-manager autofill sets the DOM value without firing a React
+              // onChange event; re-sync both our own floated-label state and the form library's
+              // state from the real input value once the autofill animation hook above fires.
+              if (e.animationName !== 'onAutoFillStart') return;
+              setHasValue(e.currentTarget.value.length > 0);
+              onChange?.(e as unknown as React.ChangeEvent<HTMLInputElement>);
+            }}
             aria-invalid={Boolean(error)}
             className={cn(
               'flex h-14 w-full rounded-xl border bg-muted/60 px-4 pt-3 text-sm text-foreground outline-none transition-shadow',

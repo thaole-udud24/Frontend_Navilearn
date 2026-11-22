@@ -20,7 +20,7 @@ export const ACCESS = {
     canManageOwnNtfItems: true,
     canManageOwnPlnItems: true,
     canManageOwnQbkItems: true,
-    canManageOwnRbacItems: true,
+    canManageOwnRbacItems: false,
     canManageOwnRevItems: true,
     canManageOwnRptItems: true,
     canManageOwnRskItems: true,

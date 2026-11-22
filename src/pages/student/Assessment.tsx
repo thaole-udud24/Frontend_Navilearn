@@ -23,8 +23,6 @@ import { compareAttempts, getScoreHistory, listAssessments, startRetryWrong } fr
 import type { Assessment } from '@/services/assessment/types';
 import { AssessmentDialog } from './components/AssessmentDialog';
 
-const mockUser = { name: 'Minh Anh' };
-
 // UC-ASM-06: score before/after a regrade (business-rule: regrade appends a new history entry
 // rather than overwriting the original score, so the full before/after trail is preserved).
 function ScoreHistoryDialog({ assessmentId, onClose }: { assessmentId: string | null; onClose: () => void }) {
@@ -119,6 +117,7 @@ function CompareDialog({ open, onClose }: { open: boolean; onClose: () => void }
 export default function AssessmentPage() {
   const navigate = useNavigate();
   const logout = useAuthStore((s) => s.logout);
+  const user = useAuthStore((s) => s.user);
   const [openId, setOpenId] = useState<string | null>(null);
   const [compareOpen, setCompareOpen] = useState(false);
   const [historyId, setHistoryId] = useState<string | null>(null);
@@ -174,8 +173,8 @@ export default function AssessmentPage() {
       menu={studentMenu}
       title="Đánh giá"
       breadcrumb={['Trang chủ', 'Đánh giá']}
-      userName={mockUser.name}
-      roleLabel="Sinh viên năm 2"
+      userName={user?.fullName ?? ''}
+      roleLabel="Sinh viên"
       compactHeader
       onLogout={() => {
         logout();
@@ -212,7 +211,6 @@ export default function AssessmentPage() {
         key={tableKey}
         columns={columns}
         getRowId={(r) => r._id}
-        queryKeyPrefix="asm_"
         searchPlaceholder="Tìm trong bài làm…"
         emptyLabel="Bạn chưa có bài làm nào. Vào Thư viện đề thi để bắt đầu."
         fetcher={async ({ page, pageSize }) => {

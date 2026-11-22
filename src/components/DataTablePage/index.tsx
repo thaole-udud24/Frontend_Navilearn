@@ -10,7 +10,6 @@ import {
   type ColumnFiltersState,
   type SortingState,
 } from '@tanstack/react-table';
-import { useSearchParams } from 'react-router-dom';
 import { AlertTriangle, ArrowUpDown, Filter, Inbox, Menu, RefreshCw, Search } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 
@@ -59,34 +58,18 @@ export function DataTablePage<T>({
   rowActions,
   toolbarActions,
   bulkActions,
-  queryKeyPrefix = '',
   searchPlaceholder = 'Tìm theo: Mã, Tên…',
   emptyLabel = 'Không có dữ liệu',
 }: DataTablePageProps<T>) {
   const reduced = useReducedMotion();
   const isManual = !!fetcher;
-  const p = (key: string) => `${queryKeyPrefix}${key}`;
 
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [pagination, setPagination] = useState({
-    pageIndex: Number(searchParams.get(p('page')) ?? 1) - 1,
-    pageSize: Number(searchParams.get(p('pageSize')) ?? 10),
-  });
-  const [sorting, setSorting] = useState<SortingState>(() => {
-    const sortBy = searchParams.get(p('sortBy'));
-    const sortDir = searchParams.get(p('sortDir'));
-    return sortBy ? [{ id: sortBy, desc: sortDir === 'desc' }] : [];
-  });
-  const [globalFilter, setGlobalFilter] = useState(searchParams.get(p('search')) ?? '');
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(() => {
-    const raw = searchParams.get(p('filters'));
-    if (!raw) return [];
-    try {
-      return JSON.parse(raw) as ColumnFiltersState;
-    } catch {
-      return [];
-    }
-  });
+  // Paging/sorting/search/filters are plain component state, not reflected in the URL — keeps the
+  // address bar clean (no page/pageSize/sortBy/search query params for list screens).
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [globalFilter, setGlobalFilter] = useState('');
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
   const [userColumnOrder, setUserColumnOrder] = useState<string[]>(() => columns.map((c) => String(c.id ?? (c as { accessorKey?: string }).accessorKey)));
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
@@ -94,31 +77,6 @@ export function DataTablePage<T>({
   const [deleteTarget, setDeleteTarget] = useState<T | null>(null);
 
   const debouncedSearch = useDebounce(globalFilter, 300);
-
-  // --- keep page/pageSize/sort/search/filters in the URL so F5 preserves state ---
-  useEffect(() => {
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        next.set(p('page'), String(pagination.pageIndex + 1));
-        next.set(p('pageSize'), String(pagination.pageSize));
-        if (debouncedSearch) next.set(p('search'), debouncedSearch);
-        else next.delete(p('search'));
-        if (sorting[0]) {
-          next.set(p('sortBy'), sorting[0].id);
-          next.set(p('sortDir'), sorting[0].desc ? 'desc' : 'asc');
-        } else {
-          next.delete(p('sortBy'));
-          next.delete(p('sortDir'));
-        }
-        if (columnFilters.length) next.set(p('filters'), JSON.stringify(columnFilters));
-        else next.delete(p('filters'));
-        return next;
-      },
-      { replace: true },
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.pageIndex, pagination.pageSize, debouncedSearch, sorting, columnFilters]);
 
   // --- fetcher-backed data (server/async path) ---
   const [remoteRows, setRemoteRows] = useState<T[]>([]);

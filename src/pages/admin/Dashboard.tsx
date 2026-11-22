@@ -145,7 +145,6 @@ export default function AdminDashboard() {
             columns={columns}
             data={users}
             getRowId={(r) => r.id}
-            queryKeyPrefix="users_"
             searchPlaceholder="Tìm theo: Mã, Tên…"
             rowActions={[
               { key: 'view', label: 'Xem chi tiết', onSelect: (r) => console.log('view', r) },
