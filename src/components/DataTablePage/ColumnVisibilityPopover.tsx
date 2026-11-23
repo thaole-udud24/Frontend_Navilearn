@@ -37,12 +37,7 @@ export function ColumnVisibilityPopover({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-11 w-11 shrink-0"
-          aria-label="Cấu hình cột"
-        >
+        <Button variant="outline" size="icon" className="h-11 w-11 shrink-0" aria-label="Cấu hình cột">
           <Settings2 className="h-5 w-5" />
         </Button>
       </PopoverTrigger>

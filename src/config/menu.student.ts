@@ -1,12 +1,16 @@
 import {
+  AlertTriangle,
   BookMarked,
   CalendarDays,
   CheckSquare,
   FileText,
+  Flag,
   Home,
   LayoutGrid,
+  LifeBuoy,
   Network,
   Percent,
+  Star,
   TrendingUp,
   Settings,
   Sparkles,
@@ -43,7 +47,12 @@ export const studentMenu: MenuGroup[] = [
         roles: ['student'],
         children: [
           { label: 'Thư viện đề thi', icon: BookMarked, path: PATHS.student.examLibrary, roles: ['student'] },
-          { label: 'Tài nguyên khoá', icon: LayoutGrid, path: PATHS.student.courseResources, roles: ['student'] },
+          {
+            label: 'Tài nguyên khoá',
+            icon: LayoutGrid,
+            path: PATHS.student.courseResources,
+            roles: ['student'],
+          },
         ],
       },
     ],
@@ -52,6 +61,29 @@ export const studentMenu: MenuGroup[] = [
     label: 'Hỗ trợ',
     items: [
       { label: 'AI Trợ lý học tập', icon: Sparkles, path: PATHS.student.aiAssist, roles: ['student'] },
+      // Gộp các form phản hồi/báo cáo của học sinh vào một submenu cho gọn, thay vì 5 mục rời.
+      {
+        label: 'Phản hồi & hỗ trợ học tập',
+        icon: LifeBuoy,
+        roles: ['student'],
+        children: [
+          {
+            label: 'Cảnh báo rủi ro',
+            icon: AlertTriangle,
+            path: PATHS.student.riskItems,
+            roles: ['student'],
+          },
+          { label: 'Đề xuất môn học', icon: Flag, path: PATHS.student.subjectItems, roles: ['student'] },
+          { label: 'Yêu cầu hỗ trợ', icon: LifeBuoy, path: PATHS.student.supportItems, roles: ['student'] },
+          {
+            label: 'Báo cáo sự cố',
+            icon: FileText,
+            path: PATHS.student.adminReportItems,
+            roles: ['student'],
+          },
+          { label: 'Đánh giá của tôi', icon: Star, path: PATHS.student.reviewItems, roles: ['student'] },
+        ],
+      },
       { label: 'Thông báo', icon: Bell, path: PATHS.student.notifications, roles: ['student'] },
       { label: 'Cài đặt', icon: Settings, path: PATHS.student.settings, roles: ['student'] },
     ],

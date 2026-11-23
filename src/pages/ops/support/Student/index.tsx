@@ -1,38 +1,21 @@
-import { Tag } from 'antd';
-import { PageHeader } from '@/components/PageHeader';
-import { DataTable } from '@/components/CustomTable';
-import { Loading } from '@/components/Loading';
-import { usePagedList } from '@/hooks/usePagedList';
-import { useQueryErrorMessage } from '@/hooks/useQueryErrorMessage';
-import { useCreateSupportItem, useSupportItemList } from './hooks/useSupportItems';
-import { CreateItemForm } from './components/CreateItemForm';
+import { GenericScaffoldStudentPage } from '@/components/GenericScaffoldAdminPage/StudentPage';
+import { createSupportItem, listSupportItems } from '@/services/support';
 import type { SupportItem } from '@/services/support/types';
 
-// index.tsx only composes layout and calls hooks — no business logic here.
-export default function SupportItemsPage() {
-  const { paging, setPage } = usePagedList();
-  const { data, isLoading, error } = useSupportItemList(paging);
-  const createMutation = useCreateSupportItem();
-  const errorMessage = useQueryErrorMessage(error);
-
-  if (isLoading) return <Loading />;
-
+export default function StudentSupportItemsPage() {
   return (
-    <div>
-      <PageHeader title="Support items (scaffold – business logic pending)" />
-      <CreateItemForm loading={createMutation.isPending} onSubmit={(values) => createMutation.mutate(values)} />
-      {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
-      <DataTable<SupportItem>
-        rowKey="_id"
-        dataSource={data?.data ?? []}
-        meta={data?.meta}
-        onPageChange={setPage}
-        columns={[
-          { title: 'Tiêu đề', dataIndex: 'title' },
-          { title: 'Nội dung', dataIndex: 'content' },
-          { title: 'Trạng thái', dataIndex: 'status', render: (s: string) => <Tag>{s}</Tag> },
-        ]}
-      />
-    </div>
+    <GenericScaffoldStudentPage<SupportItem>
+      pageTitle="Yêu cầu hỗ trợ"
+      breadcrumb={['Trang chủ', 'Yêu cầu hỗ trợ']}
+      searchPlaceholder="Tìm theo tiêu đề…"
+      emptyLabel="Bạn chưa gửi yêu cầu hỗ trợ nào"
+      createLabel="Gửi yêu cầu hỗ trợ"
+      titleFieldLabel="Tiêu đề"
+      titlePlaceholder="vd: Không đăng nhập được vào hệ thống"
+      contentFieldLabel="Mô tả chi tiết"
+      contentPlaceholder="Mô tả sự cố hoặc yêu cầu của bạn…"
+      list={listSupportItems}
+      create={createSupportItem}
+    />
   );
 }

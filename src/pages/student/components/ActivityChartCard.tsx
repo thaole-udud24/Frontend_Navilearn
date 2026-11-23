@@ -1,7 +1,13 @@
 import { useReducedMotion } from 'framer-motion';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { ActivityPoint } from '@/mocks/dashboardMocks';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+
+export interface ActivityPoint {
+  day: string;
+  studied: number;
+  practiced: number;
+}
 
 interface ChartTooltipEntry {
   dataKey?: string;
@@ -38,12 +44,12 @@ interface ActivityChartCardProps {
 /** Real, data-driven two-line chart (not a chart screenshot) for weekly learning activity. */
 export function ActivityChartCard({ data }: ActivityChartCardProps) {
   const reduced = useReducedMotion();
-  const peak = data.reduce((best, p, i) => (p.studied > data[best].studied ? i : best), 0);
+  const peak = data.length ? data.reduce((best, p, i) => (p.studied > data[best].studied ? i : best), 0) : -1;
 
   return (
-    <div className="rounded-card border border-border bg-card p-5 shadow-card">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="font-semibold text-foreground">Hoạt động học tập</h3>
+    <Card>
+      <CardHeader>
+        <CardTitle>Hoạt động học tập</CardTitle>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
@@ -63,14 +69,23 @@ export function ActivityChartCard({ data }: ActivityChartCardProps) {
             </SelectContent>
           </Select>
         </div>
-      </div>
+      </CardHeader>
 
       <div className="mt-2 h-[220px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 24, right: 8, left: -16, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-            <XAxis dataKey="day" tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
+            <XAxis
+              dataKey="day"
+              tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+              axisLine={false}
+              tickLine={false}
+            />
             <Tooltip content={<ChartTooltip />} />
             <Line
               type="monotone"
@@ -95,9 +110,12 @@ export function ActivityChartCard({ data }: ActivityChartCardProps) {
           </LineChart>
         </ResponsiveContainer>
       </div>
-      <p className="text-center text-xs text-muted-foreground">
-        Cao điểm: <span className="font-semibold text-foreground">{data[peak].studied} phút</span> vào {data[peak].day}
-      </p>
-    </div>
+      {peak >= 0 && (
+        <p className="text-center text-xs text-muted-foreground">
+          Cao điểm: <span className="font-semibold text-foreground">{data[peak].studied} lượt</span> vào{' '}
+          {data[peak].day}
+        </p>
+      )}
+    </Card>
   );
 }

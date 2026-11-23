@@ -1,7 +1,5 @@
-import type { AdaptiveItemFilters } from '@/services/adaptive/types';
-
-export const adaptiveItemKeys = {
-  all: ['adaptiveItems'] as const,
-  list: (filters: AdaptiveItemFilters) => [...adaptiveItemKeys.all, 'list', filters] as const,
-  detail: (id: string) => [...adaptiveItemKeys.all, 'detail', id] as const,
+export const adaptiveKeys = {
+  all: ['adaptive'] as const,
+  nextBestAction: () => [...adaptiveKeys.all, 'next-best-action'] as const,
+  replanCheck: (planId: string) => [...adaptiveKeys.all, 'replan-check', planId] as const,
 };

@@ -27,7 +27,9 @@ export function CourseThumb({ tone, icon: Icon }: { tone: CourseTone; icon: Luci
   return (
     <div className={cn('relative h-20 w-full overflow-hidden rounded-control', TONE_BG[tone])} aria-hidden>
       <span className={cn('absolute -right-4 -top-5 h-16 w-16 rounded-full opacity-50', TONE_SHAPE[tone])} />
-      <span className={cn('absolute -bottom-6 -left-3 h-14 w-14 rounded-full opacity-30', TONE_SHAPE[tone])} />
+      <span
+        className={cn('absolute -bottom-6 -left-3 h-14 w-14 rounded-full opacity-30', TONE_SHAPE[tone])}
+      />
       <span
         className={cn(
           'absolute left-3 top-3 flex h-9 w-9 items-center justify-center rounded-xl bg-white/80 shadow-sm',

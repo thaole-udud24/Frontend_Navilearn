@@ -8,7 +8,7 @@ import { studentMenu } from '@/config/menu.student';
 import { DataTablePage } from '@/components/DataTablePage';
 import { StatusBadge } from '@/components/StatusBadge';
 import { listQuestions } from '@/services/question-bank';
-import type { Question } from '@/services/question-bank/types';
+import type { Question, QuestionType } from '@/services/question-bank/types';
 import { ReportQuestionIssueButton } from './components/ReportQuestionIssueButton';
 
 const DIFFICULTY_LABEL: Record<Question['difficulty'], string> = {
@@ -17,16 +17,24 @@ const DIFFICULTY_LABEL: Record<Question['difficulty'], string> = {
   hard: 'Khó',
 };
 
+const TYPE_LABEL: Record<QuestionType, string> = {
+  mcq: 'Trắc nghiệm',
+  true_false: 'Đúng/sai',
+  essay: 'Tự luận',
+};
+
 const columns: ColumnDef<Question>[] = [
   { accessorKey: 'text', header: 'Nội dung câu hỏi' },
   {
     accessorKey: 'type',
     header: 'Loại',
-    cell: ({ getValue }) => (
-      <StatusBadge variant="info">{getValue<string>() === 'mcq' ? 'Trắc nghiệm' : 'Tự luận'}</StatusBadge>
-    ),
+    cell: ({ getValue }) => <StatusBadge variant="info">{TYPE_LABEL[getValue<QuestionType>()]}</StatusBadge>,
   },
-  { accessorKey: 'difficulty', header: 'Độ khó', cell: ({ getValue }) => DIFFICULTY_LABEL[getValue<Question['difficulty']>()] },
+  {
+    accessorKey: 'difficulty',
+    header: 'Độ khó',
+    cell: ({ getValue }) => DIFFICULTY_LABEL[getValue<Question['difficulty']>()],
+  },
   {
     id: 'report',
     header: '',

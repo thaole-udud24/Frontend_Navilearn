@@ -7,15 +7,20 @@ import type {
   AiAssistItemFilters,
   AiAssistLog,
   AskInput,
+  ConceptDraft,
   CreateAiAssistItemInput,
   DraftQuestion,
   EssayFeedbackInput,
   ExplainWrongInput,
+  GeneratedStudyPlan,
   GenerateQuestionInput,
+  TemplateDraft,
 } from './types';
 
 export async function listAiAssistItems(filters: AiAssistItemFilters): Promise<ApiSuccess<AiAssistItem[]>> {
-  const { data } = await request.get<ApiSuccess<AiAssistItem[]>>(ENDPOINTS.aiAssistItems.list, { params: filters });
+  const { data } = await request.get<ApiSuccess<AiAssistItem[]>>(ENDPOINTS.aiAssistItems.list, {
+    params: filters,
+  });
   return data;
 }
 
@@ -29,26 +34,73 @@ export async function practiceQuestion(input: GenerateQuestionInput): Promise<Dr
   return data.data;
 }
 
-export async function askAi(input: AskInput): Promise<{ answer: string; sources: { concept: string; label: string }[] }> {
-  const { data } = await request.post<ApiSuccess<{ answer: string; sources: { concept: string; label: string }[] }>>(
-    '/ai-assist-items/ask',
+// UC-QBK-09 source: admin-only draft generation for the shared question bank.
+export async function generateQuestionDraft(input: GenerateQuestionInput): Promise<DraftQuestion> {
+  const { data } = await request.post<ApiSuccess<DraftQuestion>>(
+    ENDPOINTS.aiAssistItems.generateQuestion,
     input,
   );
   return data.data;
 }
 
+// UC-KNW-AI-01: admin-only draft generation for the knowledge map.
+export async function generateConceptDraft(topic: string): Promise<ConceptDraft> {
+  const { data } = await request.post<ApiSuccess<ConceptDraft>>(ENDPOINTS.aiAssistItems.generateConcept, {
+    topic,
+  });
+  return data.data;
+}
+
+// UC-PLN-TPL-04: admin-only draft generation for a whole plan template.
+export async function generateTemplateDraft(input: {
+  topic?: string;
+  conceptId?: string;
+  sessionCount?: number;
+}): Promise<TemplateDraft> {
+  const { data } = await request.post<ApiSuccess<TemplateDraft>>(
+    ENDPOINTS.aiAssistItems.generateTemplate,
+    input,
+  );
+  return data.data;
+}
+
+export async function askAi(
+  input: AskInput,
+): Promise<{ answer: string; sources: { concept: string; label: string }[] }> {
+  const { data } = await request.post<
+    ApiSuccess<{ answer: string; sources: { concept: string; label: string }[] }>
+  >('/ai-assist-items/ask', input);
+  return data.data;
+}
+
 export async function explainWrong(input: ExplainWrongInput): Promise<{ explanation: string }> {
-  const { data } = await request.post<ApiSuccess<{ explanation: string }>>('/ai-assist-items/explain-wrong', input);
+  const { data } = await request.post<ApiSuccess<{ explanation: string }>>(
+    '/ai-assist-items/explain-wrong',
+    input,
+  );
   return data.data;
 }
 
 export async function essayFeedback(input: EssayFeedbackInput): Promise<{ feedback: string }> {
-  const { data } = await request.post<ApiSuccess<{ feedback: string }>>('/ai-assist-items/essay-feedback', input);
+  const { data } = await request.post<ApiSuccess<{ feedback: string }>>(
+    '/ai-assist-items/essay-feedback',
+    input,
+  );
+  return data.data;
+}
+
+// UC-PLN-AI-01: biến một mục tiêu học tập thành lộ trình (Plan) đề xuất, học sinh xác nhận sau.
+export async function generateStudyPlan(goalId: string): Promise<GeneratedStudyPlan> {
+  const { data } = await request.post<ApiSuccess<GeneratedStudyPlan>>(ENDPOINTS.aiAssistItems.generatePlan, {
+    goalId,
+  });
   return data.data;
 }
 
 export async function listAiAssistLogs(filters: AiAssistFilters): Promise<ApiSuccess<AiAssistLog[]>> {
-  const { data } = await request.get<ApiSuccess<AiAssistLog[]>>(ENDPOINTS.aiAssistItems.list, { params: filters });
+  const { data } = await request.get<ApiSuccess<AiAssistLog[]>>(ENDPOINTS.aiAssistItems.list, {
+    params: filters,
+  });
   return data;
 }
 
@@ -57,7 +109,10 @@ export async function removeAiAssistLog(id: string): Promise<void> {
 }
 
 export async function rateAiAssistLog(id: string, rating: number, comment?: string): Promise<AiAssistLog> {
-  const { data } = await request.post<ApiSuccess<AiAssistLog>>(`/ai-assist-items/${id}/rate`, { rating, comment });
+  const { data } = await request.post<ApiSuccess<AiAssistLog>>(`/ai-assist-items/${id}/rate`, {
+    rating,
+    comment,
+  });
   return data.data;
 }
 

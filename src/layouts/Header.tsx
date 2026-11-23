@@ -31,7 +31,17 @@ const LANGUAGES = [
   { code: 'en', flag: '🇬🇧', label: 'English' },
 ];
 
-function AvatarMenu({ userName, roleLabel, onLogout, light }: { userName: string; roleLabel: string; onLogout?: () => void; light?: boolean }) {
+function AvatarMenu({
+  userName,
+  roleLabel,
+  onLogout,
+  light,
+}: {
+  userName: string;
+  roleLabel: string;
+  onLogout?: () => void;
+  light?: boolean;
+}) {
   const initial = userName.trim().charAt(0).toUpperCase();
   return (
     <DropdownMenu>
@@ -46,13 +56,20 @@ function AvatarMenu({ userName, roleLabel, onLogout, light }: { userName: string
           <span
             className={cn(
               'flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold',
-              light ? 'bg-gradient-to-br from-primary to-primary-hover text-primary-foreground' : 'bg-white/20',
+              light
+                ? 'bg-gradient-to-br from-primary to-primary-hover text-primary-foreground'
+                : 'bg-white/20',
             )}
           >
             {initial}
           </span>
           <span className="hidden text-left sm:block">
-            <span className={cn('block text-sm font-semibold leading-tight', light ? 'text-foreground' : 'text-white')}>
+            <span
+              className={cn(
+                'block text-sm font-semibold leading-tight',
+                light ? 'text-foreground' : 'text-white',
+              )}
+            >
               {userName}
             </span>
             {!light && <span className="block text-xs leading-tight text-white/80">{roleLabel}</span>}
@@ -114,17 +131,6 @@ export function Header({
           >
             <Menu className="h-5 w-5" />
           </button>
-
-          <nav aria-label="Breadcrumb" className="hidden min-w-0 items-center gap-1.5 truncate text-sm md:flex">
-            {breadcrumb?.map((crumb, i) => (
-              <span key={crumb} className="flex items-center gap-1.5">
-                {i > 0 && <span className="text-muted-foreground">›</span>}
-                <span className={i === (breadcrumb.length ?? 0) - 1 ? 'font-bold text-foreground' : 'text-muted-foreground'}>
-                  {crumb}
-                </span>
-              </span>
-            ))}
-          </nav>
 
           <div className="flex-1" />
 

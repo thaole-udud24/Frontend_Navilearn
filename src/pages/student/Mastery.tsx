@@ -20,13 +20,7 @@ import { useAuthStore } from '@/hooks/useAuth';
 import { PATHS } from '@/routes/paths';
 import { studentMenu } from '@/config/menu.student';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { exportMasteryReport, getMasteryTrend, listMasteries, setMasteryGoal } from '@/services/mastery';
 import type { Mastery } from '@/services/mastery/types';
@@ -133,7 +127,10 @@ export default function MasteryPage() {
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((m) => (
-            <div key={m._id} className="flex flex-col gap-2 rounded-card border border-border bg-card p-4 shadow-card">
+            <div
+              key={m._id}
+              className="flex flex-col gap-2 rounded-card border border-border bg-card p-4 shadow-card"
+            >
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-foreground">{conceptName(m.concept)}</span>
                 <span className={`rounded-badge px-2 py-1 text-xs font-semibold ${LEVEL_TONE[m.level]}`}>
@@ -158,7 +155,13 @@ export default function MasteryPage() {
                 >
                   <Target className="h-3.5 w-3.5" /> Đặt mục tiêu
                 </Button>
-                <Button type="button" variant="ghost" size="sm" className="self-start" onClick={() => setTrendTarget(m)}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="self-start"
+                  onClick={() => setTrendTarget(m)}
+                >
                   <LineChartIcon className="h-3.5 w-3.5" /> Xu hướng
                 </Button>
               </div>
@@ -181,6 +184,9 @@ export default function MasteryPage() {
             placeholder="Mục tiêu (%)"
           />
           <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setGoalTarget(null)}>
+              Hủy
+            </Button>
             <Button type="button" onClick={submitGoal}>
               Lưu mục tiêu
             </Button>

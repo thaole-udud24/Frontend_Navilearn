@@ -1,38 +1,21 @@
-import { Tag } from 'antd';
-import { PageHeader } from '@/components/PageHeader';
-import { DataTable } from '@/components/CustomTable';
-import { Loading } from '@/components/Loading';
-import { usePagedList } from '@/hooks/usePagedList';
-import { useQueryErrorMessage } from '@/hooks/useQueryErrorMessage';
-import { useCreateRiskItem, useRiskItemList } from './hooks/useRiskItems';
-import { CreateItemForm } from './components/CreateItemForm';
+import { GenericScaffoldStudentPage } from '@/components/GenericScaffoldAdminPage/StudentPage';
+import { createRiskItem, listRiskItems } from '@/services/risk';
 import type { RiskItem } from '@/services/risk/types';
 
-// index.tsx only composes layout and calls hooks — no business logic here.
-export default function RiskItemsPage() {
-  const { paging, setPage } = usePagedList();
-  const { data, isLoading, error } = useRiskItemList(paging);
-  const createMutation = useCreateRiskItem();
-  const errorMessage = useQueryErrorMessage(error);
-
-  if (isLoading) return <Loading />;
-
+export default function StudentRiskItemsPage() {
   return (
-    <div>
-      <PageHeader title="Risk items (scaffold – business logic pending)" />
-      <CreateItemForm loading={createMutation.isPending} onSubmit={(values) => createMutation.mutate(values)} />
-      {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
-      <DataTable<RiskItem>
-        rowKey="_id"
-        dataSource={data?.data ?? []}
-        meta={data?.meta}
-        onPageChange={setPage}
-        columns={[
-          { title: 'Tiêu đề', dataIndex: 'title' },
-          { title: 'Nội dung', dataIndex: 'content' },
-          { title: 'Trạng thái', dataIndex: 'status', render: (s: string) => <Tag>{s}</Tag> },
-        ]}
-      />
-    </div>
+    <GenericScaffoldStudentPage<RiskItem>
+      pageTitle="Báo cáo rủi ro học tập"
+      breadcrumb={['Trang chủ', 'Báo cáo rủi ro học tập']}
+      searchPlaceholder="Tìm theo tiêu đề…"
+      emptyLabel="Bạn chưa gửi báo cáo rủi ro nào"
+      createLabel="Báo cáo rủi ro"
+      titleFieldLabel="Tiêu đề"
+      titlePlaceholder="vd: Có nguy cơ bị tụt lại ở môn Giải tích"
+      contentFieldLabel="Mô tả chi tiết"
+      contentPlaceholder="Mô tả vấn đề bạn đang gặp phải…"
+      list={listRiskItems}
+      create={createRiskItem}
+    />
   );
 }

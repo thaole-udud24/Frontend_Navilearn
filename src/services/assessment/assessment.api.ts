@@ -12,13 +12,19 @@ import type {
   SubmitAssessmentInput,
 } from './types';
 
-export async function listAssessmentItems(filters: AssessmentItemFilters): Promise<ApiSuccess<AssessmentItem[]>> {
-  const { data } = await request.get<ApiSuccess<AssessmentItem[]>>(ENDPOINTS.assessmentItems.list, { params: filters });
+export async function listAssessmentItems(
+  filters: AssessmentItemFilters,
+): Promise<ApiSuccess<AssessmentItem[]>> {
+  const { data } = await request.get<ApiSuccess<AssessmentItem[]>>(ENDPOINTS.assessmentItems.list, {
+    params: filters,
+  });
   return data;
 }
 
 export async function listAssessments(filters: AssessmentFilters): Promise<ApiSuccess<Assessment[]>> {
-  const { data } = await request.get<ApiSuccess<Assessment[]>>(ENDPOINTS.assessmentItems.list, { params: filters });
+  const { data } = await request.get<ApiSuccess<Assessment[]>>(ENDPOINTS.assessmentItems.list, {
+    params: filters,
+  });
   return data;
 }
 
@@ -33,7 +39,9 @@ export async function getAssessment(id: string): Promise<Assessment> {
 }
 
 export async function startAssessment(assessmentConfig: string): Promise<Assessment> {
-  const { data } = await request.post<ApiSuccess<Assessment>>(ENDPOINTS.assessmentItems.create, { assessmentConfig });
+  const { data } = await request.post<ApiSuccess<Assessment>>(ENDPOINTS.assessmentItems.create, {
+    assessmentConfig,
+  });
   return data.data;
 }
 
@@ -55,15 +63,19 @@ export async function setAssessmentFlag(id: string, question: string, flagged: b
   return data.data;
 }
 
-export async function getWrongAnswers(id: string): Promise<{ assessment: string; concept: string; wrongAnswers: Assessment['answers'] }> {
-  const { data } = await request.get<ApiSuccess<{ assessment: string; concept: string; wrongAnswers: Assessment['answers'] }>>(
-    ENDPOINTS.assessmentItems.wrongAnswers(id),
-  );
+export async function getWrongAnswers(
+  id: string,
+): Promise<{ assessment: string; concept: string; wrongAnswers: Assessment['answers'] }> {
+  const { data } = await request.get<
+    ApiSuccess<{ assessment: string; concept: string; wrongAnswers: Assessment['answers'] }>
+  >(ENDPOINTS.assessmentItems.wrongAnswers(id));
   return data.data;
 }
 
 export async function getScoreHistory(id: string): Promise<ScoreHistoryEntry[]> {
-  const { data } = await request.get<ApiSuccess<ScoreHistoryEntry[]>>(ENDPOINTS.assessmentItems.scoreHistory(id));
+  const { data } = await request.get<ApiSuccess<ScoreHistoryEntry[]>>(
+    ENDPOINTS.assessmentItems.scoreHistory(id),
+  );
   return data.data;
 }
 

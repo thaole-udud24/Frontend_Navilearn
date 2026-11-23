@@ -16,7 +16,20 @@ export interface FloatingInputProps extends React.InputHTMLAttributes<HTMLInputE
 /** Shared floating-label text input for every AuthPage form (spec step 6). */
 export const FloatingInput = React.forwardRef<HTMLInputElement, FloatingInputProps>(
   (
-    { label, icon: Icon, error, valid, rightElement, className, id, defaultValue, onFocus, onBlur, onChange, ...props },
+    {
+      label,
+      icon: Icon,
+      error,
+      valid,
+      rightElement,
+      className,
+      id,
+      defaultValue,
+      onFocus,
+      onBlur,
+      onChange,
+      ...props
+    },
     ref,
   ) => {
     const [focused, setFocused] = React.useState(false);

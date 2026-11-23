@@ -1,22 +1,48 @@
-export type KnowledgeItemStatus = 'open' | 'in_progress' | 'resolved';
+import type { RecordSource } from '@/types/api.d';
 
-export interface KnowledgeItem {
+export type ConceptStatus = 'active' | 'archived';
+
+export interface ConceptRef {
+  _id: string;
+  name: string;
+}
+
+export interface Concept {
   _id: string;
   owner: string;
-  title: string;
-  content: string;
-  status: KnowledgeItemStatus;
+  name: string;
+  description: string;
+  order: number;
+  status: ConceptStatus;
+  source?: RecordSource;
+  parentConcept?: ConceptRef | string | null;
+  prerequisites?: ConceptRef[] | string[];
+  related?: ConceptRef[] | string[];
   createdAt: string;
   updatedAt: string;
 }
 
-export interface KnowledgeItemFilters {
+export interface ConceptFilters {
   page?: number;
   limit?: number;
-  status?: KnowledgeItemStatus;
+  status?: ConceptStatus;
 }
 
-export interface CreateKnowledgeItemInput {
-  title: string;
-  content: string;
+export interface CreateConceptInput {
+  name: string;
+  description?: string;
+  order?: number;
+  source?: RecordSource;
+  parentConcept?: string | null;
+  prerequisites?: string[];
+  related?: string[];
+}
+
+export type UpdateConceptInput = Partial<CreateConceptInput>;
+
+export interface ImportRowResult {
+  createdCount: number;
+  createdIds: string[];
+  errorCount: number;
+  errors: { row: number; message: string }[];
 }

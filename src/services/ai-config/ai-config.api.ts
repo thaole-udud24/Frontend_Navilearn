@@ -4,7 +4,9 @@ import type { ApiSuccess } from '@/types/api.d';
 import type { CreateAiConfigItemInput, AiConfigItem, AiConfigItemFilters } from './types';
 
 export async function listAiConfigItems(filters: AiConfigItemFilters): Promise<ApiSuccess<AiConfigItem[]>> {
-  const { data } = await request.get<ApiSuccess<AiConfigItem[]>>(ENDPOINTS.aiConfigItems.list, { params: filters });
+  const { data } = await request.get<ApiSuccess<AiConfigItem[]>>(ENDPOINTS.aiConfigItems.list, {
+    params: filters,
+  });
   return data;
 }
 

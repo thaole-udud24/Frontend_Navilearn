@@ -20,7 +20,10 @@ export default function TemplateItemsPage() {
   return (
     <div>
       <PageHeader title="Template items (demo module)" />
-      <CreateItemForm loading={createMutation.isPending} onSubmit={(values) => createMutation.mutate(values)} />
+      <CreateItemForm
+        loading={createMutation.isPending}
+        onSubmit={(values) => createMutation.mutate(values)}
+      />
       {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
       <DataTable<TemplateItem>
         rowKey="_id"

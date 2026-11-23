@@ -118,7 +118,9 @@ export function OtpView({ email, onBack, onChangeEmail, onVerified, purpose = 'r
 
       <form noValidate onSubmit={submit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Mã bảo mật OTP (6 số)</span>
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Mã bảo mật OTP (6 số)
+          </span>
           <OtpInput value={otp} onChange={setOtp} error={error} />
         </div>
 

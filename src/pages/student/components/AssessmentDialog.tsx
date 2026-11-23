@@ -53,7 +53,7 @@ export function AssessmentDialog({
   });
 
   const questionIds = useMemo(
-    () => (attempt?.questionsOverride.length ? attempt.questionsOverride : config?.questions ?? []),
+    () => (attempt?.questionsOverride.length ? attempt.questionsOverride : (config?.questions ?? [])),
     [attempt, config],
   );
 
@@ -152,7 +152,9 @@ export function AssessmentDialog({
                 {a.correctAnswer && (
                   <p className="text-sm text-muted-foreground">Đáp án đúng: {a.correctAnswer}</p>
                 )}
-                {a.feedback && <p className="mt-1 text-sm italic text-muted-foreground">Nhận xét AI: {a.feedback}</p>}
+                {a.feedback && (
+                  <p className="mt-1 text-sm italic text-muted-foreground">Nhận xét AI: {a.feedback}</p>
+                )}
                 <ReportQuestionIssueButton questionId={a.question} />
               </div>
             ))}
@@ -177,7 +179,7 @@ export function AssessmentDialog({
                   </button>
                 </div>
 
-                {q.type === 'mcq' ? (
+                {q.type === 'mcq' || q.type === 'true_false' ? (
                   <div className="flex flex-col gap-2">
                     {q.options.map((opt, optIdx) => (
                       <label key={optIdx} className="flex items-center gap-2 text-sm text-foreground">
@@ -210,10 +212,19 @@ export function AssessmentDialog({
 
         {!view && (
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => saveDraftMutation.mutate()} disabled={saveDraftMutation.isPending}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => saveDraftMutation.mutate()}
+              disabled={saveDraftMutation.isPending}
+            >
               Lưu nháp
             </Button>
-            <Button type="button" onClick={() => submitMutation.mutate()} disabled={submitMutation.isPending || !questions}>
+            <Button
+              type="button"
+              onClick={() => submitMutation.mutate()}
+              disabled={submitMutation.isPending || !questions}
+            >
               {submitMutation.isPending ? 'Đang nộp…' : 'Nộp bài'}
             </Button>
           </DialogFooter>

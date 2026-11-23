@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AnimatePresence,
@@ -19,11 +19,7 @@ import { ROLES } from '@/constants/enums';
 import { PATHS } from '@/routes/paths';
 import { useAuthStore } from '@/hooks/useAuth';
 import { toApiError } from '@/services/apiError';
-import {
-  login,
-  register as registerApi,
-  resendOtp,
-} from '@/services/account/account.auth.api';
+import { login, register as registerApi, resendOtp } from '@/services/account/account.auth.api';
 import type { LoginResponse } from '@/services/account/account.auth.types';
 import type { LoginFormValues, RegisterFormValues } from '@/schemas/auth';
 import { LoginForm } from './LoginForm';
@@ -93,12 +89,6 @@ export default function AuthPage() {
     setSearchParams({}, { replace: true });
   }, [searchParams, setSearchParams]);
 
-  const cardRef = useRef<HTMLDivElement>(null);
-  const rotateX = useMotionValue(0);
-  const rotateY = useMotionValue(0);
-  const springRotateX = useSpring(rotateX, { stiffness: 150, damping: 20 });
-  const springRotateY = useSpring(rotateY, { stiffness: 150, damping: 20 });
-
   const mvX = useMotionValue(0);
   const mvY = useMotionValue(0);
   const springX = useSpring(mvX, { stiffness: 50, damping: 20 });
@@ -114,19 +104,6 @@ export default function AuthPage() {
     window.addEventListener('mousemove', handleMove);
     return () => window.removeEventListener('mousemove', handleMove);
   }, [parallaxEnabled, mvX, mvY]);
-
-  function handleCardMouseMove(e: React.MouseEvent<HTMLDivElement>) {
-    if (!parallaxEnabled) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const px = (e.clientX - rect.left) / rect.width - 0.5;
-    const py = (e.clientY - rect.top) / rect.height - 0.5;
-    rotateY.set(px * 6);
-    rotateX.set(-py * 6);
-  }
-  function resetTilt() {
-    rotateX.set(0);
-    rotateY.set(0);
-  }
 
   async function completeAuth(result: LoginResponse) {
     localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, result.accessToken);
@@ -169,62 +146,59 @@ export default function AuthPage() {
   const mode: Mode = view === 'register' ? 'register' : 'login';
 
   return (
-    <div className={cn('tw-scope relative min-h-screen w-full overflow-x-hidden overflow-y-auto bg-background', dark && 'dark')}>
+    <div
+      className={cn(
+        'tw-scope relative min-h-screen w-full overflow-x-hidden overflow-y-auto bg-background',
+        dark && 'dark',
+      )}
+    >
       <Background reduced={reduced} springX={springX} springY={springY} />
 
       <ThemeToggle dark={dark} onToggle={() => setDark((d) => !d)} />
 
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center gap-6 p-4 py-10">
+      <div className="relative z-10 min-h-screen w-full">
         <AnimatePresence mode="wait">
           {view === 'login' || view === 'register' ? (
             <motion.div
               key="auth-card"
-              ref={cardRef}
               variants={cardEntrance}
               initial="hidden"
               animate="visible"
-              exit={{ opacity: 0, scale: 0.98 }}
-              onMouseMove={handleCardMouseMove}
-              onMouseLeave={resetTilt}
-              style={{ perspective: 1600 }}
-              className="relative w-full max-w-[1080px]"
+              exit={{ opacity: 0 }}
+              className="min-h-screen w-full"
             >
-              <motion.div
-                style={{ rotateX: springRotateX, rotateY: springRotateY }}
-                className="overflow-hidden rounded-[28px] shadow-[0_30px_80px_-20px_rgba(11,58,130,0.35),0_10px_30px_-10px_rgba(11,58,130,0.2)]"
-              >
-                {/* Desktop: side-by-side, overlay swaps sides via `layout` FLIP animation. */}
-                <div className="hidden h-[680px] grid-cols-2 bg-card lg:grid">
-                  {mode === 'login' ? (
-                    <>
-                      <FormHalf key="form" mode={mode} />
-                      <OverlayHalf key="overlay" mode={mode} />
-                    </>
-                  ) : (
-                    <>
-                      <OverlayHalf key="overlay" mode={mode} />
-                      <FormHalf key="form" mode={mode} />
-                    </>
-                  )}
-                </div>
+              {/* Desktop: true 50/50 full-screen split, overlay swaps sides via `layout` FLIP animation. */}
+              <div className="hidden min-h-screen grid-cols-2 lg:grid">
+                {mode === 'login' ? (
+                  <>
+                    <FormHalf key="form" mode={mode} />
+                    <OverlayHalf key="overlay" mode={mode} />
+                  </>
+                ) : (
+                  <>
+                    <OverlayHalf key="overlay" mode={mode} />
+                    <FormHalf key="form" mode={mode} />
+                  </>
+                )}
+              </div>
 
-                {/* Mobile/tablet: single column with a Tabs-style mode switch. */}
-                <div className="flex flex-col gap-6 bg-card p-6 lg:hidden">
-                  <Logo />
-                  <MobileModeSwitch mode={mode} onChange={(m) => setView(m)} />
-                  <AnimatePresence mode="wait" initial={false}>
-                    <motion.div
-                      key={mode}
-                      initial={{ opacity: 0, x: mode === 'login' ? -30 : 30 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: mode === 'login' ? 30 : -30 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      {renderForm(mode)}
-                    </motion.div>
-                  </AnimatePresence>
-                </div>
-              </motion.div>
+              {/* Mobile/tablet: single column with a Tabs-style mode switch. */}
+              <div className="flex min-h-screen flex-col justify-center gap-6 p-6 py-10 lg:hidden">
+                <Logo />
+                <MobileModeSwitch mode={mode} onChange={(m) => setView(m)} />
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div
+                    key={mode}
+                    initial={{ opacity: 0, x: mode === 'login' ? -30 : 30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: mode === 'login' ? 30 : -30 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {renderForm(mode)}
+                  </motion.div>
+                </AnimatePresence>
+                <p className="text-center text-xs text-muted-foreground">{APP_FOOTER_TEXT}</p>
+              </div>
             </motion.div>
           ) : view === 'otp' || view === 'verify' ? (
             <motion.div
@@ -233,9 +207,9 @@ export default function AuthPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.3 }}
-              className="grid w-full max-w-[1080px] grid-cols-1 overflow-hidden rounded-[28px] bg-card shadow-[0_30px_80px_-20px_rgba(11,58,130,0.35),0_10px_30px_-10px_rgba(11,58,130,0.2)] md:h-[680px] md:grid-cols-2"
+              className="grid min-h-screen grid-cols-1 md:grid-cols-2"
             >
-              <div className="flex h-full items-center overflow-y-auto p-8 lg:p-10">
+              <div className="flex min-h-screen items-center overflow-y-auto p-8 lg:p-16">
                 <div className="mx-auto flex w-full max-w-sm flex-col gap-6">
                   <OtpView
                     email={view === 'verify' ? verifyEmailAddress : resetEmail}
@@ -252,6 +226,7 @@ export default function AuthPage() {
                       }
                     }}
                   />
+                  <p className="text-center text-xs text-muted-foreground">{APP_FOOTER_TEXT}</p>
                 </div>
               </div>
               <OtpOverlayPanel onBackToLogin={() => setView('login')} />
@@ -263,9 +238,9 @@ export default function AuthPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.3 }}
-              className="grid w-full max-w-[1080px] grid-cols-1 overflow-hidden rounded-[28px] bg-card shadow-[0_30px_80px_-20px_rgba(11,58,130,0.35),0_10px_30px_-10px_rgba(11,58,130,0.2)] md:h-[680px] md:grid-cols-2"
+              className="grid min-h-screen grid-cols-1 md:grid-cols-2"
             >
-              <div className="flex h-full items-center overflow-y-auto p-8 lg:p-10">
+              <div className="flex min-h-screen items-center overflow-y-auto p-8 lg:p-16">
                 <div className="mx-auto flex w-full max-w-sm flex-col gap-6">
                   {view === 'forgot' && (
                     <ForgotPasswordView
@@ -277,18 +252,19 @@ export default function AuthPage() {
                     />
                   )}
                   {view === 'reset' && (
-                    <ResetPasswordView resetToken={resetToken} onBack={() => setView('otp')} onDone={() => setView('login')} />
+                    <ResetPasswordView
+                      resetToken={resetToken}
+                      onBack={() => setView('otp')}
+                      onDone={() => setView('login')}
+                    />
                   )}
+                  <p className="text-center text-xs text-muted-foreground">{APP_FOOTER_TEXT}</p>
                 </div>
               </div>
               <OtpOverlayPanel onBackToLogin={() => setView('login')} />
             </motion.div>
           )}
         </AnimatePresence>
-
-        {(view === 'login' || view === 'register') && (
-          <p className="text-center text-xs text-muted-foreground">{APP_FOOTER_TEXT}</p>
-        )}
       </div>
 
       <AnimatePresence>
@@ -318,7 +294,11 @@ export default function AuthPage() {
 
   function FormHalf({ mode: m }: { mode: Mode }) {
     return (
-      <motion.div layout transition={springTransition} className="relative flex items-center justify-center p-10">
+      <motion.div
+        layout
+        transition={springTransition}
+        className="relative flex min-h-screen items-center justify-center bg-card p-10"
+      >
         <div className="flex w-full max-w-sm flex-col items-center gap-6">
           <Logo />
           <AnimatePresence mode="wait" initial={false}>
@@ -333,6 +313,7 @@ export default function AuthPage() {
               {renderForm(m)}
             </motion.div>
           </AnimatePresence>
+          <p className="text-center text-xs text-muted-foreground">{APP_FOOTER_TEXT}</p>
         </div>
       </motion.div>
     );
@@ -345,17 +326,24 @@ export default function AuthPage() {
       </motion.div>
     );
   }
-
 }
 
 function Logo() {
   return (
-    <motion.div variants={popIn} initial="hidden" animate="visible" className="flex flex-col items-center gap-2">
+    <motion.div
+      variants={popIn}
+      initial="hidden"
+      animate="visible"
+      className="flex flex-col items-center gap-2"
+    >
       <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
         <GraduationCap className="h-8 w-8" />
       </span>
       <div className="overflow-hidden">
-        <motion.span variants={textLineReveal} className="block text-[28px] font-extrabold tracking-tight text-foreground">
+        <motion.span
+          variants={textLineReveal}
+          className="block text-[28px] font-extrabold tracking-tight text-foreground"
+        >
           NaviLearn
         </motion.span>
       </div>
@@ -365,25 +353,75 @@ function Logo() {
 }
 
 function ThemeToggle({ dark, onToggle }: { dark: boolean; onToggle: () => void }) {
+  // Material/iOS-style "theme ripple": a solid circle in the *target* theme's background grows
+  // from the button to cover the screen, the real `dark` class flips while fully hidden behind
+  // it, then the same circle shrinks away again to reveal the page already in its new theme.
+  const [ripple, setRipple] = useState<{ x: number; y: number; toDark: boolean } | null>(null);
+
+  function handleClick(e: React.MouseEvent<HTMLButtonElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    setRipple({ x, y, toDark: !dark });
+    window.setTimeout(onToggle, 320);
+    window.setTimeout(() => setRipple(null), 640);
+  }
+
+  const maxRadius = typeof window !== 'undefined' ? Math.hypot(window.innerWidth, window.innerHeight) : 2000;
+
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-label={dark ? 'Chuyển sang chế độ sáng' : 'Chuyển sang chế độ tối'}
-      className="absolute right-4 top-4 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-card/80 text-foreground shadow-card backdrop-blur transition-colors hover:bg-card"
-    >
-      <AnimatePresence mode="wait" initial={false}>
-        {dark ? (
-          <motion.span key="sun" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }}>
-            <Sun className="h-4 w-4" />
-          </motion.span>
-        ) : (
-          <motion.span key="moon" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }}>
-            <Moon className="h-4 w-4" />
-          </motion.span>
+    <>
+      <button
+        type="button"
+        onClick={handleClick}
+        aria-label={dark ? 'Chuyển sang chế độ sáng' : 'Chuyển sang chế độ tối'}
+        className="absolute right-4 top-4 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-card/80 text-foreground shadow-card backdrop-blur transition-colors hover:bg-card"
+      >
+        <AnimatePresence mode="wait" initial={false}>
+          {dark ? (
+            <motion.span
+              key="sun"
+              initial={{ rotate: -90, opacity: 0 }}
+              animate={{ rotate: 0, opacity: 1 }}
+              exit={{ rotate: 90, opacity: 0 }}
+            >
+              <Sun className="h-4 w-4" />
+            </motion.span>
+          ) : (
+            <motion.span
+              key="moon"
+              initial={{ rotate: 90, opacity: 0 }}
+              animate={{ rotate: 0, opacity: 1 }}
+              exit={{ rotate: -90, opacity: 0 }}
+            >
+              <Moon className="h-4 w-4" />
+            </motion.span>
+          )}
+        </AnimatePresence>
+      </button>
+
+      <AnimatePresence>
+        {ripple && (
+          <motion.div
+            key="theme-ripple"
+            className={cn(
+              'fixed inset-0 z-[90] pointer-events-none',
+              ripple.toDark ? 'bg-[#0f1629]' : 'bg-[#f7faff]',
+            )}
+            initial={{ clipPath: `circle(0px at ${ripple.x}px ${ripple.y}px)` }}
+            animate={{
+              clipPath: [
+                `circle(0px at ${ripple.x}px ${ripple.y}px)`,
+                `circle(${maxRadius}px at ${ripple.x}px ${ripple.y}px)`,
+                `circle(0px at ${ripple.x}px ${ripple.y}px)`,
+              ],
+            }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.64, times: [0, 0.5, 1], ease: 'easeInOut' }}
+          />
         )}
       </AnimatePresence>
-    </button>
+    </>
   );
 }
 

@@ -1,5 +1,6 @@
 import { ArrowRight, CalendarClock } from 'lucide-react';
 
+import { Card } from '@/components/ui/card';
 import clipboard3d from '@/assets/icons/clipboard-3d.png';
 
 interface NextActionCardProps {
@@ -11,8 +12,11 @@ interface NextActionCardProps {
 /** Compact peach card that sits beside GoalCard, matching the reference's "Việc tiếp theo" slot. */
 export function NextActionCard({ topic, dueLabel, onStart }: NextActionCardProps) {
   return (
-    <div className="relative flex flex-1 items-center gap-4 overflow-hidden rounded-card border border-accent/20 bg-accent-soft p-5 shadow-card">
-      <span className="pointer-events-none absolute -right-6 -top-8 h-24 w-24 rounded-full bg-accent/15" aria-hidden />
+    <Card className="relative flex flex-1 items-center gap-4 overflow-hidden border-accent/20 bg-accent-soft">
+      <span
+        className="pointer-events-none absolute -right-6 -top-8 h-24 w-24 rounded-full bg-accent/15"
+        aria-hidden
+      />
 
       <div className="relative min-w-0 flex-1">
         <h3 className="text-sm font-semibold text-accent">Việc tiếp theo</h3>
@@ -34,6 +38,6 @@ export function NextActionCard({ topic, dueLabel, onStart }: NextActionCardProps
       <span className="relative hidden h-16 w-16 shrink-0 items-center justify-center sm:flex" aria-hidden>
         <img src={clipboard3d} alt="" className="h-16 w-16 drop-shadow-md" />
       </span>
-    </div>
+    </Card>
   );
 }

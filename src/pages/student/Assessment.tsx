@@ -3,19 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';
-import { GitCompareArrows, History } from 'lucide-react';
+import { Eye, GitCompareArrows, History, RotateCcw } from 'lucide-react';
 
 import { AppShell } from '@/layouts/AppShell';
 import { useAuthStore } from '@/hooks/useAuth';
 import { PATHS } from '@/routes/paths';
 import { studentMenu } from '@/config/menu.student';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DataTablePage } from '@/components/DataTablePage';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -40,12 +35,17 @@ function ScoreHistoryDialog({ assessmentId, onClose }: { assessmentId: string | 
         </DialogHeader>
         <div className="flex flex-col gap-1">
           {(data ?? []).map((h, i) => (
-            <div key={i} className="flex items-center justify-between rounded-control bg-muted px-3 py-2 text-sm">
+            <div
+              key={i}
+              className="flex items-center justify-between rounded-control bg-muted px-3 py-2 text-sm"
+            >
               <span>{h.reason === 'regrade' ? 'Sau chấm lại' : 'Chấm lần đầu'}</span>
               <span className="font-semibold">{h.score}%</span>
             </div>
           ))}
-          {data?.length === 1 && <p className="text-xs text-muted-foreground">Bài làm chưa được chấm lại lần nào.</p>}
+          {data?.length === 1 && (
+            <p className="text-xs text-muted-foreground">Bài làm chưa được chấm lại lần nào.</p>
+          )}
         </div>
       </DialogContent>
     </Dialog>
@@ -60,10 +60,7 @@ function CompareDialog({ open, onClose }: { open: boolean; onClose: () => void }
     queryFn: () => listAssessments({ status: 'submitted', page: 1, limit: 100 }),
     enabled: open,
   });
-  const concepts = useMemo(
-    () => [...new Set((submitted?.data ?? []).map((a) => a.concept))],
-    [submitted],
-  );
+  const concepts = useMemo(() => [...new Set((submitted?.data ?? []).map((a) => a.concept))], [submitted]);
 
   const { data: result } = useQuery({
     queryKey: ['assessment-compare', concept],
@@ -94,15 +91,24 @@ function CompareDialog({ open, onClose }: { open: boolean; onClose: () => void }
           <div className="flex flex-col gap-2">
             <p className="text-sm text-muted-foreground">
               Thay đổi so với lần đầu:{' '}
-              <span className={result.deltaFromFirst >= 0 ? 'font-semibold text-success' : 'font-semibold text-danger'}>
+              <span
+                className={
+                  result.deltaFromFirst >= 0 ? 'font-semibold text-success' : 'font-semibold text-danger'
+                }
+              >
                 {result.deltaFromFirst >= 0 ? '+' : ''}
                 {result.deltaFromFirst}%
               </span>
             </p>
             <div className="flex flex-col gap-1">
               {result.attempts.map((a, i) => (
-                <div key={a.id} className="flex items-center justify-between rounded-control bg-muted px-3 py-2 text-sm">
-                  <span>Lần {i + 1} — {new Date(a.submittedAt).toLocaleDateString('vi-VN')}</span>
+                <div
+                  key={a.id}
+                  className="flex items-center justify-between rounded-control bg-muted px-3 py-2 text-sm"
+                >
+                  <span>
+                    Lần {i + 1} — {new Date(a.submittedAt).toLocaleDateString('vi-VN')}
+                  </span>
                   <span className="font-semibold">{a.score}%</span>
                 </div>
               ))}
@@ -128,7 +134,10 @@ export default function AssessmentPage() {
     queryKey: ['assessment-all-for-concept-filter'],
     queryFn: () => listAssessments({ page: 1, limit: 100 }),
   });
-  const concepts = useMemo(() => [...new Set((allAssessments?.data ?? []).map((a) => a.concept))], [allAssessments]);
+  const concepts = useMemo(
+    () => [...new Set((allAssessments?.data ?? []).map((a) => a.concept))],
+    [allAssessments],
+  );
 
   const columns: ColumnDef<Assessment>[] = [
     {
@@ -221,6 +230,7 @@ export default function AssessmentPage() {
           {
             key: 'open',
             label: 'Tiếp tục / Xem kết quả',
+            icon: <Eye className="h-4 w-4" />,
             onSelect: (row) => setOpenId(row._id),
           },
           {
@@ -233,6 +243,7 @@ export default function AssessmentPage() {
           {
             key: 'retry-wrong',
             label: 'Làm lại các câu sai',
+            icon: <RotateCcw className="h-4 w-4" />,
             hidden: (row) => row.status !== 'submitted',
             onSelect: (row) => {
               startRetryWrong(row._id)

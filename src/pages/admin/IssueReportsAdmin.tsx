@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { ColumnDef } from '@tanstack/react-table';
+import { CheckCircle2, XCircle } from 'lucide-react';
 
 import { AppShell } from '@/layouts/AppShell';
 import { useAuthStore } from '@/hooks/useAuth';
@@ -35,7 +36,11 @@ export default function IssueReportsAdmin() {
         return typeof q === 'string' ? q : q.text;
       },
     },
-    { accessorKey: 'reason', header: 'Lý do', cell: ({ getValue }) => REASON_LABEL[getValue<string>()] ?? getValue<string>() },
+    {
+      accessorKey: 'reason',
+      header: 'Lý do',
+      cell: ({ getValue }) => REASON_LABEL[getValue<string>()] ?? getValue<string>(),
+    },
     { accessorKey: 'description', header: 'Mô tả' },
     {
       accessorKey: 'status',
@@ -78,6 +83,7 @@ export default function IssueReportsAdmin() {
           {
             key: 'fix',
             label: 'Đánh dấu đã xử lý',
+            icon: <CheckCircle2 />,
             hidden: (row) => row.status !== 'open',
             onSelect: async (row) => {
               const resolution = window.prompt('Ghi chú xử lý (không bắt buộc)') ?? '';
@@ -89,6 +95,8 @@ export default function IssueReportsAdmin() {
           {
             key: 'dismiss',
             label: 'Bỏ qua',
+            icon: <XCircle />,
+            danger: true,
             hidden: (row) => row.status !== 'open',
             onSelect: async (row) => {
               await resolveIssueReport(row._id, { action: 'dismiss' });

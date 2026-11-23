@@ -4,7 +4,9 @@ import type { ApiSuccess } from '@/types/api.d';
 import type { CreateTemplateItemInput, TemplateItem, TemplateItemFilters } from '@/services/_template/types';
 
 export async function listTemplateItems(filters: TemplateItemFilters): Promise<ApiSuccess<TemplateItem[]>> {
-  const { data } = await request.get<ApiSuccess<TemplateItem[]>>(ENDPOINTS.templateItems.list, { params: filters });
+  const { data } = await request.get<ApiSuccess<TemplateItem[]>>(ENDPOINTS.templateItems.list, {
+    params: filters,
+  });
   return data;
 }
 

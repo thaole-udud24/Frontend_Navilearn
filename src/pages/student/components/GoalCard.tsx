@@ -33,8 +33,14 @@ export function GoalCard({ title, description, percent, segments, onViewDetail }
 
   return (
     <div className="relative flex flex-1 items-center gap-5 overflow-hidden rounded-card bg-gradient-to-br from-primary to-primary-hover p-5 text-white shadow-card">
-      <span className="pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full bg-white/10" aria-hidden />
-      <span className="pointer-events-none absolute -bottom-8 right-10 h-20 w-20 rotate-12 rounded-2xl bg-white/10" aria-hidden />
+      <span
+        className="pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full bg-white/10"
+        aria-hidden
+      />
+      <span
+        className="pointer-events-none absolute -bottom-8 right-10 h-20 w-20 rotate-12 rounded-2xl bg-white/10"
+        aria-hidden
+      />
 
       <div className="relative min-w-0 flex-1">
         <h3 className="text-sm font-semibold text-white/80">{title}</h3>

@@ -68,7 +68,13 @@ export function SubmitButton({ label, status, className }: SubmitButtonProps) {
             <Check className="h-5 w-5" />
           </motion.span>
         ) : (
-          <motion.span key="label" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2">
+          <motion.span
+            key="label"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex items-center gap-2"
+          >
             {label}
             <ArrowRight className="h-4 w-4" />
           </motion.span>

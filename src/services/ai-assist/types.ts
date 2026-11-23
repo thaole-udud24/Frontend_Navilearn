@@ -30,6 +30,29 @@ export interface DraftQuestion {
   options: { text: string; isCorrect?: boolean }[];
 }
 
+export interface ConceptDraft {
+  aiAssistLogId: string;
+  topic: string;
+  valid: boolean;
+  name: string;
+  description: string;
+}
+
+export interface GeneratedTemplateStep {
+  dayOffset: number;
+  durationMin: number;
+  theoryContent?: string;
+  note: string;
+}
+
+export interface TemplateDraft {
+  aiAssistLogId: string;
+  valid: boolean;
+  title: string;
+  description: string;
+  steps: GeneratedTemplateStep[];
+}
+
 export type AiAssistKind =
   | 'generate_question'
   | 'practice_question'
@@ -82,4 +105,9 @@ export interface EssayFeedbackInput {
   conceptId?: string;
   questionText: string;
   answerText: string;
+}
+
+export interface GeneratedStudyPlan {
+  plan: import('@/services/planning/types').Plan;
+  valid: boolean;
 }

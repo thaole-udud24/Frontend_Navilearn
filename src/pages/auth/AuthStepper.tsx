@@ -40,7 +40,9 @@ export function AuthStepper({ currentStep, labels, className }: AuthStepperProps
               </span>
             </div>
             {i < labels.length - 1 && (
-              <span className={cn('mt-3.5 h-px flex-1 transition-colors', done ? 'bg-primary' : 'bg-border')} />
+              <span
+                className={cn('mt-3.5 h-px flex-1 transition-colors', done ? 'bg-primary' : 'bg-border')}
+              />
             )}
           </Fragment>
         );

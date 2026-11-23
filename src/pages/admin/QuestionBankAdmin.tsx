@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Plus, Trash2 } from 'lucide-react';
+import { Ban, Copy, Eye, Pencil, RefreshCcw, RotateCcw, Plus, Sparkles, Trash2 } from 'lucide-react';
 
 import { AppShell } from '@/layouts/AppShell';
 import { useAuthStore } from '@/hooks/useAuth';
@@ -13,15 +13,11 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
+import { DetailRow, FormDialogFooter, FormDialogTitle, FormField } from '@/components/DialogForm';
 import { DataTablePage } from '@/components/DataTablePage';
 import { StatusBadge } from '@/components/StatusBadge';
+import { SourceBadge } from '@/components/SourceBadge';
 import {
   approveFromAiDraft,
   archiveQuestion,
@@ -38,7 +34,14 @@ import {
   confirmRegrade,
   updateQuestion,
 } from '@/services/question-bank';
-import type { Question, QuestionDifficulty, QuestionOption, QuestionType } from '@/services/question-bank/types';
+import { generateQuestionDraft } from '@/services/ai-assist';
+import type { DraftQuestion } from '@/services/ai-assist/types';
+import type {
+  Question,
+  QuestionDifficulty,
+  QuestionOption,
+  QuestionType,
+} from '@/services/question-bank/types';
 
 interface QuestionFormState {
   concept: string;
@@ -49,6 +52,12 @@ interface QuestionFormState {
   difficulty: QuestionDifficulty;
   points: number;
 }
+
+const TYPE_LABEL: Record<QuestionType, string> = {
+  mcq: 'Trắc nghiệm',
+  true_false: 'Đúng/sai',
+  essay: 'Tự luận',
+};
 
 const EMPTY_FORM: QuestionFormState = {
   concept: '',
@@ -95,7 +104,8 @@ function QuestionFormDialog({
         concept: form.concept,
         type: form.type,
         text: form.text,
-        options: form.type === 'mcq' ? form.options.filter((o) => o.text) : undefined,
+        options:
+          form.type === 'mcq' || form.type === 'true_false' ? form.options.filter((o) => o.text) : undefined,
         referenceAnswer: form.type === 'essay' ? form.referenceAnswer : undefined,
         difficulty: form.difficulty,
         points: form.points,
@@ -120,28 +130,55 @@ function QuestionFormDialog({
     >
       <DialogContent className="tw-scope max-h-[85vh] max-w-xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{editing ? 'Chỉnh sửa câu hỏi' : 'Thêm mới câu hỏi'}</DialogTitle>
+          <FormDialogTitle icon={editing ? Pencil : Plus}>
+            {editing ? 'Chỉnh sửa Câu hỏi' : 'Thêm mới Câu hỏi'}
+          </FormDialogTitle>
         </DialogHeader>
-        <div className="flex flex-col gap-3">
-          <Input value={form.concept} onChange={(e) => setForm({ ...form, concept: e.target.value })} placeholder="Mã kiến thức (concept id)" />
-          <textarea
-            value={form.text}
-            onChange={(e) => setForm({ ...form, text: e.target.value })}
-            placeholder="Nội dung câu hỏi"
-            rows={2}
-            className="w-full rounded-control border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          />
+        <div className="flex flex-col gap-4">
+          <FormField label="Kiến thức" required>
+            <Input
+              value={form.concept}
+              onChange={(e) => setForm({ ...form, concept: e.target.value })}
+              placeholder="Mã kiến thức (concept id)"
+            />
+          </FormField>
+          <FormField label="Nội dung câu hỏi" required>
+            <textarea
+              value={form.text}
+              onChange={(e) => setForm({ ...form, text: e.target.value })}
+              placeholder="Nhập nội dung câu hỏi"
+              rows={2}
+              className="w-full rounded-control border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </FormField>
           <div className="flex gap-2">
-            <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v as QuestionType })}>
+            <Select
+              value={form.type}
+              onValueChange={(v) => {
+                const type = v as QuestionType;
+                setForm({
+                  ...form,
+                  type,
+                  options:
+                    type === 'true_false'
+                      ? [{ text: 'Đúng', isCorrect: true }, { text: 'Sai' }]
+                      : form.options,
+                });
+              }}
+            >
               <SelectTrigger className="flex-1">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="tw-scope">
                 <SelectItem value="mcq">Trắc nghiệm</SelectItem>
+                <SelectItem value="true_false">Đúng/sai</SelectItem>
                 <SelectItem value="essay">Tự luận</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={form.difficulty} onValueChange={(v) => setForm({ ...form, difficulty: v as QuestionDifficulty })}>
+            <Select
+              value={form.difficulty}
+              onValueChange={(v) => setForm({ ...form, difficulty: v as QuestionDifficulty })}
+            >
               <SelectTrigger className="flex-1">
                 <SelectValue />
               </SelectTrigger>
@@ -162,35 +199,61 @@ function QuestionFormDialog({
             />
           </div>
 
-          {form.type === 'mcq' ? (
+          {form.type === 'mcq' || form.type === 'true_false' ? (
             <div className="flex flex-col gap-2">
-              <p className="text-sm font-medium text-foreground">Phương án (chọn đúng 1 đáp án đúng)</p>
+              <p className="text-sm font-medium text-foreground">
+                {form.type === 'true_false' ? 'Chọn đáp án đúng' : 'Phương án (chọn đúng 1 đáp án đúng)'}
+              </p>
               {form.options.map((opt, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <Checkbox
                     checked={!!opt.isCorrect}
                     onCheckedChange={() =>
-                      setForm({ ...form, options: form.options.map((o, idx) => ({ ...o, isCorrect: idx === i })) })
-                    }
-                  />
-                  <Input
-                    value={opt.text}
-                    onChange={(e) =>
                       setForm({
                         ...form,
-                        options: form.options.map((o, idx) => (idx === i ? { ...o, text: e.target.value } : o)),
+                        options: form.options.map((o, idx) => ({ ...o, isCorrect: idx === i })),
                       })
                     }
-                    placeholder={`Phương án ${i + 1}`}
                   />
-                  <button type="button" onClick={() => setForm({ ...form, options: form.options.filter((_, idx) => idx !== i) })}>
-                    <Trash2 className="h-4 w-4 text-muted-foreground hover:text-danger" />
-                  </button>
+                  {form.type === 'true_false' ? (
+                    <span className="flex-1 text-sm text-foreground">{opt.text}</span>
+                  ) : (
+                    <Input
+                      value={opt.text}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          options: form.options.map((o, idx) =>
+                            idx === i ? { ...o, text: e.target.value } : o,
+                          ),
+                        })
+                      }
+                      placeholder={`Phương án ${i + 1}`}
+                    />
+                  )}
+                  {form.type === 'mcq' && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm({ ...form, options: form.options.filter((_, idx) => idx !== i) })
+                      }
+                    >
+                      <Trash2 className="h-4 w-4 text-muted-foreground hover:text-danger" />
+                    </button>
+                  )}
                 </div>
               ))}
-              <Button type="button" variant="outline" size="sm" className="self-start" onClick={() => setForm({ ...form, options: [...form.options, { text: '' }] })}>
-                <Plus className="h-4 w-4" /> Thêm phương án
-              </Button>
+              {form.type === 'mcq' && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="self-start"
+                  onClick={() => setForm({ ...form, options: [...form.options, { text: '' }] })}
+                >
+                  <Plus className="h-4 w-4" /> Thêm phương án
+                </Button>
+              )}
             </div>
           ) : (
             <textarea
@@ -202,43 +265,202 @@ function QuestionFormDialog({
             />
           )}
         </div>
-        <DialogFooter>
-          <Button type="button" onClick={submit}>
-            Lưu
-          </Button>
-        </DialogFooter>
+        <FormDialogFooter
+          onCancel={onClose}
+          submitLabel={editing ? 'Lưu lại' : 'Thêm mới'}
+          onSubmit={submit}
+        />
       </DialogContent>
     </Dialog>
   );
 }
 
-function ApproveAiDraftDialog({ open, onClose, onSaved }: { open: boolean; onClose: () => void; onSaved: () => void }) {
-  const [logId, setLogId] = useState('');
+function ViewQuestionDialog({ question, onClose }: { question: Question | null; onClose: () => void }) {
+  const conceptName =
+    question && (typeof question.concept === 'string' ? question.concept : question.concept.name);
+  return (
+    <Dialog open={!!question} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="tw-scope max-h-[85vh] max-w-xl overflow-y-auto">
+        <DialogHeader>
+          <FormDialogTitle icon={Eye}>Chi tiết Câu hỏi</FormDialogTitle>
+        </DialogHeader>
+        {question && (
+          <div className="flex flex-col">
+            <DetailRow label="Nội dung">{question.text}</DetailRow>
+            <DetailRow label="Kiến thức">{conceptName}</DetailRow>
+            <DetailRow label="Loại">{TYPE_LABEL[question.type]}</DetailRow>
+            <DetailRow label="Độ khó">{question.difficulty}</DetailRow>
+            <DetailRow label="Điểm">{question.points}</DetailRow>
+            <DetailRow label="Trạng thái">
+              <StatusBadge variant={question.status === 'active' ? 'success' : 'neutral'}>
+                {question.status === 'active' ? 'Hoạt động' : 'Đã ngừng'}
+              </StatusBadge>
+            </DetailRow>
+            {question.type === 'mcq' || question.type === 'true_false' ? (
+              <DetailRow label="Phương án">
+                <div className="flex flex-col gap-1">
+                  {question.options.map((o, i) => (
+                    <span
+                      key={i}
+                      className={o.isCorrect ? 'font-semibold text-success' : 'text-muted-foreground'}
+                    >
+                      {o.isCorrect ? '✓ ' : '• '}
+                      {o.text}
+                    </span>
+                  ))}
+                </div>
+              </DetailRow>
+            ) : (
+              <DetailRow label="Đáp án tham khảo">{question.referenceAnswer || '—'}</DetailRow>
+            )}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
 
-  const submit = async () => {
+function GenerateQuestionAiDialog({
+  open,
+  onClose,
+  onSaved,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [concept, setConcept] = useState('');
+  const [difficulty, setDifficulty] = useState<QuestionDifficulty>('medium');
+  const [draft, setDraft] = useState<DraftQuestion | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [approving, setApproving] = useState(false);
+
+  const reset = () => {
+    setConcept('');
+    setDifficulty('medium');
+    setDraft(null);
+  };
+
+  const generate = async () => {
+    setGenerating(true);
     try {
-      await approveFromAiDraft({ aiAssistLogId: logId });
+      const result = await generateQuestionDraft({ concept, difficulty });
+      setDraft(result);
+      if (!result.valid) toast('AI trả về không đúng định dạng — kiểm tra lại nội dung trước khi duyệt.');
+    } catch {
+      toast('Sinh câu hỏi bằng AI thất bại.');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const approve = async () => {
+    if (!draft) return;
+    setApproving(true);
+    try {
+      await approveFromAiDraft({
+        aiAssistLogId: draft.aiAssistLogId,
+        concept,
+        text: draft.text,
+        options: draft.options,
+        difficulty,
+      });
       toast('Đã duyệt câu hỏi AI sinh vào ngân hàng');
       onSaved();
       onClose();
-      setLogId('');
+      reset();
     } catch {
-      toast('Duyệt thất bại — kiểm tra lại mã log AI.');
+      toast('Duyệt thất bại — kiểm tra lại nội dung câu hỏi.');
+    } finally {
+      setApproving(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="tw-scope max-w-sm">
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) {
+          onClose();
+          reset();
+        }
+      }}
+    >
+      <DialogContent className="tw-scope max-h-[85vh] max-w-xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Duyệt câu hỏi do AI sinh</DialogTitle>
+          <FormDialogTitle icon={Sparkles}>Sinh Câu hỏi bằng AI</FormDialogTitle>
         </DialogHeader>
-        <Input value={logId} onChange={(e) => setLogId(e.target.value)} placeholder="Mã log AI (aiAssistLogId)" />
-        <DialogFooter>
-          <Button type="button" onClick={submit} disabled={!logId}>
-            Duyệt vào ngân hàng chung
+        <div className="flex flex-col gap-3">
+          <div className="flex gap-2">
+            <Input
+              value={concept}
+              onChange={(e) => setConcept(e.target.value)}
+              placeholder="Mã kiến thức (concept id)"
+              className="flex-1"
+            />
+            <Select value={difficulty} onValueChange={(v) => setDifficulty(v as QuestionDifficulty)}>
+              <SelectTrigger className="w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="tw-scope">
+                <SelectItem value="easy">Dễ</SelectItem>
+                <SelectItem value="medium">Trung bình</SelectItem>
+                <SelectItem value="hard">Khó</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button type="button" variant="outline" onClick={generate} disabled={!concept || generating}>
+            {generating ? 'Đang sinh…' : draft ? 'Sinh lại' : 'Sinh câu hỏi'}
           </Button>
-        </DialogFooter>
+
+          {draft && (
+            <div className="flex flex-col gap-2 rounded-control border border-border bg-muted/40 p-3">
+              {!draft.valid && (
+                <p className="text-xs font-medium text-warning">
+                  AI trả về không đúng định dạng — kiểm tra lại trước khi duyệt.
+                </p>
+              )}
+              <textarea
+                value={draft.text}
+                onChange={(e) => setDraft({ ...draft, text: e.target.value })}
+                rows={2}
+                className="w-full rounded-control border border-input bg-card px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+              {draft.options.map((opt, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <Checkbox
+                    checked={!!opt.isCorrect}
+                    onCheckedChange={() =>
+                      setDraft({
+                        ...draft,
+                        options: draft.options.map((o, idx) => ({ ...o, isCorrect: idx === i })),
+                      })
+                    }
+                  />
+                  <Input
+                    value={opt.text}
+                    onChange={(e) =>
+                      setDraft({
+                        ...draft,
+                        options: draft.options.map((o, idx) =>
+                          idx === i ? { ...o, text: e.target.value } : o,
+                        ),
+                      })
+                    }
+                    placeholder={`Phương án ${i + 1}`}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <FormDialogFooter
+          onCancel={onClose}
+          submitLabel="Duyệt vào ngân hàng chung"
+          onSubmit={approve}
+          disabled={!draft}
+          submitting={approving}
+        />
       </DialogContent>
     </Dialog>
   );
@@ -273,7 +495,13 @@ function DuplicatesPanel() {
 }
 
 function QualityStatsPanel() {
-  const columns: ColumnDef<{ question: string; text: string; attempts: number; correctRatePercent: number | null; openIssueCount: number }>[] = [
+  const columns: ColumnDef<{
+    question: string;
+    text: string;
+    attempts: number;
+    correctRatePercent: number | null;
+    openIssueCount: number;
+  }>[] = [
     { accessorKey: 'text', header: 'Câu hỏi' },
     { accessorKey: 'attempts', header: 'Số lần làm' },
     {
@@ -307,19 +535,29 @@ export default function QuestionBankAdmin() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Question | null>(null);
   const [aiDraftOpen, setAiDraftOpen] = useState(false);
+  const [viewing, setViewing] = useState<Question | null>(null);
 
   const reload = () => setTableKey((k) => k + 1);
 
   const columns: ColumnDef<Question>[] = [
     { accessorKey: 'text', header: 'Nội dung', meta: { enableColumnSearch: true } },
-    { accessorKey: 'type', header: 'Loại', cell: ({ getValue }) => (getValue<string>() === 'mcq' ? 'Trắc nghiệm' : 'Tự luận') },
+    { accessorKey: 'type', header: 'Loại', cell: ({ getValue }) => TYPE_LABEL[getValue<QuestionType>()] },
     { accessorKey: 'difficulty', header: 'Độ khó' },
     { accessorKey: 'points', header: 'Điểm' },
     {
       accessorKey: 'status',
       header: 'Trạng thái',
       cell: ({ getValue }) =>
-        getValue<string>() === 'active' ? <StatusBadge variant="success">Hoạt động</StatusBadge> : <StatusBadge variant="neutral">Đã ngừng</StatusBadge>,
+        getValue<string>() === 'active' ? (
+          <StatusBadge variant="success">Hoạt động</StatusBadge>
+        ) : (
+          <StatusBadge variant="neutral">Đã ngừng</StatusBadge>
+        ),
+    },
+    {
+      accessorKey: 'source',
+      header: 'Nguồn',
+      cell: ({ getValue }) => <SourceBadge source={getValue<Question['source']>()} />,
     },
   ];
 
@@ -337,7 +575,18 @@ export default function QuestionBankAdmin() {
         navigate(PATHS.login);
       }}
     >
-      <h1 className="mb-4 text-xl font-bold text-foreground">Ngân hàng câu hỏi</h1>
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-xl font-bold text-foreground">Ngân hàng câu hỏi</h1>
+        <Button
+          type="button"
+          onClick={() => {
+            setEditing(null);
+            setFormOpen(true);
+          }}
+        >
+          <Plus className="h-4 w-4" /> Thêm mới
+        </Button>
+      </div>
       <Tabs defaultValue="list">
         <TabsList className="mb-4">
           <TabsTrigger value="list">Câu hỏi</TabsTrigger>
@@ -354,12 +603,21 @@ export default function QuestionBankAdmin() {
             emptyLabel="Chưa có câu hỏi nào"
             fetcher={async ({ page, pageSize, search }) => {
               const res = await listQuestions({ page, limit: pageSize });
-              const filtered = search ? res.data.filter((q) => q.text.toLowerCase().includes(search.toLowerCase())) : res.data;
+              const filtered = search
+                ? res.data.filter((q) => q.text.toLowerCase().includes(search.toLowerCase()))
+                : res.data;
               return { data: filtered, total: res.meta?.total ?? filtered.length };
             }}
             toolbarActions={[
-              { key: 'create', label: 'Thêm mới câu hỏi', onSelect: () => { setEditing(null); setFormOpen(true); } },
-              { key: 'ai-draft', label: 'Duyệt câu hỏi AI sinh', onSelect: () => setAiDraftOpen(true) },
+              {
+                key: 'create',
+                label: 'Thêm mới câu hỏi',
+                onSelect: () => {
+                  setEditing(null);
+                  setFormOpen(true);
+                },
+              },
+              { key: 'ai-draft', label: 'Sinh câu hỏi bằng AI', onSelect: () => setAiDraftOpen(true) },
               {
                 key: 'export',
                 label: 'Xuất ngân hàng câu hỏi',
@@ -378,7 +636,9 @@ export default function QuestionBankAdmin() {
                 key: 'import',
                 label: 'Nhập câu hỏi (dán JSON)',
                 onSelect: async () => {
-                  const raw = window.prompt('Dán danh sách câu hỏi dạng JSON (mảng object concept/type/text/options...)');
+                  const raw = window.prompt(
+                    'Dán danh sách câu hỏi dạng JSON (mảng object concept/type/text/options...)',
+                  );
                   if (!raw) return;
                   try {
                     const items = JSON.parse(raw);
@@ -392,10 +652,20 @@ export default function QuestionBankAdmin() {
               },
             ]}
             rowActions={[
-              { key: 'edit', label: 'Chỉnh sửa', onSelect: (row) => { setEditing(row); setFormOpen(true); } },
+              { key: 'view', label: 'Xem chi tiết', icon: <Eye />, onSelect: (row) => setViewing(row) },
+              {
+                key: 'edit',
+                label: 'Chỉnh sửa',
+                icon: <Pencil />,
+                onSelect: (row) => {
+                  setEditing(row);
+                  setFormOpen(true);
+                },
+              },
               {
                 key: 'duplicate',
                 label: 'Sao chép câu hỏi',
+                icon: <Copy />,
                 onSelect: async (row) => {
                   await duplicateQuestion(row._id);
                   toast('Đã sao chép câu hỏi');
@@ -405,6 +675,8 @@ export default function QuestionBankAdmin() {
               {
                 key: 'archive',
                 label: 'Ngừng sử dụng',
+                icon: <Ban />,
+                danger: true,
                 hidden: (row) => row.status === 'archived',
                 onSelect: async (row) => {
                   await archiveQuestion(row._id);
@@ -415,6 +687,7 @@ export default function QuestionBankAdmin() {
               {
                 key: 'restore',
                 label: 'Khôi phục',
+                icon: <RotateCcw />,
                 hidden: (row) => row.status === 'active',
                 onSelect: async (row) => {
                   await restoreQuestion(row._id);
@@ -425,13 +698,18 @@ export default function QuestionBankAdmin() {
               {
                 key: 'regrade',
                 label: 'Xem trước & chấm lại bài bị ảnh hưởng',
+                icon: <RefreshCcw />,
                 onSelect: async (row) => {
                   const preview = await previewRegradeImpact(row._id);
                   if (preview.affectedAttemptsCount === 0) {
                     toast('Không có bài làm nào bị ảnh hưởng');
                     return;
                   }
-                  if (window.confirm(`Có ${preview.affectedAttemptsCount} bài làm sẽ được chấm lại theo nội dung câu hỏi hiện tại. Xác nhận?`)) {
+                  if (
+                    window.confirm(
+                      `Có ${preview.affectedAttemptsCount} bài làm sẽ được chấm lại theo nội dung câu hỏi hiện tại. Xác nhận?`,
+                    )
+                  ) {
                     const result = await confirmRegrade(row._id);
                     toast(`Đã chấm lại ${result.regradedCount} bài làm`);
                   }
@@ -440,6 +718,7 @@ export default function QuestionBankAdmin() {
               {
                 key: 'delete',
                 label: 'Xoá',
+                icon: <Trash2 />,
                 danger: true,
                 onSelect: async (row) => {
                   await removeQuestion(row._id);
@@ -460,8 +739,14 @@ export default function QuestionBankAdmin() {
         </TabsContent>
       </Tabs>
 
-      <QuestionFormDialog open={formOpen} onClose={() => setFormOpen(false)} editing={editing} onSaved={reload} />
-      <ApproveAiDraftDialog open={aiDraftOpen} onClose={() => setAiDraftOpen(false)} onSaved={reload} />
+      <QuestionFormDialog
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        editing={editing}
+        onSaved={reload}
+      />
+      <GenerateQuestionAiDialog open={aiDraftOpen} onClose={() => setAiDraftOpen(false)} onSaved={reload} />
+      <ViewQuestionDialog question={viewing} onClose={() => setViewing(null)} />
     </AppShell>
   );
 }

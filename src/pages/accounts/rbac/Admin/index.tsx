@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Pagination } from 'antd';
-import { Ban, Check, Download, KeyRound, Search, ShieldCheck, UserCog, Users } from 'lucide-react';
+import type { ColumnDef } from '@tanstack/react-table';
+import { Check, Download, KeyRound, ShieldCheck, UserCog, Users } from 'lucide-react';
 
+import { DataTablePage } from '@/components/DataTablePage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { StatusBadge } from '@/components/StatusBadge';
 import { cn } from '@/lib/utils';
 import {
   exportPermissionMatrix,
@@ -17,7 +18,7 @@ import {
   listRbacRoles,
   listUsers,
 } from '@/services/account';
-import type { RbacAccess } from '@/services/account/account.rbac.types';
+import type { DeniedAccessLog, PermissionMatrixRow, RbacAccess } from '@/services/account/account.rbac.types';
 
 const ACCESS_LABEL: Record<RbacAccess, string> = {
   none: 'Không được phép',
@@ -51,16 +52,14 @@ function EmptyState({ text }: { text: string }) {
 }
 
 export default function AdminRbacItemsPage() {
-  const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'student' | 'admin'>('all');
   const [selectedUserId, setSelectedUserId] = useState('');
   const [userSearch, setUserSearch] = useState('');
-  const [logPage, setLogPage] = useState(1);
   const [logRole, setLogRole] = useState<'all' | 'student' | 'admin'>('all');
 
   const matrixFilters = useMemo(
-    () => ({ search: search || undefined, role: roleFilter === 'all' ? undefined : roleFilter }),
-    [search, roleFilter],
+    () => ({ role: roleFilter === 'all' ? undefined : roleFilter }),
+    [roleFilter],
   );
 
   const rolesQuery = useQuery({ queryKey: ['rbac', 'roles'], queryFn: listRbacRoles });
@@ -77,15 +76,71 @@ export default function AdminRbacItemsPage() {
     queryFn: () => getEffectivePermissions(selectedUserId),
     enabled: Boolean(selectedUserId),
   });
-  const deniedQuery = useQuery({
-    queryKey: ['rbac', 'denied', logPage, logRole],
-    queryFn: () =>
-      listDeniedAccessLogs({ page: logPage, limit: 10, role: logRole === 'all' ? undefined : logRole }),
-  });
+
+  const matrixColumns: ColumnDef<PermissionMatrixRow>[] = [
+    {
+      accessorKey: 'module',
+      header: 'Module',
+      size: 100,
+      cell: ({ getValue }) => <span className="font-bold text-primary">{getValue<string>()}</span>,
+    },
+    { accessorKey: 'capability', header: 'Chức năng', size: 280 },
+    {
+      accessorKey: 'student',
+      header: 'Sinh viên',
+      size: 160,
+      cell: ({ getValue }) => <AccessBadge value={getValue<RbacAccess>()} />,
+    },
+    {
+      accessorKey: 'admin',
+      header: 'Quản trị viên',
+      size: 160,
+      cell: ({ getValue }) => <AccessBadge value={getValue<RbacAccess>()} />,
+    },
+  ];
+
+  const deniedColumns: ColumnDef<DeniedAccessLog>[] = [
+    {
+      id: 'user',
+      header: 'Người dùng',
+      size: 220,
+      cell: ({ row }) => (
+        <div>
+          <p className="font-medium text-foreground">{row.original.user?.fullName ?? 'Tài khoản đã xóa'}</p>
+          <p className="text-xs text-muted-foreground">{row.original.user?.email}</p>
+        </div>
+      ),
+    },
+    {
+      id: 'request',
+      header: 'Yêu cầu',
+      size: 320,
+      cell: ({ row }) => (
+        <span>
+          <span className="mr-2 rounded bg-danger/10 px-2 py-1 text-xs font-bold text-danger">
+            {row.original.method}
+          </span>
+          <span className="text-sm">{row.original.path}</span>
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'role',
+      header: 'Vai trò',
+      size: 140,
+      cell: ({ getValue }) => <StatusBadge variant="danger">{getValue<string>()}</StatusBadge>,
+    },
+    {
+      accessorKey: 'createdAt',
+      header: 'Thời gian',
+      size: 170,
+      cell: ({ getValue }) => new Date(getValue<string>()).toLocaleString('vi-VN'),
+    },
+  ];
 
   const totalUsers = rolesQuery.data?.reduce((sum, role) => sum + role.totalUsers, 0) ?? 0;
   const activeUsers = rolesQuery.data?.reduce((sum, role) => sum + role.activeUsers, 0) ?? 0;
-  const hasError = rolesQuery.isError || matrixQuery.isError || usersQuery.isError || deniedQuery.isError;
+  const hasError = rolesQuery.isError || matrixQuery.isError || usersQuery.isError;
 
   return (
     <div className="mx-auto max-w-[1500px] space-y-6">
@@ -188,59 +243,25 @@ export default function AdminRbacItemsPage() {
         </TabsContent>
 
         <TabsContent value="matrix">
-          <section className="overflow-hidden rounded-card border border-border bg-card shadow-card">
-            <div className="grid gap-3 border-b border-border p-4 sm:grid-cols-[1fr_220px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  className="pl-9"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Tìm module hoặc chức năng..."
-                />
-              </div>
-              <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as typeof roleFilter)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả vai trò</SelectItem>
-                  <SelectItem value="student">Sinh viên</SelectItem>
-                  <SelectItem value="admin">Quản trị viên</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {matrixQuery.data?.length ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-24 px-4">Module</TableHead>
-                    <TableHead>Chức năng</TableHead>
-                    <TableHead>Sinh viên</TableHead>
-                    <TableHead>Quản trị viên</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {matrixQuery.data.map((row) => (
-                    <TableRow key={`${row.module}-${row.capability}`}>
-                      <TableCell className="px-4 font-bold text-primary">{row.module}</TableCell>
-                      <TableCell className="min-w-[280px] font-medium">{row.capability}</TableCell>
-                      <TableCell>
-                        <AccessBadge value={row.student} />
-                      </TableCell>
-                      <TableCell>
-                        <AccessBadge value={row.admin} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <div className="p-4">
-                <EmptyState text="Không tìm thấy nhóm quyền phù hợp." />
-              </div>
-            )}
-          </section>
+          <div className="mb-3 flex justify-end">
+            <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as typeof roleFilter)}>
+              <SelectTrigger className="w-full sm:w-56">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả vai trò</SelectItem>
+                <SelectItem value="student">Sinh viên</SelectItem>
+                <SelectItem value="admin">Quản trị viên</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <DataTablePage<PermissionMatrixRow>
+            columns={matrixColumns}
+            getRowId={(r) => `${r.module}-${r.capability}`}
+            data={matrixQuery.data ?? []}
+            searchPlaceholder="Tìm module hoặc chức năng…"
+            emptyLabel="Không tìm thấy nhóm quyền phù hợp."
+          />
         </TabsContent>
 
         <TabsContent value="effective">
@@ -312,86 +333,37 @@ export default function AdminRbacItemsPage() {
         </TabsContent>
 
         <TabsContent value="denied">
-          <section className="overflow-hidden rounded-card border border-border bg-card shadow-card">
-            <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="font-bold">Nhật ký truy cập bị từ chối</h2>
-                <p className="text-sm text-muted-foreground">
-                  Các yêu cầu đã đăng nhập nhưng không đúng vai trò.
-                </p>
-              </div>
-              <div className="w-full sm:w-52">
-                <Select
-                  value={logRole}
-                  onValueChange={(value) => {
-                    setLogRole(value as typeof logRole);
-                    setLogPage(1);
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tất cả vai trò</SelectItem>
-                    <SelectItem value="student">Sinh viên</SelectItem>
-                    <SelectItem value="admin">Quản trị viên</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          <div className="mb-3 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+            <div>
+              <h2 className="font-bold">Nhật ký truy cập bị từ chối</h2>
+              <p className="text-sm text-muted-foreground">
+                Các yêu cầu đã đăng nhập nhưng không đúng vai trò.
+              </p>
             </div>
-            {deniedQuery.data?.data.length ? (
-              <>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="px-4">Người dùng</TableHead>
-                      <TableHead>Yêu cầu</TableHead>
-                      <TableHead>Vai trò</TableHead>
-                      <TableHead>Thời gian</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {deniedQuery.data.data.map((log) => (
-                      <TableRow key={log.id}>
-                        <TableCell className="min-w-[220px] px-4">
-                          <p className="font-medium">{log.user?.fullName ?? 'Tài khoản đã xóa'}</p>
-                          <p className="text-xs text-muted-foreground">{log.user?.email}</p>
-                        </TableCell>
-                        <TableCell className="min-w-[280px]">
-                          <span className="mr-2 rounded bg-red-50 px-2 py-1 text-xs font-bold text-red-700">
-                            {log.method}
-                          </span>
-                          <span className="text-sm">{log.path}</span>
-                        </TableCell>
-                        <TableCell>
-                          <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
-                            <Ban className="h-3.5 w-3.5" />
-                            {log.role}
-                          </span>
-                        </TableCell>
-                        <TableCell className="min-w-[170px] text-sm text-muted-foreground">
-                          {new Date(log.createdAt).toLocaleString('vi-VN')}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                <div className="flex justify-end border-t border-border p-4">
-                  <Pagination
-                    current={logPage}
-                    pageSize={10}
-                    total={deniedQuery.data.meta?.total ?? 0}
-                    showSizeChanger={false}
-                    onChange={setLogPage}
-                  />
-                </div>
-              </>
-            ) : (
-              <div className="p-4">
-                <EmptyState text="Chưa có truy cập nào bị từ chối." />
-              </div>
-            )}
-          </section>
+            <Select value={logRole} onValueChange={(value) => setLogRole(value as typeof logRole)}>
+              <SelectTrigger className="w-full sm:w-52">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả vai trò</SelectItem>
+                <SelectItem value="student">Sinh viên</SelectItem>
+                <SelectItem value="admin">Quản trị viên</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <DataTablePage<DeniedAccessLog>
+            columns={deniedColumns}
+            getRowId={(r) => r.id}
+            emptyLabel="Chưa có truy cập nào bị từ chối."
+            fetcher={async ({ page, pageSize }) => {
+              const res = await listDeniedAccessLogs({
+                page,
+                limit: pageSize,
+                role: logRole === 'all' ? undefined : logRole,
+              });
+              return { data: res.data, total: res.meta?.total ?? res.data.length };
+            }}
+          />
         </TabsContent>
       </Tabs>
     </div>

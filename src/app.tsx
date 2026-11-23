@@ -23,19 +23,33 @@ export function App() {
 
     if (!hasSession) {
       setAuthReady(true);
-      return () => { active = false; };
+      return () => {
+        active = false;
+      };
     }
 
     me()
-      .then((user) => { if (active) setUser(user); })
-      .catch(() => { if (active) setUser(null); })
-      .finally(() => { if (active) setAuthReady(true); });
+      .then((user) => {
+        if (active) setUser(user);
+      })
+      .catch(() => {
+        if (active) setUser(null);
+      })
+      .finally(() => {
+        if (active) setAuthReady(true);
+      });
 
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [setUser]);
 
   if (!authReady) {
-    return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Đang khôi phục phiên đăng nhập…</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
+        Đang khôi phục phiên đăng nhập…
+      </div>
+    );
   }
 
   return (

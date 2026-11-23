@@ -55,7 +55,7 @@ export function Toolbar<T>({
 
   return (
     <div className="relative">
-      <div className="flex h-12 items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <ColumnVisibilityPopover
           columns={columns}
           order={order}
@@ -65,7 +65,7 @@ export function Toolbar<T>({
           onReset={onResetColumns}
         />
 
-        <div className="relative w-[280px] shrink-0">
+        <div className="relative w-full sm:w-[280px] sm:shrink-0">
           <input
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
@@ -157,7 +157,12 @@ export function Toolbar<T>({
                 {action.label}
               </Button>
             ))}
-            <Button size="sm" variant="ghost" className="text-primary-foreground hover:bg-white/10" onClick={onClearSelection}>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-primary-foreground hover:bg-white/10"
+              onClick={onClearSelection}
+            >
               Bỏ chọn
             </Button>
           </motion.div>

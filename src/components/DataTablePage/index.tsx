@@ -10,7 +10,16 @@ import {
   type ColumnFiltersState,
   type SortingState,
 } from '@tanstack/react-table';
-import { AlertTriangle, ArrowUpDown, Filter, Inbox, Menu, RefreshCw, Search } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowUpDown,
+  Filter,
+  Inbox,
+  Menu,
+  MoreHorizontal,
+  RefreshCw,
+  Search,
+} from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 
 import { Checkbox } from '@/components/ui/checkbox';
@@ -18,14 +27,13 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useDebounce } from '@/hooks/useDebounce';
 import { cn } from '@/lib/utils';
 import { pickVariants, staggerContainer } from '@/lib/motion';
 import { Toolbar } from './Toolbar';
 import { Pagination } from './Pagination';
-import type { DataTablePageProps, FetchParams } from './types';
+import type { DataTablePageProps, FetchParams, RowAction } from './types';
 
 // Column ids injected by DataTablePage itself; never part of the caller's columns.
 const SELECT_COL = '__select';
@@ -36,13 +44,77 @@ const SELECT_COL_WIDTH = 44;
 /** Reusable 2-line clamp + native title tooltip for long cell text (spec 2.2). */
 export function ClampLine({ text, lines = 2 }: { text: string; lines?: number }) {
   return (
-    <span title={text} className={cn('block', lines === 2 ? 'line-clamp-2' : 'line-clamp-3')}>
+    <span
+      title={text}
+      className={cn('block whitespace-normal', lines === 2 ? 'line-clamp-2' : 'line-clamp-3')}
+    >
       {text}
     </span>
   );
 }
 
-function filterFnWithChrome(row: { getValue: (id: string) => unknown }, columnId: string, filterValue: { search?: string; values?: string[] }) {
+/** Single compact trigger for the actions column — a wide icon row per action pushed every table
+ * too wide, so this collapses back to one handle; hovering (not clicking) reveals the full list. */
+/** Exported so a page with its own hand-rolled table (e.g. Account admin, which needs stats cards
+ * driven by the same query and can't hand data-fetching over to DataTablePage) still gets the same
+ * actions-menu look and behavior as every table that does use DataTablePage. */
+export function ActionsMenu<T>({
+  actions,
+  row,
+  onDelete,
+}: {
+  actions: RowAction<T>[];
+  row: T;
+  onDelete: (row: T) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label="Thao tác"
+          onMouseEnter={() => setOpen(true)}
+          onMouseLeave={() => setOpen(false)}
+          className="flex h-9 w-9 items-center justify-center rounded-control text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <Menu className="h-4 w-4" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="end"
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        className="tw-scope w-56 p-1"
+      >
+        {actions.map((action) => (
+          <button
+            key={action.key}
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              action.key === 'delete' ? onDelete(row) : action.onSelect(row);
+            }}
+            className={cn(
+              'flex w-full items-center gap-2 rounded-control px-2 py-1.5 text-left text-sm text-foreground hover:bg-muted [&_svg]:h-4 [&_svg]:w-4',
+              action.danger && 'text-danger hover:bg-danger/10',
+            )}
+          >
+            {action.icon ?? <MoreHorizontal className="h-4 w-4" />}
+            {action.label}
+          </button>
+        ))}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function filterFnWithChrome(
+  row: { getValue: (id: string) => unknown },
+  columnId: string,
+  filterValue: { search?: string; values?: string[] },
+) {
   const raw = row.getValue(columnId);
   const cell = String(raw ?? '').toLowerCase();
   if (filterValue?.search && !cell.includes(filterValue.search.toLowerCase())) return false;
@@ -60,6 +132,7 @@ export function DataTablePage<T>({
   bulkActions,
   searchPlaceholder = 'Tìm theo: Mã, Tên…',
   emptyLabel = 'Không có dữ liệu',
+  onDataChange,
 }: DataTablePageProps<T>) {
   const reduced = useReducedMotion();
   const isManual = !!fetcher;
@@ -71,8 +144,28 @@ export function DataTablePage<T>({
   const [globalFilter, setGlobalFilter] = useState('');
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
-  const [userColumnOrder, setUserColumnOrder] = useState<string[]>(() => columns.map((c) => String(c.id ?? (c as { accessorKey?: string }).accessorKey)));
+  const [userColumnOrder, setUserColumnOrder] = useState<string[]>(() =>
+    columns.map((c) => String(c.id ?? (c as { accessorKey?: string }).accessorKey)),
+  );
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
+  // Per-table column widths, remembered per browser (searchPlaceholder is already a distinct label
+  // every caller passes, so it doubles as a cheap storage key without adding a required prop).
+  const columnSizingKey = `dtp:colsize:${searchPlaceholder}`;
+  const [columnSizing, setColumnSizing] = useState<Record<string, number>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(columnSizingKey) ?? '{}');
+    } catch {
+      return {};
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(columnSizingKey, JSON.stringify(columnSizing));
+    } catch {
+      // ignore (private browsing / storage full)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [columnSizing]);
   const [scrolledRight, setScrolledRight] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<T | null>(null);
 
@@ -109,6 +202,7 @@ export function DataTablePage<T>({
         if (cancelled) return;
         setRemoteRows(res.data);
         setRemoteTotal(res.total);
+        onDataChange?.(res.data, { total: res.total });
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -121,7 +215,15 @@ export function DataTablePage<T>({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetcher, pagination.pageIndex, pagination.pageSize, debouncedSearch, sorting, columnFilters, reloadToken.current]);
+  }, [
+    fetcher,
+    pagination.pageIndex,
+    pagination.pageSize,
+    debouncedSearch,
+    sorting,
+    columnFilters,
+    reloadToken.current,
+  ]);
 
   const fullColumnOrder = useMemo(
     () => [SELECT_COL, INDEX_COL, ...userColumnOrder, ACTIONS_COL],
@@ -133,20 +235,41 @@ export function DataTablePage<T>({
       const label = typeof col.header === 'string' ? col.header : undefined;
       const meta = col.meta as { enableColumnSearch?: boolean; filterOptions?: string[] } | undefined;
       const hasChrome = !!meta?.enableColumnSearch || !!meta?.filterOptions?.length;
+      // A caller that doesn't size its column (most don't) used to get a flat 200px regardless of
+      // whether the header says "Vai trò" or "Đăng nhập gần nhất" — estimate from the label's own
+      // length instead, so a short column starts short and a long one starts with room to breathe.
+      // Chrome (sort/search/filter icons) needs its own ~70px regardless of label length.
+      const estimatedSize = label ? Math.round(label.length * 8.5) + (hasChrome ? 80 : 48) : undefined;
       return {
         ...col,
+        size: col.size ?? (estimatedSize ? Math.max(90, Math.min(320, estimatedSize)) : undefined),
+        minSize:
+          col.minSize ?? (estimatedSize ? Math.max(72, Math.min(160, estimatedSize * 0.7)) : undefined),
         filterFn: hasChrome ? filterFnWithChrome : col.filterFn,
         header: label
-          ? (ctx: { column: { id: string; getCanSort: () => boolean; getIsSorted: () => false | 'asc' | 'desc'; toggleSorting: (desc?: boolean) => void; getFilterValue: () => unknown; setFilterValue: (v: unknown) => void } }) => (
-              <ColumnHeaderCell label={label} column={ctx.column} meta={meta} />
-            )
+          ? (ctx: {
+              column: {
+                id: string;
+                getCanSort: () => boolean;
+                getIsSorted: () => false | 'asc' | 'desc';
+                toggleSorting: (desc?: boolean) => void;
+                getFilterValue: () => unknown;
+                setFilterValue: (v: unknown) => void;
+              };
+            }) => <ColumnHeaderCell label={label} column={ctx.column} meta={meta} />
           : col.header,
       } as ColumnDef<T>;
     });
 
     const selectCol: ColumnDef<T> = {
       id: SELECT_COL,
+      // minSize/maxSize must be declared too — left unset, they fall back to defaultColumn's
+      // minSize (120), which *clamps* this column's rendered width up from 44 regardless of
+      // `size`. That mismatch between the declared 44 and the actually-rendered ~120 is what threw
+      // off every sticky-column offset calculated against SELECT_COL_WIDTH.
       size: SELECT_COL_WIDTH,
+      minSize: SELECT_COL_WIDTH,
+      maxSize: SELECT_COL_WIDTH,
       header: ({ table }) => (
         <Checkbox
           aria-label="Chọn tất cả"
@@ -168,6 +291,8 @@ export function DataTablePage<T>({
       id: INDEX_COL,
       header: 'TT',
       size: 56,
+      minSize: 48,
+      maxSize: 60,
       cell: ({ row, table }) =>
         (isManual ? table.getState().pagination.pageIndex * table.getState().pagination.pageSize : 0) +
         row.index +
@@ -178,59 +303,48 @@ export function DataTablePage<T>({
     const actionsCol: ColumnDef<T> = {
       id: ACTIONS_COL,
       header: 'Thao tác',
-      size: 64,
+      size: 56,
+      minSize: 48,
+      maxSize: 60,
       enableSorting: false,
       cell: ({ row }) => {
         const visible = rowActions?.filter((a) => !a.hidden?.(row.original)) ?? [];
         if (!visible.length) return null;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                aria-label="Thao tác"
-                className="flex h-10 w-10 items-center justify-center rounded-control bg-primary/10 text-primary hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              >
-                <Menu className="h-5 w-5" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="tw-scope w-[200px]" align="end">
-              {visible.map((action, idx) => {
-                const isDelete = action.key === 'delete';
-                const prevDanger = visible[idx - 1]?.danger;
-                return (
-                  <DropdownMenuItem
-                    key={action.key}
-                    className={cn(action.danger && 'text-danger', action.danger && !prevDanger && 'mt-1 border-t border-border pt-2')}
-                    onSelect={() => (isDelete ? setDeleteTarget(row.original) : action.onSelect(row.original))}
-                  >
-                    {action.icon}
-                    {action.label}
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
+        return <ActionsMenu actions={visible} row={row.original} onDelete={setDeleteTarget} />;
       },
     };
 
     return [selectCol, indexCol, ...wrapped, actionsCol];
   }, [columns, rowActions, isManual]);
 
-  const tableData = isManual ? remoteRows : staticData ?? [];
+  const tableData = isManual ? remoteRows : (staticData ?? []);
 
   const table = useReactTable({
     data: tableData,
     columns: tableColumns,
+    // A column with no explicit size would otherwise default to 150 — too narrow for a short label
+    // plus its sort/search/filter icons, which is what forced text to wrap mid-word. minSize only
+    // floors manual resize-drag; keep it low; a short, legitimately-narrow column (e.g. a badge or
+    // the fixed system columns below) must not get silently widened by it the way 120 just did.
+    defaultColumn: { size: 200, minSize: 60 },
     columnResizeMode: 'onChange',
     getRowId: (row) => getRowId(row),
-    state: { pagination, sorting, globalFilter: debouncedSearch, columnFilters, columnVisibility, columnOrder: fullColumnOrder, rowSelection },
+    state: {
+      pagination,
+      sorting,
+      globalFilter: debouncedSearch,
+      columnFilters,
+      columnVisibility,
+      columnOrder: fullColumnOrder,
+      rowSelection,
+      columnSizing,
+    },
     onPaginationChange: setPagination,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    onColumnSizingChange: setColumnSizing,
     manualPagination: isManual,
     manualSorting: isManual,
     manualFiltering: isManual,
@@ -270,17 +384,29 @@ export function DataTablePage<T>({
   const resetColumns = () => {
     setUserColumnOrder(columns.map((c) => String(c.id ?? (c as { accessorKey?: string }).accessorKey)));
     setColumnVisibility({});
+    setColumnSizing({});
   };
 
   const containerVariants = pickVariants(!!reduced, staggerContainer);
 
   return (
-    <motion.div initial="hidden" animate="visible" variants={containerVariants} className="rounded-card border border-border bg-card shadow-card">
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      className="min-w-0 rounded-card border border-border bg-card shadow-card"
+    >
       <div className="p-3">
         <Toolbar
           columns={columnMetaList}
           order={userColumnOrder}
-          hidden={new Set(Object.entries(columnVisibility).filter(([, v]) => v === false).map(([k]) => k))}
+          hidden={
+            new Set(
+              Object.entries(columnVisibility)
+                .filter(([, v]) => v === false)
+                .map(([k]) => k),
+            )
+          }
           onToggleColumn={(id) => setColumnVisibility((prev) => ({ ...prev, [id]: prev[id] === false }))}
           onMoveColumn={moveColumn}
           onResetColumns={resetColumns}
@@ -306,23 +432,61 @@ export function DataTablePage<T>({
         className="max-h-[560px] overflow-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-border"
       >
         <Table>
+          <colgroup>
+            {table
+              .getHeaderGroups()[0]
+              ?.headers.map((header) => (
+                <col
+                  key={header.id}
+                  style={{ width: header.getSize(), minWidth: header.column.columnDef.minSize }}
+                />
+              ))}
+          </colgroup>
           <TableHeader className="sticky top-0 z-20 bg-muted">
             {table.getHeaderGroups().map((hg) => (
               <TableRow key={hg.id} className="border-b border-border">
-                {hg.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    className={cn(
-                      'h-14 border-r border-border/70 text-[14px] font-semibold text-foreground last:border-r-0',
-                      header.column.id === SELECT_COL && 'sticky left-0 z-30 bg-muted',
-                      header.column.id === INDEX_COL && `sticky z-30 bg-muted`,
-                      header.column.id === ACTIONS_COL && cn('sticky right-0 z-30 bg-muted', scrolledRight && 'shadow-[-6px_0_8px_-4px_rgba(15,40,90,0.15)]'),
-                    )}
-                    style={header.column.id === INDEX_COL ? { left: SELECT_COL_WIDTH } : undefined}
-                  >
-                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                ))}
+                {hg.headers.map((header) => {
+                  const isFixedCol =
+                    header.column.id === SELECT_COL ||
+                    header.column.id === INDEX_COL ||
+                    header.column.id === ACTIONS_COL;
+                  return (
+                    <TableHead
+                      key={header.id}
+                      className={cn(
+                        'relative h-14 whitespace-nowrap border-r border-border/70 text-[14px] font-semibold text-foreground last:border-r-0',
+                        header.column.id === SELECT_COL && 'sticky left-0 z-30 bg-muted',
+                        header.column.id === INDEX_COL && `sticky z-30 bg-muted`,
+                        header.column.id === ACTIONS_COL &&
+                          cn(
+                            'sticky right-0 z-30 bg-muted',
+                            scrolledRight && 'shadow-[-6px_0_8px_-4px_rgba(15,40,90,0.15)]',
+                          ),
+                      )}
+                      style={header.column.id === INDEX_COL ? { left: SELECT_COL_WIDTH } : undefined}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
+                      {!isFixedCol && (
+                        <div
+                          onMouseDown={header.getResizeHandler()}
+                          onTouchStart={header.getResizeHandler()}
+                          onDoubleClick={() => header.column.resetSize()}
+                          title="Kéo để đổi độ rộng — nhấp đúp để khôi phục mặc định"
+                          className="group/resize absolute right-0 top-0 z-10 flex h-full w-2.5 cursor-col-resize touch-none select-none items-center justify-center"
+                        >
+                          <div
+                            className={cn(
+                              'h-2/5 w-[3px] rounded-full bg-border/80 transition-colors group-hover/resize:h-3/5 group-hover/resize:bg-primary',
+                              header.column.getIsResizing() && 'h-3/5 bg-primary',
+                            )}
+                          />
+                        </div>
+                      )}
+                    </TableHead>
+                  );
+                })}
               </TableRow>
             ))}
           </TableHeader>
@@ -363,15 +527,23 @@ export function DataTablePage<T>({
               </TableRow>
             ) : (
               rows.map((row) => (
-                <TableRow key={row.id} className="min-h-[72px] border-b border-border hover:bg-muted/40" data-state={row.getIsSelected() ? 'selected' : undefined}>
+                <TableRow
+                  key={row.id}
+                  className="group h-14 border-b border-border hover:bg-muted/40"
+                  data-state={row.getIsSelected() ? 'selected' : undefined}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
                       className={cn(
-                        'h-[72px] py-2',
-                        cell.column.id === SELECT_COL && 'sticky left-0 z-10 bg-card',
-                        cell.column.id === INDEX_COL && 'sticky z-10 bg-card',
-                        cell.column.id === ACTIONS_COL && cn('sticky right-0 z-10 bg-card', scrolledRight && 'shadow-[-6px_0_8px_-4px_rgba(15,40,90,0.15)]'),
+                        'whitespace-nowrap py-2 align-middle',
+                        cell.column.id === SELECT_COL && 'sticky left-0 z-10 bg-card group-hover:bg-muted/40',
+                        cell.column.id === INDEX_COL && 'sticky z-10 bg-card group-hover:bg-muted/40',
+                        cell.column.id === ACTIONS_COL &&
+                          cn(
+                            'sticky right-0 z-10 bg-card group-hover:bg-muted/40',
+                            scrolledRight && 'shadow-[-6px_0_8px_-4px_rgba(15,40,90,0.15)]',
+                          ),
                       )}
                       style={cell.column.id === INDEX_COL ? { left: SELECT_COL_WIDTH } : undefined}
                     >
@@ -441,7 +613,11 @@ function ColumnHeaderCell({
       {meta?.enableColumnSearch && (
         <Popover open={searchOpen} onOpenChange={setSearchOpen}>
           <PopoverTrigger asChild>
-            <button type="button" aria-label={`Tìm trong ${label}`} className="rounded-badge p-0.5 hover:bg-border/60">
+            <button
+              type="button"
+              aria-label={`Tìm trong ${label}`}
+              className="rounded-badge p-0.5 hover:bg-border/60"
+            >
               <Search className="h-3.5 w-3.5" />
             </button>
           </PopoverTrigger>
@@ -459,7 +635,14 @@ function ColumnHeaderCell({
       {!!meta?.filterOptions?.length && (
         <Popover>
           <PopoverTrigger asChild>
-            <button type="button" aria-label={`Lọc theo ${label}`} className={cn('rounded-badge p-0.5 hover:bg-border/60', filterValue.values?.length && 'text-primary')}>
+            <button
+              type="button"
+              aria-label={`Lọc theo ${label}`}
+              className={cn(
+                'rounded-badge p-0.5 hover:bg-border/60',
+                filterValue.values?.length && 'text-primary',
+              )}
+            >
               <Filter className="h-3.5 w-3.5" />
             </button>
           </PopoverTrigger>

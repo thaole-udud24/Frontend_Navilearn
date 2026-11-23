@@ -18,8 +18,12 @@ export function HeroBanner({ name, onStart }: HeroBannerProps) {
 
       <div className="absolute inset-0 flex items-center">
         <div className="max-w-md px-6 sm:px-8">
-          <h2 className="text-[26px] font-extrabold leading-tight text-foreground sm:text-3xl">Xin chào, {name}!</h2>
-          <p className="mt-2 text-sm font-medium text-muted-foreground sm:text-base">Cùng khám phá hành trình tri thức của bạn nhé!</p>
+          <h2 className="text-[26px] font-extrabold leading-tight text-foreground sm:text-3xl">
+            Xin chào, {name}!
+          </h2>
+          <p className="mt-2 text-sm font-medium text-muted-foreground sm:text-base">
+            Cùng khám phá hành trình tri thức của bạn nhé!
+          </p>
           <Button size="lg" onClick={onStart} className="mt-5 text-base font-bold tracking-wide shadow-card">
             Bắt đầu học ngay
             <ArrowRight />

@@ -43,6 +43,18 @@ export const popIn: Variants = {
   visible: { opacity: 1, scale: 1, transition: { type: 'spring', stiffness: 260, damping: 18 } },
 };
 
+/** Entrance: fade + slide in from the left 24px — alternating timeline/tree layouts. */
+export const slideInLeft: Variants = {
+  hidden: { opacity: 0, x: -24 },
+  visible: { opacity: 1, x: 0, transition: fadeUpTransition },
+};
+
+/** Entrance: fade + slide in from the right 24px — alternating timeline/tree layouts. */
+export const slideInRight: Variants = {
+  hidden: { opacity: 0, x: 24 },
+  visible: { opacity: 1, x: 0, transition: fadeUpTransition },
+};
+
 /** Parent container for form fields: 70ms stagger per spec step 3. */
 export const formStagger: Variants = {
   hidden: {},

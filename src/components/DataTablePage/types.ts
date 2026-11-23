@@ -63,4 +63,7 @@ export interface DataTablePageProps<T> {
   bulkActions?: BulkAction<T>[];
   searchPlaceholder?: string;
   emptyLabel?: string;
+  /** Fires with each fetcher result — for a caller that needs the current page's rows/total
+   * outside the table too (e.g. stat cards), since the table otherwise keeps fetched data to itself. */
+  onDataChange?: (data: T[], meta: { total: number }) => void;
 }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { ColumnDef } from '@tanstack/react-table';
+import { Ban, Copy, Eye, Pencil, Plus, Repeat, RotateCcw, Settings2, Trash2 } from 'lucide-react';
 
 import { AppShell } from '@/layouts/AppShell';
 import { useAuthStore } from '@/hooks/useAuth';
@@ -10,20 +11,20 @@ import { adminMenu } from '@/config/menu.admin';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
+import { DetailRow, FormDialogFooter, FormDialogTitle, FormField } from '@/components/DialogForm';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { DataTablePage } from '@/components/DataTablePage';
 import { StatusBadge } from '@/components/StatusBadge';
+import { SourceBadge } from '@/components/SourceBadge';
 import {
   archiveAssessmentConfig,
   createAssessmentConfig,
   duplicateAssessmentConfig,
+  exportAssessmentConfigs,
+  importAssessmentConfigs,
   listAssessmentConfigs,
+  removeAssessmentConfig,
   restoreAssessmentConfig,
   updateAssessmentConfig,
   updateAssessmentConfigPolicy,
@@ -70,7 +71,10 @@ function ConfigFormDialog({
   };
 
   const submit = async () => {
-    const questions = questionsCsv.split(',').map((s) => s.trim()).filter(Boolean);
+    const questions = questionsCsv
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
     try {
       if (editing) {
         await updateAssessmentConfig(editing._id, { title, questions, passScore, timeLimitMinutes, kind });
@@ -86,21 +90,45 @@ function ConfigFormDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (v) load(editing); if (!v) onClose(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (v) load(editing);
+        if (!v) onClose();
+      }}
+    >
       <DialogContent className="tw-scope max-w-lg">
         <DialogHeader>
-          <DialogTitle>{editing ? 'Chỉnh sửa cấu hình bài kiểm tra' : 'Tạo cấu hình bài kiểm tra'}</DialogTitle>
+          <FormDialogTitle icon={editing ? Pencil : Plus}>
+            {editing ? 'Chỉnh sửa Cấu hình bài kiểm tra' : 'Thêm mới Cấu hình bài kiểm tra'}
+          </FormDialogTitle>
         </DialogHeader>
-        <div className="flex flex-col gap-3">
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Tên đề bài" />
-          {!editing && <Input value={concept} onChange={(e) => setConcept(e.target.value)} placeholder="Mã kiến thức (concept id)" />}
-          <textarea
-            value={questionsCsv}
-            onChange={(e) => setQuestionsCsv(e.target.value)}
-            placeholder="Mã câu hỏi, phân tách bằng dấu phẩy (q1, q2, q3…)"
-            rows={2}
-            className="w-full rounded-control border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          />
+        <div className="flex flex-col gap-4">
+          <FormField label="Tên đề bài" required>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ví dụ: Kiểm tra giữa kỳ — Chương 1"
+            />
+          </FormField>
+          {!editing && (
+            <FormField label="Kiến thức" required>
+              <Input
+                value={concept}
+                onChange={(e) => setConcept(e.target.value)}
+                placeholder="Mã kiến thức (concept id)"
+              />
+            </FormField>
+          )}
+          <FormField label="Câu hỏi">
+            <textarea
+              value={questionsCsv}
+              onChange={(e) => setQuestionsCsv(e.target.value)}
+              placeholder="Mã câu hỏi, phân tách bằng dấu phẩy (q1, q2, q3…)"
+              rows={2}
+              className="w-full rounded-control border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </FormField>
           <div className="flex gap-2">
             <Select value={kind} onValueChange={(v) => setKind(v as AssessmentConfigKind)}>
               <SelectTrigger className="flex-1">
@@ -114,15 +142,70 @@ function ConfigFormDialog({
                 ))}
               </SelectContent>
             </Select>
-            <Input type="number" min={0} max={100} value={passScore} onChange={(e) => setPassScore(Number(e.target.value))} placeholder="Điểm đạt (%)" className="w-32" />
-            <Input type="number" min={0} value={timeLimitMinutes} onChange={(e) => setTimeLimitMinutes(Number(e.target.value))} placeholder="Phút" className="w-28" />
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              value={passScore}
+              onChange={(e) => setPassScore(Number(e.target.value))}
+              placeholder="Điểm đạt (%)"
+              className="w-32"
+            />
+            <Input
+              type="number"
+              min={0}
+              value={timeLimitMinutes}
+              onChange={(e) => setTimeLimitMinutes(Number(e.target.value))}
+              placeholder="Phút"
+              className="w-28"
+            />
           </div>
         </div>
-        <DialogFooter>
-          <Button type="button" onClick={submit}>
-            Lưu
-          </Button>
-        </DialogFooter>
+        <FormDialogFooter
+          onCancel={onClose}
+          submitLabel={editing ? 'Lưu lại' : 'Thêm mới'}
+          onSubmit={submit}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ViewConfigDialog({ config, onClose }: { config: AssessmentConfig | null; onClose: () => void }) {
+  return (
+    <Dialog open={!!config} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="tw-scope max-w-lg">
+        <DialogHeader>
+          <FormDialogTitle icon={Eye}>Chi tiết Cấu hình bài kiểm tra</FormDialogTitle>
+        </DialogHeader>
+        {config && (
+          <div className="flex flex-col">
+            <DetailRow label="Tên đề bài">{config.title}</DetailRow>
+            <DetailRow label="Kiến thức">{config.concept}</DetailRow>
+            <DetailRow label="Loại">{KIND_LABEL[config.kind]}</DetailRow>
+            <DetailRow label="Điểm đạt">{config.passScore}%</DetailRow>
+            <DetailRow label="Thời gian">{config.timeLimitMinutes || 'Không giới hạn'}</DetailRow>
+            <DetailRow label="Trạng thái">
+              <StatusBadge variant={config.status === 'active' ? 'success' : 'neutral'}>
+                {config.status === 'active' ? 'Hoạt động' : 'Đã ngừng'}
+              </StatusBadge>
+            </DetailRow>
+            <DetailRow label={`Câu hỏi (${config.questions.length})`}>
+              {config.questions.join(', ')}
+            </DetailRow>
+            <DetailRow label="Chính sách làm lại">
+              Số lần tối đa: {config.retryPolicy?.maxAttempts || 'Không giới hạn'} • Thời gian chờ:{' '}
+              {config.retryPolicy?.cooldownMinutes ?? 0} phút
+            </DetailRow>
+            <DetailRow label="Hiển thị đáp án">
+              {config.showAnswersPolicy === 'after_due'
+                ? 'Sau hạn'
+                : config.showAnswersPolicy === 'never'
+                  ? 'Không hiện đáp án'
+                  : 'Ngay sau khi nộp'}
+            </DetailRow>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -161,30 +244,52 @@ function PolicyDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (v) load(target); if (!v) onClose(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (v) load(target);
+        if (!v) onClose();
+      }}
+    >
       <DialogContent className="tw-scope max-w-sm">
         <DialogHeader>
-          <DialogTitle>Chính sách làm lại & hiển thị đáp án</DialogTitle>
+          <FormDialogTitle icon={Settings2}>Chính sách làm lại &amp; hiển thị đáp án</FormDialogTitle>
         </DialogHeader>
-        <div className="flex flex-col gap-3">
-          <Input type="number" min={0} value={maxAttempts} onChange={(e) => setMaxAttempts(Number(e.target.value))} placeholder="Số lần làm lại tối đa (0 = không giới hạn)" />
-          <Input type="number" min={0} value={cooldownMinutes} onChange={(e) => setCooldownMinutes(Number(e.target.value))} placeholder="Thời gian chờ giữa các lần (phút)" />
-          <Select value={showAnswersPolicy} onValueChange={(v) => setShowAnswersPolicy(v as ShowAnswersPolicy)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="tw-scope">
-              <SelectItem value="after_submit">Hiện đáp án ngay sau khi nộp</SelectItem>
-              <SelectItem value="after_due">Hiện đáp án sau hạn</SelectItem>
-              <SelectItem value="never">Không hiện đáp án</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex flex-col gap-4">
+          <FormField label="Số lần làm lại tối đa">
+            <Input
+              type="number"
+              min={0}
+              value={maxAttempts}
+              onChange={(e) => setMaxAttempts(Number(e.target.value))}
+              placeholder="0 = không giới hạn"
+            />
+          </FormField>
+          <FormField label="Thời gian chờ giữa các lần (phút)">
+            <Input
+              type="number"
+              min={0}
+              value={cooldownMinutes}
+              onChange={(e) => setCooldownMinutes(Number(e.target.value))}
+            />
+          </FormField>
+          <FormField label="Hiển thị đáp án">
+            <Select
+              value={showAnswersPolicy}
+              onValueChange={(v) => setShowAnswersPolicy(v as ShowAnswersPolicy)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="tw-scope">
+                <SelectItem value="after_submit">Hiện đáp án ngay sau khi nộp</SelectItem>
+                <SelectItem value="after_due">Hiện đáp án sau hạn</SelectItem>
+                <SelectItem value="never">Không hiện đáp án</SelectItem>
+              </SelectContent>
+            </Select>
+          </FormField>
         </div>
-        <DialogFooter>
-          <Button type="button" onClick={submit}>
-            Lưu chính sách
-          </Button>
-        </DialogFooter>
+        <FormDialogFooter onCancel={onClose} submitLabel="Lưu lại" onSubmit={submit} />
       </DialogContent>
     </Dialog>
   );
@@ -198,19 +303,47 @@ export default function AssessmentConfigAdmin() {
   const [formOpen, setFormOpen] = useState(false);
   const [policyOpen, setPolicyOpen] = useState(false);
   const [editing, setEditing] = useState<AssessmentConfig | null>(null);
+  const [viewing, setViewing] = useState<AssessmentConfig | null>(null);
+  const [deleting, setDeleting] = useState<AssessmentConfig | null>(null);
 
   const reload = () => setTableKey((k) => k + 1);
 
+  const handleDelete = async () => {
+    if (!deleting) return;
+    try {
+      await removeAssessmentConfig(deleting._id);
+      toast.success(`Đã xoá cấu hình "${deleting.title}"`);
+      reload();
+    } catch {
+      toast.error('Xoá cấu hình thất bại');
+    } finally {
+      setDeleting(null);
+    }
+  };
+
   const columns: ColumnDef<AssessmentConfig>[] = [
     { accessorKey: 'title', header: 'Tên đề bài', meta: { enableColumnSearch: true } },
-    { accessorKey: 'kind', header: 'Loại', cell: ({ getValue }) => KIND_LABEL[getValue<AssessmentConfigKind>()] },
+    {
+      accessorKey: 'kind',
+      header: 'Loại',
+      cell: ({ getValue }) => KIND_LABEL[getValue<AssessmentConfigKind>()],
+    },
     { id: 'questionCount', header: 'Số câu hỏi', cell: ({ row }) => row.original.questions.length },
     { accessorKey: 'passScore', header: 'Điểm đạt', cell: ({ getValue }) => `${getValue<number>()}%` },
     {
       accessorKey: 'status',
       header: 'Trạng thái',
       cell: ({ getValue }) =>
-        getValue<string>() === 'active' ? <StatusBadge variant="success">Hoạt động</StatusBadge> : <StatusBadge variant="neutral">Đã ngừng</StatusBadge>,
+        getValue<string>() === 'active' ? (
+          <StatusBadge variant="success">Hoạt động</StatusBadge>
+        ) : (
+          <StatusBadge variant="neutral">Đã ngừng</StatusBadge>
+        ),
+    },
+    {
+      accessorKey: 'source',
+      header: 'Nguồn',
+      cell: ({ getValue }) => <SourceBadge source={getValue<AssessmentConfig['source']>()} />,
     },
   ];
 
@@ -228,7 +361,18 @@ export default function AssessmentConfigAdmin() {
         navigate(PATHS.login);
       }}
     >
-      <h1 className="mb-4 text-xl font-bold text-foreground">Cấu hình bài kiểm tra</h1>
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-xl font-bold text-foreground">Cấu hình bài kiểm tra</h1>
+        <Button
+          type="button"
+          onClick={() => {
+            setEditing(null);
+            setFormOpen(true);
+          }}
+        >
+          <Plus className="h-4 w-4" /> Thêm mới
+        </Button>
+      </div>
       <DataTablePage<AssessmentConfig>
         key={tableKey}
         columns={columns}
@@ -237,16 +381,77 @@ export default function AssessmentConfigAdmin() {
         emptyLabel="Chưa có cấu hình bài kiểm tra nào"
         fetcher={async ({ page, pageSize, search }) => {
           const res = await listAssessmentConfigs({ page, limit: pageSize });
-          const filtered = search ? res.data.filter((c) => c.title.toLowerCase().includes(search.toLowerCase())) : res.data;
+          const filtered = search
+            ? res.data.filter((c) => c.title.toLowerCase().includes(search.toLowerCase()))
+            : res.data;
           return { data: filtered, total: res.meta?.total ?? filtered.length };
         }}
-        toolbarActions={[{ key: 'create', label: 'Tạo cấu hình mới', onSelect: () => { setEditing(null); setFormOpen(true); } }]}
+        toolbarActions={[
+          {
+            key: 'create',
+            label: 'Tạo cấu hình mới',
+            onSelect: () => {
+              setEditing(null);
+              setFormOpen(true);
+            },
+          },
+          {
+            key: 'export',
+            label: 'Xuất cấu hình',
+            onSelect: async () => {
+              const items = await exportAssessmentConfigs();
+              const blob = new Blob([JSON.stringify(items, null, 2)], { type: 'application/json' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'cau-hinh-bai-kiem-tra.json';
+              a.click();
+              URL.revokeObjectURL(url);
+            },
+          },
+          {
+            key: 'import',
+            label: 'Nhập cấu hình (dán JSON)',
+            onSelect: async () => {
+              const raw = window.prompt(
+                'Dán danh sách cấu hình dạng JSON (mảng object title/concept/questions...)',
+              );
+              if (!raw) return;
+              try {
+                const items = JSON.parse(raw);
+                const res = await importAssessmentConfigs(items);
+                toast(`Đã nhập ${res.createdCount} cấu hình, ${res.errorCount} lỗi`);
+                reload();
+              } catch {
+                toast('JSON không hợp lệ');
+              }
+            },
+          },
+        ]}
         rowActions={[
-          { key: 'edit', label: 'Chỉnh sửa', onSelect: (row) => { setEditing(row); setFormOpen(true); } },
-          { key: 'policy', label: 'Chính sách làm lại/đáp án', onSelect: (row) => { setEditing(row); setPolicyOpen(true); } },
+          { key: 'view', label: 'Xem chi tiết', icon: <Eye />, onSelect: (row) => setViewing(row) },
+          {
+            key: 'edit',
+            label: 'Chỉnh sửa',
+            icon: <Pencil />,
+            onSelect: (row) => {
+              setEditing(row);
+              setFormOpen(true);
+            },
+          },
+          {
+            key: 'policy',
+            label: 'Chính sách làm lại/đáp án',
+            icon: <Repeat />,
+            onSelect: (row) => {
+              setEditing(row);
+              setPolicyOpen(true);
+            },
+          },
           {
             key: 'duplicate',
             label: 'Sao chép cấu hình',
+            icon: <Copy />,
             onSelect: async (row) => {
               await duplicateAssessmentConfig(row._id);
               toast('Đã sao chép cấu hình');
@@ -256,6 +461,8 @@ export default function AssessmentConfigAdmin() {
           {
             key: 'archive',
             label: 'Ngừng sử dụng',
+            icon: <Ban />,
+            danger: true,
             hidden: (row) => row.status === 'archived',
             onSelect: async (row) => {
               await archiveAssessmentConfig(row._id);
@@ -266,6 +473,7 @@ export default function AssessmentConfigAdmin() {
           {
             key: 'restore',
             label: 'Khôi phục',
+            icon: <RotateCcw />,
             hidden: (row) => row.status === 'active',
             onSelect: async (row) => {
               await restoreAssessmentConfig(row._id);
@@ -273,11 +481,36 @@ export default function AssessmentConfigAdmin() {
               reload();
             },
           },
+          {
+            key: 'delete',
+            label: 'Xoá',
+            icon: <Trash2 />,
+            danger: true,
+            onSelect: (row) => setDeleting(row),
+          },
         ]}
       />
 
-      <ConfigFormDialog open={formOpen} onClose={() => setFormOpen(false)} editing={editing} onSaved={reload} />
-      <PolicyDialog open={policyOpen} onClose={() => setPolicyOpen(false)} target={editing} onSaved={reload} />
+      <ConfigFormDialog
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        editing={editing}
+        onSaved={reload}
+      />
+      <PolicyDialog
+        open={policyOpen}
+        onClose={() => setPolicyOpen(false)}
+        target={editing}
+        onSaved={reload}
+      />
+      <ViewConfigDialog config={viewing} onClose={() => setViewing(null)} />
+      <ConfirmDialog
+        open={!!deleting}
+        onOpenChange={(v) => !v && setDeleting(null)}
+        title="Xoá cấu hình bài kiểm tra?"
+        description={`Cấu hình "${deleting?.title ?? ''}" sẽ bị xoá.`}
+        onConfirm={handleDelete}
+      />
     </AppShell>
   );
 }

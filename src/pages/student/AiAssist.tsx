@@ -80,9 +80,21 @@ export default function AiAssistPage() {
   };
 
   const columns: ColumnDef<AiAssistLog>[] = [
-    { accessorKey: 'kind', header: 'Loại', cell: ({ getValue }) => KIND_LABEL[getValue<string>()] ?? getValue<string>() },
-    { accessorKey: 'prompt', header: 'Câu hỏi / Nội dung', cell: ({ getValue }) => <span className="line-clamp-2">{getValue<string>()}</span> },
-    { accessorKey: 'response', header: 'Trả lời của AI', cell: ({ getValue }) => <span className="line-clamp-2">{getValue<string>()}</span> },
+    {
+      accessorKey: 'kind',
+      header: 'Loại',
+      cell: ({ getValue }) => KIND_LABEL[getValue<string>()] ?? getValue<string>(),
+    },
+    {
+      accessorKey: 'prompt',
+      header: 'Câu hỏi / Nội dung',
+      cell: ({ getValue }) => <span className="line-clamp-2">{getValue<string>()}</span>,
+    },
+    {
+      accessorKey: 'response',
+      header: 'Trả lời của AI',
+      cell: ({ getValue }) => <span className="line-clamp-2">{getValue<string>()}</span>,
+    },
     {
       accessorKey: 'rating',
       header: 'Đánh giá',
@@ -121,10 +133,12 @@ export default function AiAssistPage() {
         <div className="flex items-center justify-between gap-4 rounded-card bg-gradient-to-r from-primary to-indigo-500 p-5 text-primary-foreground shadow-card">
           <div>
             <h1 className="flex items-center gap-2 text-lg font-bold">
-              <Sparkles className="h-5 w-5" /> Chào {user?.fullName ?? 'bạn'}! Hôm nay mình cùng giải quyết môn học nào?
+              <Sparkles className="h-5 w-5" /> Chào {user?.fullName ?? 'bạn'}! Hôm nay mình cùng giải quyết
+              môn học nào?
             </h1>
             <p className="mt-1 text-sm text-primary-foreground/80">
-              Đặt câu hỏi, xin AI tạo câu luyện tập, hoặc nhờ nhận xét bài tự luận — ngay trong khung chat bên dưới.
+              Đặt câu hỏi, xin AI tạo câu luyện tập, hoặc nhờ nhận xét bài tự luận — ngay trong khung chat bên
+              dưới.
             </p>
           </div>
           <Input
@@ -136,7 +150,13 @@ export default function AiAssistPage() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" size="sm" disabled={practiceMutation.isPending} onClick={() => practiceMutation.mutate()}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={practiceMutation.isPending}
+            onClick={() => practiceMutation.mutate()}
+          >
             {practiceMutation.isPending ? 'Đang tạo…' : 'Tạo câu hỏi luyện tập'}
           </Button>
           <Button
@@ -144,7 +164,12 @@ export default function AiAssistPage() {
             variant="outline"
             size="sm"
             onClick={() =>
-              pushMessage({ id: crypto.randomUUID(), role: 'ai-essay-form', questionText: '', answerText: '' })
+              pushMessage({
+                id: crypto.randomUUID(),
+                role: 'ai-essay-form',
+                questionText: '',
+                answerText: '',
+              })
             }
           >
             Nhận xét bài tự luận
@@ -163,16 +188,24 @@ export default function AiAssistPage() {
             if (m.role === 'user') {
               return (
                 <div key={m.id} className="flex items-start justify-end gap-2">
-                  <p className="max-w-[75%] rounded-card bg-primary px-3 py-2 text-sm text-primary-foreground">{m.text}</p>
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted"><User className="h-4 w-4" /></span>
+                  <p className="max-w-[75%] rounded-card bg-primary px-3 py-2 text-sm text-primary-foreground">
+                    {m.text}
+                  </p>
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
+                    <User className="h-4 w-4" />
+                  </span>
                 </div>
               );
             }
             if (m.role === 'ai') {
               return (
                 <div key={m.id} className="flex items-start gap-2">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary"><Bot className="h-4 w-4" /></span>
-                  <p className="max-w-[75%] rounded-card bg-muted px-3 py-2 text-sm text-foreground">{m.text}</p>
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
+                    <Bot className="h-4 w-4" />
+                  </span>
+                  <p className="max-w-[75%] rounded-card bg-muted px-3 py-2 text-sm text-foreground">
+                    {m.text}
+                  </p>
                 </div>
               );
             }
@@ -261,7 +294,9 @@ function PracticeCard({ text, options }: { text: string; options: { text: string
 
   return (
     <div className="flex items-start gap-2">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary"><Bot className="h-4 w-4" /></span>
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
+        <Bot className="h-4 w-4" />
+      </span>
       <div className="w-full max-w-md rounded-card bg-muted p-3">
         <p className="mb-2 text-sm font-medium text-foreground">{text}</p>
         <div className="flex flex-col gap-1.5">
@@ -273,17 +308,29 @@ function PracticeCard({ text, options }: { text: string; options: { text: string
                 selected === i ? 'border-primary bg-primary-soft' : 'border-border bg-card',
               )}
             >
-              <input type="radio" name="practice-option" checked={selected === i} onChange={() => setSelected(i)} />
+              <input
+                type="radio"
+                name="practice-option"
+                checked={selected === i}
+                onChange={() => setSelected(i)}
+              />
               {o.text}
             </label>
           ))}
         </div>
-        <Button type="button" size="sm" className="mt-2" disabled={selected === null} onClick={() => setChecked(true)}>
+        <Button
+          type="button"
+          size="sm"
+          className="mt-2"
+          disabled={selected === null}
+          onClick={() => setChecked(true)}
+        >
           Kiểm tra kết quả
         </Button>
         {checked && (
           <p className="mt-2 text-xs text-muted-foreground">
-            Đây là câu hỏi luyện tập do AI tạo để tham khảo — đáp án đúng do AI đề xuất, không tính điểm chính thức.
+            Đây là câu hỏi luyện tập do AI tạo để tham khảo — đáp án đúng do AI đề xuất, không tính điểm chính
+            thức.
           </p>
         )}
       </div>
@@ -296,9 +343,13 @@ function EssayForm({ pending, onSubmit }: { pending: boolean; onSubmit: (q: stri
   const [a, setA] = useState('');
   return (
     <div className="flex items-start gap-2">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary"><Bot className="h-4 w-4" /></span>
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
+        <Bot className="h-4 w-4" />
+      </span>
       <div className="w-full max-w-md rounded-card bg-muted p-3">
-        <p className="mb-2 text-sm font-medium text-foreground">Dán đề bài và bài làm tự luận để mình nhận xét nhé:</p>
+        <p className="mb-2 text-sm font-medium text-foreground">
+          Dán đề bài và bài làm tự luận để mình nhận xét nhé:
+        </p>
         <textarea
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -313,7 +364,13 @@ function EssayForm({ pending, onSubmit }: { pending: boolean; onSubmit: (q: stri
           rows={3}
           className="w-full rounded-control border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
-        <Button type="button" size="sm" className="mt-2" disabled={!q || !a || pending} onClick={() => onSubmit(q, a)}>
+        <Button
+          type="button"
+          size="sm"
+          className="mt-2"
+          disabled={!q || !a || pending}
+          onClick={() => onSubmit(q, a)}
+        >
           {pending ? 'Đang nhận xét…' : 'Gửi cho AI nhận xét'}
         </Button>
       </div>

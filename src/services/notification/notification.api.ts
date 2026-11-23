@@ -1,14 +1,37 @@
 import { request } from '@/utils/request';
 import { ENDPOINTS } from '@/services/endpoints';
 import type { ApiSuccess } from '@/types/api.d';
-import type { CreateNotificationItemInput, NotificationItem, NotificationItemFilters } from './types';
+import type {
+  CreateNotificationItemInput,
+  NotificationItem,
+  NotificationItemFilters,
+  NotificationItemStatus,
+} from './types';
 
-export async function listNotificationItems(filters: NotificationItemFilters): Promise<ApiSuccess<NotificationItem[]>> {
-  const { data } = await request.get<ApiSuccess<NotificationItem[]>>(ENDPOINTS.notificationItems.list, { params: filters });
+export async function listNotificationItems(
+  filters: NotificationItemFilters,
+): Promise<ApiSuccess<NotificationItem[]>> {
+  const { data } = await request.get<ApiSuccess<NotificationItem[]>>(ENDPOINTS.notificationItems.list, {
+    params: filters,
+  });
   return data;
 }
 
 export async function createNotificationItem(input: CreateNotificationItemInput): Promise<NotificationItem> {
-  const { data } = await request.post<ApiSuccess<NotificationItem>>(ENDPOINTS.notificationItems.create, input);
+  const { data } = await request.post<ApiSuccess<NotificationItem>>(
+    ENDPOINTS.notificationItems.create,
+    input,
+  );
+  return data.data;
+}
+
+export async function updateNotificationItemStatus(
+  id: string,
+  status: NotificationItemStatus,
+): Promise<NotificationItem> {
+  const { data } = await request.patch<ApiSuccess<NotificationItem>>(
+    ENDPOINTS.notificationItems.updateStatus(id),
+    { status },
+  );
   return data.data;
 }

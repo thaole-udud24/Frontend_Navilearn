@@ -42,7 +42,11 @@ export function ResetPasswordView({ onBack, onDone, resetToken }: ResetPasswordV
 
   return (
     <div className="flex w-full flex-col gap-4">
-      <button type="button" onClick={onBack} className="self-start text-sm text-muted-foreground hover:text-foreground">
+      <button
+        type="button"
+        onClick={onBack}
+        className="self-start text-sm text-muted-foreground hover:text-foreground"
+      >
         ← Quay lại
       </button>
       <AuthStepper currentStep={3} labels={FORGOT_PASSWORD_STEPS} />

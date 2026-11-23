@@ -50,7 +50,12 @@ export function MascotWidget() {
             placeholder="Nhập câu hỏi…"
             onKeyDown={(e) => e.key === 'Enter' && question && askMutation.mutate()}
           />
-          <Button type="button" size="icon" disabled={!question || askMutation.isPending} onClick={() => askMutation.mutate()}>
+          <Button
+            type="button"
+            size="icon"
+            disabled={!question || askMutation.isPending}
+            onClick={() => askMutation.mutate()}
+          >
             <Send className="h-4 w-4" />
           </Button>
         </div>

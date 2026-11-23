@@ -1,9 +1,9 @@
 export type RuleCategory = 'AI' | 'RISK' | 'REVISION' | 'MASTERY' | 'GENERAL';
 
-export interface RuleHistoryEntry  {
+export interface RuleHistoryEntry {
   oldValue: string;
   newValue: string;
-  changedBy?:{
+  changedBy?: {
     _id: string;
     fullName: string;
     email: string;

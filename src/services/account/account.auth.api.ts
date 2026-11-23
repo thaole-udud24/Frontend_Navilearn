@@ -41,7 +41,10 @@ export async function requestPasswordReset(email: string): Promise<void> {
 }
 
 export async function verifyResetOtp(payload: VerifyResetOtpPayload): Promise<{ resetToken: string }> {
-  const { data } = await request.post<ApiSuccess<{ resetToken: string }>>(ENDPOINTS.auth.verifyResetOtp, payload);
+  const { data } = await request.post<ApiSuccess<{ resetToken: string }>>(
+    ENDPOINTS.auth.verifyResetOtp,
+    payload,
+  );
   return data.data;
 }
 

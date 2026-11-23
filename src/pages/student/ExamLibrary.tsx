@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
+import { PlayCircle } from 'lucide-react';
 
 import { AppShell } from '@/layouts/AppShell';
 import { useAuthStore } from '@/hooks/useAuth';
@@ -29,7 +30,9 @@ export default function ExamLibraryPage() {
   const navigate = useNavigate();
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
-  const startMutation = useMutation({ mutationFn: (assessmentConfigId: string) => startAssessment(assessmentConfigId) });
+  const startMutation = useMutation({
+    mutationFn: (assessmentConfigId: string) => startAssessment(assessmentConfigId),
+  });
 
   return (
     <AppShell
@@ -65,6 +68,7 @@ export default function ExamLibraryPage() {
           {
             key: 'start',
             label: 'Bắt đầu làm bài',
+            icon: <PlayCircle className="h-4 w-4" />,
             onSelect: (row) => {
               startMutation.mutate(row._id, { onSuccess: () => navigate(PATHS.student.assessment) });
             },

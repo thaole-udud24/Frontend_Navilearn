@@ -6,22 +6,14 @@ import AssessmentPage from '@/pages/student/Assessment';
 import MasteryPage from '@/pages/student/Mastery';
 import AiAssistPage from '@/pages/student/AiAssist';
 import PracticePage from '@/pages/student/Practice';
+import PlannerPage from '@/pages/student/Planner';
 import TemplateItemsPage from '@/pages/_template/Student';
 import StudentAccountItemsPage from '@/pages/accounts/account/Student';
-import StudentSubjectItemsPage from '@/pages/accounts/subject/Student';
-import StudentKnowledgeItemsPage from '@/pages/content/knowledge/Student';
-import StudentPlanningItemsPage from '@/pages/planning/planning/Student';
-import StudentAdaptiveItemsPage from '@/pages/planning/adaptive/Student';
-import StudentReviewItemsPage from '@/pages/planning/review/Student';
 import StudentRiskItemsPage from '@/pages/planning/risk/Student';
-import StudentAiConfigItemsPage from '@/pages/ai/ai-config/Student';
-import StudentBusinessRuleItemsPage from '@/pages/ops/business-rule/Student';
-import StudentMonitoringItemsPage from '@/pages/ops/monitoring/Student';
-import StudentDataRetentionItemsPage from '@/pages/ops/data-retention/Student';
-import StudentReportItemsPage from '@/pages/ops/report/Student';
-import StudentAdminReportItemsPage from '@/pages/ops/admin-report/Student';
-import StudentNotificationItemsPage from '@/pages/ops/notification/Student';
+import StudentSubjectItemsPage from '@/pages/accounts/subject/Student';
 import StudentSupportItemsPage from '@/pages/ops/support/Student';
+import AdminReportItemsStudentPage from '@/pages/ops/admin-report/Student';
+import ReviewItemsStudentPage from '@/pages/content/review/Student';
 
 // The real dashboard brings its own full AppShell (sidebar + header), so it must render as a
 // sibling of StudentLayout, not nested inside its antd Sider — see routes/index.tsx.
@@ -36,31 +28,19 @@ export const studentComingSoonRoutes = [
   { path: 'practice', element: createElement(PracticePage) },
   { path: 'assessment', element: createElement(AssessmentPage) },
   { path: 'mastery', element: createElement(MasteryPage) },
-  { path: 'planner', element: createElement(StudentComingSoon, { label: 'Lộ kế hoạch học tập' }) },
+  { path: 'planner', element: createElement(PlannerPage) },
   { path: 'resources', element: createElement(StudentComingSoon, { label: 'Tài liệu học tập' }) },
   { path: 'exam-library', element: createElement(ExamLibraryPage) },
   { path: 'course-resources', element: createElement(StudentComingSoon, { label: 'Tài nguyên khoá' }) },
   { path: 'ai-assist', element: createElement(AiAssistPage) },
   { path: 'notifications', element: createElement(StudentComingSoon, { label: 'Thông báo' }) },
   { path: 'settings', element: createElement(StudentAccountItemsPage) },
+  { path: 'risk-items', element: createElement(StudentRiskItemsPage) },
+  { path: 'subject-items', element: createElement(StudentSubjectItemsPage) },
+  { path: 'support-items', element: createElement(StudentSupportItemsPage) },
+  { path: 'report-issue', element: createElement(AdminReportItemsStudentPage) },
+  { path: 'reviews', element: createElement(ReviewItemsStudentPage) },
 ];
 
-// Legacy CRUD-scaffold pages: bare content, they rely on StudentLayout for navigation/chrome.
-export const studentLegacyRoutes = [
-  { path: 'template-items', element: createElement(TemplateItemsPage) },
-  { path: 'account-items', element: createElement(StudentAccountItemsPage) },
-  { path: 'subject-items', element: createElement(StudentSubjectItemsPage) },
-  { path: 'knowledge-items', element: createElement(StudentKnowledgeItemsPage) },
-  { path: 'planning-items', element: createElement(StudentPlanningItemsPage) },
-  { path: 'adaptive-items', element: createElement(StudentAdaptiveItemsPage) },
-  { path: 'review-items', element: createElement(StudentReviewItemsPage) },
-  { path: 'risk-items', element: createElement(StudentRiskItemsPage) },
-  { path: 'ai-config-items', element: createElement(StudentAiConfigItemsPage) },
-  { path: 'business-rule-items', element: createElement(StudentBusinessRuleItemsPage) },
-  { path: 'monitoring-items', element: createElement(StudentMonitoringItemsPage) },
-  { path: 'data-retention-items', element: createElement(StudentDataRetentionItemsPage) },
-  { path: 'report-items', element: createElement(StudentReportItemsPage) },
-  { path: 'admin-report-items', element: createElement(StudentAdminReportItemsPage) },
-  { path: 'notification-items', element: createElement(StudentNotificationItemsPage) },
-  { path: 'support-items', element: createElement(StudentSupportItemsPage) },
-];
+// Kept as a live reference for scaffolding new modules the same way; not linked from the sidebar.
+export const studentLegacyRoutes = [{ path: 'template-items', element: createElement(TemplateItemsPage) }];

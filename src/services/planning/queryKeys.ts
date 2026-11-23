@@ -1,7 +1,8 @@
-import type { PlanningItemFilters } from '@/services/planning/types';
+import type { GoalFilters, PlanFilters } from '@/services/planning/types';
 
-export const planningItemKeys = {
-  all: ['planningItems'] as const,
-  list: (filters: PlanningItemFilters) => [...planningItemKeys.all, 'list', filters] as const,
-  detail: (id: string) => [...planningItemKeys.all, 'detail', id] as const,
+export const planningKeys = {
+  all: ['planning'] as const,
+  plans: (filters: PlanFilters = {}) => [...planningKeys.all, 'plans', filters] as const,
+  plan: (id: string) => [...planningKeys.all, 'plan', id] as const,
+  goals: (filters: GoalFilters = {}) => [...planningKeys.all, 'goals', filters] as const,
 };

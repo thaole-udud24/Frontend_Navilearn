@@ -162,9 +162,33 @@ export interface StudentCourse {
 }
 
 export const studentCourses: StudentCourse[] = [
-  { id: 'c1', name: 'Giải tích 1', code: 'MAT101', chapters: 12, progress: 68, status: 'learning', tone: 'blue' },
-  { id: 'c2', name: 'Cấu trúc dữ liệu & GT', code: 'CS202', chapters: 10, progress: 40, status: 'review', tone: 'peach' },
-  { id: 'c3', name: 'Xác suất thống kê', code: 'MAT205', chapters: 8, progress: 15, status: 'started', tone: 'mint' },
+  {
+    id: 'c1',
+    name: 'Giải tích 1',
+    code: 'MAT101',
+    chapters: 12,
+    progress: 68,
+    status: 'learning',
+    tone: 'blue',
+  },
+  {
+    id: 'c2',
+    name: 'Cấu trúc dữ liệu & GT',
+    code: 'CS202',
+    chapters: 10,
+    progress: 40,
+    status: 'review',
+    tone: 'peach',
+  },
+  {
+    id: 'c3',
+    name: 'Xác suất thống kê',
+    code: 'MAT205',
+    chapters: 8,
+    progress: 15,
+    status: 'started',
+    tone: 'mint',
+  },
 ];
 
 export interface ClassWeekStat {
@@ -244,7 +268,19 @@ export const upcomingSchedule: ScheduleItem[] = [
 ];
 
 export const studentRecentActivity: StudentActivityEntry[] = [
-  { id: 'sa1', text: 'Hoàn thành bài luyện tập Đạo hàm', time: '10 phút trước', status: 'success', statusLabel: 'Hoàn thành' },
-  { id: 'sa2', text: 'Mastery Giới hạn tăng lên mức Đã vững', time: '1 giờ trước', status: 'info', statusLabel: 'Cập nhật' },
+  {
+    id: 'sa1',
+    text: 'Hoàn thành bài luyện tập Đạo hàm',
+    time: '10 phút trước',
+    status: 'success',
+    statusLabel: 'Hoàn thành',
+  },
+  {
+    id: 'sa2',
+    text: 'Mastery Giới hạn tăng lên mức Đã vững',
+    time: '1 giờ trước',
+    status: 'info',
+    statusLabel: 'Cập nhật',
+  },
   { id: 'sa3', text: 'Navi giải thích 1 câu bạn làm sai', time: 'Hôm qua', status: 'ai', statusLabel: 'AI' },
 ];

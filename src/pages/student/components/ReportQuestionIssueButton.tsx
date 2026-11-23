@@ -3,13 +3,7 @@ import { toast } from 'sonner';
 import { Flag } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { reportQuestionIssue } from '@/services/question-bank';
 
@@ -78,6 +72,9 @@ export function ReportQuestionIssueButton({ questionId }: { questionId: string }
           />
         </div>
         <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            Hủy
+          </Button>
           <Button type="button" onClick={submit} disabled={submitting}>
             {submitting ? 'Đang gửi…' : 'Gửi báo lỗi'}
           </Button>

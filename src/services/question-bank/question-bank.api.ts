@@ -17,18 +17,27 @@ import type {
   UpdateQuestionInput,
 } from './types';
 
-export async function listQuestionBankItems(filters: QuestionBankItemFilters): Promise<ApiSuccess<QuestionBankItem[]>> {
-  const { data } = await request.get<ApiSuccess<QuestionBankItem[]>>(ENDPOINTS.questionBankItems.list, { params: filters });
+export async function listQuestionBankItems(
+  filters: QuestionBankItemFilters,
+): Promise<ApiSuccess<QuestionBankItem[]>> {
+  const { data } = await request.get<ApiSuccess<QuestionBankItem[]>>(ENDPOINTS.questionBankItems.list, {
+    params: filters,
+  });
   return data;
 }
 
 export async function listQuestions(filters: QuestionFilters): Promise<ApiSuccess<Question[]>> {
-  const { data } = await request.get<ApiSuccess<Question[]>>(ENDPOINTS.questionBankItems.list, { params: filters });
+  const { data } = await request.get<ApiSuccess<Question[]>>(ENDPOINTS.questionBankItems.list, {
+    params: filters,
+  });
   return data;
 }
 
 export async function createQuestionBankItem(input: CreateQuestionBankItemInput): Promise<QuestionBankItem> {
-  const { data } = await request.post<ApiSuccess<QuestionBankItem>>(ENDPOINTS.questionBankItems.create, input);
+  const { data } = await request.post<ApiSuccess<QuestionBankItem>>(
+    ENDPOINTS.questionBankItems.create,
+    input,
+  );
   return data.data;
 }
 
@@ -78,12 +87,16 @@ export async function removeQuestion(id: string): Promise<void> {
 }
 
 export async function importQuestions(items: Record<string, unknown>[]): Promise<ImportRowResult> {
-  const { data } = await request.post<ApiSuccess<ImportRowResult>>(ENDPOINTS.questionBankItems.import, { items });
+  const { data } = await request.post<ApiSuccess<ImportRowResult>>(ENDPOINTS.questionBankItems.import, {
+    items,
+  });
   return data.data;
 }
 
 export async function exportQuestions(filters: { concept?: string; status?: string }): Promise<Question[]> {
-  const { data } = await request.get<ApiSuccess<Question[]>>(ENDPOINTS.questionBankItems.export, { params: filters });
+  const { data } = await request.get<ApiSuccess<Question[]>>(ENDPOINTS.questionBankItems.export, {
+    params: filters,
+  });
   return data.data;
 }
 
@@ -93,9 +106,12 @@ export async function approveFromAiDraft(input: FromAiDraftInput): Promise<Quest
 }
 
 export async function getQualityStats(concept?: string): Promise<QuestionQualityStat[]> {
-  const { data } = await request.get<ApiSuccess<QuestionQualityStat[]>>(ENDPOINTS.questionBankItems.qualityStats, {
-    params: { concept },
-  });
+  const { data } = await request.get<ApiSuccess<QuestionQualityStat[]>>(
+    ENDPOINTS.questionBankItems.qualityStats,
+    {
+      params: { concept },
+    },
+  );
   return data.data;
 }
 
@@ -106,10 +122,15 @@ export async function findDuplicateQuestions(concept?: string): Promise<Duplicat
   return data.data;
 }
 
-export async function listIssueReports(filters: IssueReportFilters): Promise<ApiSuccess<QuestionIssueReport[]>> {
-  const { data } = await request.get<ApiSuccess<QuestionIssueReport[]>>(ENDPOINTS.questionBankItems.issueReports, {
-    params: filters,
-  });
+export async function listIssueReports(
+  filters: IssueReportFilters,
+): Promise<ApiSuccess<QuestionIssueReport[]>> {
+  const { data } = await request.get<ApiSuccess<QuestionIssueReport[]>>(
+    ENDPOINTS.questionBankItems.issueReports,
+    {
+      params: filters,
+    },
+  );
   return data;
 }
 
@@ -117,11 +138,16 @@ export async function resolveIssueReport(
   id: string,
   input: { action: 'fix' | 'dismiss'; resolution?: string },
 ): Promise<QuestionIssueReport> {
-  const { data } = await request.patch<ApiSuccess<QuestionIssueReport>>(ENDPOINTS.questionBankItems.issueReport(id), input);
+  const { data } = await request.patch<ApiSuccess<QuestionIssueReport>>(
+    ENDPOINTS.questionBankItems.issueReport(id),
+    input,
+  );
   return data.data;
 }
 
-export async function previewRegradeImpact(id: string): Promise<{ questionId: string; affectedAttemptsCount: number }> {
+export async function previewRegradeImpact(
+  id: string,
+): Promise<{ questionId: string; affectedAttemptsCount: number }> {
   const { data } = await request.get<ApiSuccess<{ questionId: string; affectedAttemptsCount: number }>>(
     ENDPOINTS.questionBankItems.regradeImpact(id),
   );

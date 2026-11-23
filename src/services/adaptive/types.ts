@@ -1,22 +1,34 @@
-export type AdaptiveItemStatus = 'open' | 'in_progress' | 'resolved';
+export interface AdaptiveConceptRef {
+  id: string;
+  name: string;
+}
 
-export interface AdaptiveItem {
+export interface NextBestAction {
+  concept: AdaptiveConceptRef;
+  priority: number;
+  reason: string;
+}
+
+export interface AdaptiveActivity {
   _id: string;
   owner: string;
-  title: string;
-  content: string;
-  status: AdaptiveItemStatus;
+  concept: string;
+  priority: number;
+  reason: string;
   createdAt: string;
-  updatedAt: string;
 }
 
-export interface AdaptiveItemFilters {
-  page?: number;
-  limit?: number;
-  status?: AdaptiveItemStatus;
+export interface StartNextBestActionResult {
+  activity: AdaptiveActivity;
+  concept: AdaptiveConceptRef;
 }
 
-export interface CreateAdaptiveItemInput {
-  title: string;
-  content: string;
+export interface ReplanCheckResult {
+  needed: boolean;
+  missedCount: number;
+}
+
+export interface ReplanResult {
+  plan: Record<string, unknown>;
+  reason: string;
 }

@@ -6,7 +6,7 @@ export default function AdminSubjectItemsPage() {
   return (
     <GenericScaffoldAdminPage<SubjectItem>
       pageTitle="Môn học"
-      breadcrumb={['Trang chủ', 'Tài khoản & phân quyền', 'Môn học']}
+      breadcrumb={['Trang chủ', 'Danh mục', 'Môn học']}
       searchPlaceholder="Tìm theo tên môn học…"
       emptyLabel="Chưa có môn học nào"
       list={listSubjectItems}

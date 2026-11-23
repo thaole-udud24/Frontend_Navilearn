@@ -154,7 +154,12 @@ export function RegisterForm({ onSubmit, twoStep = false, onSwitchToLogin }: Reg
           control={control}
           render={({ field }) => (
             <label className="flex items-start gap-2 text-sm text-muted-foreground" htmlFor="register-agree">
-              <Checkbox id="register-agree" checked={field.value} onCheckedChange={field.onChange} className="mt-0.5" />
+              <Checkbox
+                id="register-agree"
+                checked={field.value}
+                onCheckedChange={field.onChange}
+                className="mt-0.5"
+              />
               Tôi đồng ý với điều khoản sử dụng
             </label>
           )}
@@ -195,8 +200,12 @@ export function RegisterForm({ onSubmit, twoStep = false, onSwitchToLogin }: Reg
     >
       {twoStep && (
         <div className="flex gap-1.5" aria-hidden>
-          <span className={`h-1 flex-1 rounded-full transition-colors ${step >= 1 ? 'bg-primary' : 'bg-muted'}`} />
-          <span className={`h-1 flex-1 rounded-full transition-colors ${step >= 2 ? 'bg-primary' : 'bg-muted'}`} />
+          <span
+            className={`h-1 flex-1 rounded-full transition-colors ${step >= 1 ? 'bg-primary' : 'bg-muted'}`}
+          />
+          <span
+            className={`h-1 flex-1 rounded-full transition-colors ${step >= 2 ? 'bg-primary' : 'bg-muted'}`}
+          />
         </div>
       )}
 

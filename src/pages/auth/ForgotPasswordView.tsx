@@ -44,7 +44,11 @@ export function ForgotPasswordView({ onBack, onSent }: ForgotPasswordViewProps) 
 
   return (
     <div className="flex w-full flex-col gap-4">
-      <button type="button" onClick={onBack} className="self-start text-sm text-muted-foreground hover:text-foreground">
+      <button
+        type="button"
+        onClick={onBack}
+        className="self-start text-sm text-muted-foreground hover:text-foreground"
+      >
         ← Quay lại đăng nhập
       </button>
 
@@ -52,7 +56,14 @@ export function ForgotPasswordView({ onBack, onSent }: ForgotPasswordViewProps) 
 
       <AnimatePresence mode="wait" initial={false}>
         {!sent ? (
-          <motion.div key="form" variants={fadeUp} initial="hidden" animate="visible" exit={{ opacity: 0 }} className="flex flex-col gap-4">
+          <motion.div
+            key="form"
+            variants={fadeUp}
+            initial="hidden"
+            animate="visible"
+            exit={{ opacity: 0 }}
+            className="flex flex-col gap-4"
+          >
             <div>
               <h2 className="text-lg font-bold text-foreground">Quên mật khẩu?</h2>
               <p className="text-sm text-muted-foreground">

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { APP_FOOTER_TEXT } from '@/constants/app';
 import { formStagger, textLineReveal } from '@/lib/motion';
 import { AuthIllustration } from './AuthIllustration';
+import { TechGridOverlay } from './TechGridOverlay';
 
 interface OtpOverlayPanelProps {
   title?: string;
@@ -29,6 +30,7 @@ export function OtpOverlayPanel({
       className="relative hidden h-full flex-col items-center justify-center gap-6 overflow-hidden p-10 text-center text-white md:flex"
       style={{ backgroundImage: 'linear-gradient(135deg, var(--primary), var(--primary-hover))' }}
     >
+      <TechGridOverlay variant="dark" />
       <motion.div
         variants={formStagger}
         initial="hidden"
@@ -39,7 +41,10 @@ export function OtpOverlayPanel({
           <AuthIllustration />
         </motion.div>
         <div className="overflow-hidden">
-          <motion.div variants={textLineReveal} className="text-[28px] font-bold leading-tight text-white/85 sm:text-[32px]">
+          <motion.div
+            variants={textLineReveal}
+            className="text-[28px] font-bold leading-tight text-white/85 sm:text-[32px]"
+          >
             {title.split(highlight)[0]}
             <span className="text-white">{highlight}</span>
           </motion.div>

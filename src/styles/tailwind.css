@@ -70,6 +70,12 @@
   --mint: #bdeedc;
   --mint-foreground: #1c7a5c;
 
+  /* Soft pink accent (Soft Pastel Cosmic Orbit) — a gentle highlight color, never the primary
+     call-to-attention (that stays --accent/orange); a tiny lavender for natural color transitions. */
+  --blush: #f7d9e8;
+  --blush-foreground: #a24d78;
+  --lavender: #e6e0fb;
+
   --muted: #eef3fc;
   --muted-foreground: #6b7a99;
 
@@ -111,6 +117,10 @@
   --mint: #52c99a;
   --mint-foreground: #e8ecf5;
 
+  --blush: #4a2c40;
+  --blush-foreground: #f3c9df;
+  --lavender: #241f3d;
+
   --muted: #1a2238;
   --muted-foreground: #8a94a8;
 
@@ -142,6 +152,10 @@
 
   --color-mint: var(--mint);
   --color-mint-foreground: var(--mint-foreground);
+
+  --color-blush: var(--blush);
+  --color-blush-foreground: var(--blush-foreground);
+  --color-lavender: var(--lavender);
 
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);

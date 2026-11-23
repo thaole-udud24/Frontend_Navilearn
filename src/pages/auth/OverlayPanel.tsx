@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { APP_FOOTER_TEXT } from '@/constants/app';
 import { formStagger, textLineReveal } from '@/lib/motion';
 import { AuthIllustration } from './AuthIllustration';
+import { TechGridOverlay } from './TechGridOverlay';
 
 interface OverlayPanelProps {
   mode: 'login' | 'register';
@@ -35,6 +36,7 @@ export function OverlayPanel({ mode, onSwitch }: OverlayPanelProps) {
       className="relative flex h-full flex-col items-center justify-center gap-6 overflow-hidden p-10 text-center text-white"
       style={{ backgroundImage: 'linear-gradient(135deg, var(--primary), var(--primary-hover))' }}
     >
+      <TechGridOverlay variant="dark" />
       <AnimatePresence mode="wait">
         <motion.div
           key={mode}
@@ -48,7 +50,10 @@ export function OverlayPanel({ mode, onSwitch }: OverlayPanelProps) {
             <AuthIllustration />
           </motion.div>
           <div className="overflow-hidden">
-            <motion.div variants={textLineReveal} className="text-[28px] font-bold leading-tight text-white/85 sm:text-[32px]">
+            <motion.div
+              variants={textLineReveal}
+              className="text-[28px] font-bold leading-tight text-white/85 sm:text-[32px]"
+            >
               {content.title.split(content.highlight)[0]}
               <span className="text-white">{content.highlight}</span>
             </motion.div>

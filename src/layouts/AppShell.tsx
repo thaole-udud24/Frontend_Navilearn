@@ -4,7 +4,12 @@ import { Wrench, HelpCircle, Bug, BookOpen } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { APP_FOOTER_TEXT } from '@/constants/app';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { MascotWidget } from './MascotWidget';
@@ -59,7 +64,10 @@ export function AppShell({
         variant={area === 'admin' ? 'dark' : 'light'}
       />
 
-      <div className="flex min-h-screen flex-1 flex-col">
+      {/* min-w-0: a flex item's default min-width is "auto" (its content's intrinsic width), so a
+          wide table inside would otherwise stretch this column — and the whole page — instead of
+          staying put and letting the table's own overflow-auto wrapper scroll horizontally. */}
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
         <Header
           title={title}
           breadcrumb={breadcrumb}
@@ -72,11 +80,18 @@ export function AppShell({
           onLogout={onLogout}
         />
 
-        <main className={cn('flex-1 p-4 sm:p-6', !compactHeader && '-mt-10 rounded-card bg-card shadow-card')}>
+        <main
+          className={cn(
+            'min-w-0 flex-1 p-4 sm:p-6',
+            !compactHeader && '-mt-10 rounded-card bg-card shadow-card',
+          )}
+        >
           {children}
         </main>
 
-        <footer className="px-4 pb-24 pt-6 text-center text-xs text-muted-foreground sm:px-6">{APP_FOOTER_TEXT}</footer>
+        <footer className="px-4 pb-24 pt-6 text-center text-xs text-muted-foreground sm:px-6">
+          {APP_FOOTER_TEXT}
+        </footer>
       </div>
 
       <DropdownMenu>

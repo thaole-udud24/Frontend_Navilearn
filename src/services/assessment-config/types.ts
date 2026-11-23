@@ -1,6 +1,13 @@
+import type { RecordSource } from '@/types/api.d';
+
 export type AssessmentConfigItemStatus = 'open' | 'in_progress' | 'resolved';
 export type AssessmentConfigStatus = 'active' | 'archived';
-export type AssessmentConfigKind = 'placement' | 'practice' | 'chapter_test' | 'mock_exam' | 'independent_check';
+export type AssessmentConfigKind =
+  | 'placement'
+  | 'practice'
+  | 'chapter_test'
+  | 'mock_exam'
+  | 'independent_check';
 export type ShowAnswersPolicy = 'after_submit' | 'after_due' | 'never';
 
 export interface RetryPolicy {
@@ -41,6 +48,7 @@ export interface AssessmentConfig {
   retryPolicy?: RetryPolicy;
   showAnswersPolicy?: ShowAnswersPolicy;
   status: AssessmentConfigStatus;
+  source?: RecordSource;
   createdAt: string;
   updatedAt: string;
 }
@@ -81,6 +89,7 @@ export interface Rubric {
   concept: string;
   criteria: RubricCriterion[];
   status: AssessmentConfigStatus;
+  source?: RecordSource;
   createdAt: string;
   updatedAt: string;
 }
@@ -99,3 +108,10 @@ export interface CreateRubricInput {
 }
 
 export type UpdateRubricInput = Partial<Pick<CreateRubricInput, 'title' | 'criteria'>>;
+
+export interface ImportRowResult {
+  createdCount: number;
+  createdIds: string[];
+  errorCount: number;
+  errors: { row: number; message: string }[];
+}

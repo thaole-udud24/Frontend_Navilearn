@@ -1,3 +1,5 @@
+import type { RecordSource } from '@/types/api.d';
+
 export type QuestionBankItemStatus = 'open' | 'in_progress' | 'resolved';
 
 export interface QuestionBankItem {
@@ -21,7 +23,7 @@ export interface CreateQuestionBankItemInput {
   content: string;
 }
 
-export type QuestionType = 'mcq' | 'essay';
+export type QuestionType = 'mcq' | 'true_false' | 'essay';
 export type QuestionDifficulty = 'easy' | 'medium' | 'hard';
 export type QuestionStatus = 'active' | 'archived';
 
@@ -41,6 +43,7 @@ export interface Question {
   difficulty: QuestionDifficulty;
   points: number;
   status: QuestionStatus;
+  source?: RecordSource;
   createdAt: string;
   updatedAt: string;
 }

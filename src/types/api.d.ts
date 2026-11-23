@@ -1,3 +1,6 @@
+/** Provenance of an admin-editable record — display only, never used for access control. */
+export type RecordSource = 'manual' | 'ai' | 'import';
+
 export interface ApiMeta {
   page: number;
   limit: number;

@@ -4,26 +4,27 @@ import { ArrowDownRight, ArrowRight, ArrowUpRight, type LucideIcon } from 'lucid
 
 import { cn } from '@/lib/utils';
 
-export type StatTone = 'blue' | 'peach' | 'mint';
+export type StatTone = 'blue' | 'peach' | 'mint' | 'blush';
 
 const TONE_CARD: Record<StatTone, string> = {
   blue: 'bg-gradient-to-br from-primary-soft to-white border-primary/15',
   peach: 'bg-gradient-to-br from-accent-soft to-white border-accent/20',
   mint: 'bg-gradient-to-br from-mint/35 to-white border-mint-foreground/15',
+  blush: 'bg-gradient-to-br from-blush/60 to-white border-blush-foreground/15',
 };
 
 const TONE_ICON: Record<StatTone, string> = {
   blue: 'text-primary',
   peach: 'text-accent',
   mint: 'text-mint-foreground',
+  blush: 'text-blush-foreground',
 };
 
-// shortcut: no icon/pattern library ships a "diagonal corner accent" asset — this is plain CSS
-// (a rotated square clipped by the card's own rounded corner), not a downloaded resource.
-const TONE_CORNER: Record<StatTone, string> = {
-  blue: 'bg-primary/10',
-  peach: 'bg-accent/15',
-  mint: 'bg-mint-foreground/15',
+const TONE_ORBIT: Record<StatTone, string> = {
+  blue: 'border-primary/25',
+  peach: 'border-accent/25',
+  mint: 'border-mint-foreground/25',
+  blush: 'border-blush-foreground/25',
 };
 
 const TREND_CLASS: Record<'up' | 'down', string> = {
@@ -68,7 +69,13 @@ function Sparkline({ data }: { data: number[] }) {
     .join(' ');
   return (
     <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="mt-2 h-8 w-full">
-      <polyline points={points} fill="none" stroke="currentColor" strokeWidth={4} className="text-primary/60" />
+      <polyline
+        points={points}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={4}
+        className="text-primary/60"
+      />
     </svg>
   );
 }
@@ -116,9 +123,14 @@ export function StatCard({
         className,
       )}
     >
+      {/* A thin orbit arc in the corner instead of a plain rotated-square blob — ties every card
+          back to NaviLearn's orbital visual identity instead of a generic decorative shape. */}
       {tone && (
         <span
-          className={cn('pointer-events-none absolute -right-8 -top-8 h-24 w-24 rotate-45', TONE_CORNER[tone])}
+          className={cn(
+            'pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full border',
+            TONE_ORBIT[tone],
+          )}
           aria-hidden
         />
       )}
@@ -134,7 +146,10 @@ export function StatCard({
         </button>
       )}
 
-      <div className="relative flex items-center gap-2.5">
+      {/* min-w-0 on the flex row: a flex item's default min-width is its content's own width, so
+          the label below would never actually shrink enough for `truncate` to kick in and the
+          card's own overflow-hidden would hard-clip it mid-word with no ellipsis instead. */}
+      <div className="relative flex min-w-0 items-center gap-2.5">
         <span
           className={cn(
             'flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white shadow-card',
@@ -144,7 +159,9 @@ export function StatCard({
         >
           {iconSrc ? <img src={iconSrc} alt="" className="h-6 w-6" /> : Icon && <Icon className="h-4 w-4" />}
         </span>
-        <span className="truncate text-sm font-medium text-foreground">{label}</span>
+        <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground" title={label}>
+          {label}
+        </span>
       </div>
 
       <div className="relative mt-3 text-[28px] font-bold leading-tight text-foreground">
@@ -152,7 +169,12 @@ export function StatCard({
       </div>
 
       {trend && (
-        <div className={cn('relative mt-1 flex items-center gap-1 text-xs font-semibold', TREND_CLASS[trend.direction])}>
+        <div
+          className={cn(
+            'relative mt-1 flex items-center gap-1 text-xs font-semibold',
+            TREND_CLASS[trend.direction],
+          )}
+        >
           <TrendIcon className="h-3.5 w-3.5" />
           {trend.label}
         </div>

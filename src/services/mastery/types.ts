@@ -1,5 +1,6 @@
 export type MasteryItemStatus = 'open' | 'in_progress' | 'resolved';
 export type MasteryLevel = 'novice' | 'developing' | 'proficient' | 'mastered';
+export type LearningState = 'LEARNING' | 'PRACTICING' | 'UNDERSTOOD' | 'APPLIED' | 'DECAY_RISK';
 
 export interface MasteryItem {
   _id: string;
@@ -16,6 +17,7 @@ export interface Mastery {
   concept: { _id: string; name: string } | string;
   score: number;
   level: MasteryLevel;
+  learningState: LearningState;
   attemptsCount: number;
   correctCount: number;
   goalScore?: number;
@@ -35,11 +37,6 @@ export interface MasteryFilters {
   limit?: number;
   concept?: string;
   level?: MasteryLevel;
-}
-
-export interface CreateMasteryItemInput {
-  title: string;
-  content: string;
 }
 
 export interface MasteryTrendPoint {

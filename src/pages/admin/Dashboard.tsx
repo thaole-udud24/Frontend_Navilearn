@@ -1,16 +1,33 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis } from 'recharts';
-import { AlertTriangle, UserPlus, Users, FileCheck2 } from 'lucide-react';
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip as RTooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import { AlertTriangle, Copy, Eye, Pencil, Trash2, UserPlus, Users, FileCheck2 } from 'lucide-react';
 
 import { AppShell } from '@/layouts/AppShell';
 import { adminMenu } from '@/config/menu.admin';
 import { StatCard } from '@/components/StatCard';
+import { Card, CardTitle } from '@/components/ui/card';
 import { StatusBadge } from '@/components/StatusBadge';
 import { DataTablePage } from '@/components/DataTablePage';
 import { fadeUp, pickVariants, staggerContainer } from '@/lib/motion';
-import { generateUsers, masteryDistribution, recentActivityLog, systemActivity30Days, type MockUser } from '@/mocks/dashboardMocks';
+import {
+  generateUsers,
+  masteryDistribution,
+  recentActivityLog,
+  systemActivity30Days,
+  type MockUser,
+} from '@/mocks/dashboardMocks';
 
 export default function AdminDashboard() {
   const reduced = useReducedMotion();
@@ -38,7 +55,9 @@ export default function AdminDashboard() {
         accessorKey: 'statusLabel',
         header: 'Trạng thái',
         meta: { filterOptions: ['Đang hoạt động', 'Chờ xác minh', 'Đã khoá'] },
-        cell: ({ row }) => <StatusBadge variant={row.original.status}>{row.original.statusLabel}</StatusBadge>,
+        cell: ({ row }) => (
+          <StatusBadge variant={row.original.status}>{row.original.statusLabel}</StatusBadge>
+        ),
       },
       { accessorKey: 'createdAt', header: 'Ngày tạo' },
     ],
@@ -59,10 +78,64 @@ export default function AdminDashboard() {
       notificationCount={5}
       area="admin"
     >
-      <motion.div initial="hidden" animate="visible" variants={containerVariants} className="flex flex-col gap-6">
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+        className="flex flex-col gap-6"
+      >
         <motion.div variants={itemVariants}>
           <h2 className="text-xl font-bold text-foreground">Xin chào, Administrator</h2>
           <p className="text-sm text-muted-foreground">Tổng quan hệ thống NaviLearn</p>
+        </motion.div>
+
+        <motion.div variants={itemVariants} className="grid gap-4 lg:grid-cols-2">
+          <Card>
+            <CardTitle className="mb-4">Hoạt động hệ thống 30 ngày</CardTitle>
+            <ResponsiveContainer width="100%" height={220}>
+              <AreaChart key={`activity-${replayTick}`} data={systemActivity30Days}>
+                <defs>
+                  <linearGradient id="adminActivityFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="day" tick={{ fontSize: 11 }} interval={4} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <RTooltip />
+                <Area
+                  type="monotone"
+                  dataKey="value"
+                  stroke="var(--primary)"
+                  strokeWidth={2}
+                  fill="url(#adminActivityFill)"
+                  dot={false}
+                  isAnimationActive={!reduced}
+                  animationDuration={1800}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </Card>
+
+          <Card>
+            <CardTitle className="mb-4">Phân bố mức thành thạo</CardTitle>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart key={`mastery-${replayTick}`} data={masteryDistribution}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="level" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <RTooltip />
+                <Bar
+                  dataKey="value"
+                  fill="var(--primary)"
+                  radius={[6, 6, 0, 0]}
+                  isAnimationActive={!reduced}
+                  animationDuration={1200}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </Card>
         </motion.div>
 
         <motion.div variants={itemVariants} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -96,49 +169,6 @@ export default function AdminDashboard() {
           />
         </motion.div>
 
-        <motion.div variants={itemVariants} className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-card border border-border bg-card p-5 shadow-card">
-            <h3 className="mb-4 font-semibold text-foreground">Hoạt động hệ thống 30 ngày</h3>
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart key={`activity-${replayTick}`} data={systemActivity30Days}>
-                <defs>
-                  <linearGradient id="adminActivityFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="day" tick={{ fontSize: 11 }} interval={4} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <RTooltip />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke="var(--primary)"
-                  strokeWidth={2}
-                  fill="url(#adminActivityFill)"
-                  dot={false}
-                  isAnimationActive={!reduced}
-                  animationDuration={1800}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="rounded-card border border-border bg-card p-5 shadow-card">
-            <h3 className="mb-4 font-semibold text-foreground">Phân bố mức thành thạo</h3>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart key={`mastery-${replayTick}`} data={masteryDistribution}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="level" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <RTooltip />
-                <Bar dataKey="value" fill="var(--primary)" radius={[6, 6, 0, 0]} isAnimationActive={!reduced} animationDuration={1200} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </motion.div>
-
         <motion.div variants={itemVariants}>
           <h3 className="mb-3 font-semibold text-foreground">Người dùng mới nhất</h3>
           <DataTablePage
@@ -147,14 +177,30 @@ export default function AdminDashboard() {
             getRowId={(r) => r.id}
             searchPlaceholder="Tìm theo: Mã, Tên…"
             rowActions={[
-              { key: 'view', label: 'Xem chi tiết', onSelect: (r) => console.log('view', r) },
-              { key: 'edit', label: 'Chỉnh sửa', onSelect: (r) => console.log('edit', r) },
-              { key: 'duplicate', label: 'Nhân bản', onSelect: (r) => console.log('duplicate', r) },
-              { key: 'delete', label: 'Xoá', danger: true, onSelect: (r) => console.log('delete', r) },
+              { key: 'view', label: 'Xem chi tiết', icon: <Eye />, onSelect: (r) => console.log('view', r) },
+              { key: 'edit', label: 'Chỉnh sửa', icon: <Pencil />, onSelect: (r) => console.log('edit', r) },
+              {
+                key: 'duplicate',
+                label: 'Nhân bản',
+                icon: <Copy />,
+                onSelect: (r) => console.log('duplicate', r),
+              },
+              {
+                key: 'delete',
+                label: 'Xoá',
+                icon: <Trash2 />,
+                danger: true,
+                onSelect: (r) => console.log('delete', r),
+              },
             ]}
             bulkActions={[
               { key: 'lock', label: 'Khoá tài khoản', onSelect: (rows) => console.log('lock', rows) },
-              { key: 'delete', label: 'Xoá đã chọn', danger: true, onSelect: (rows) => console.log('delete many', rows) },
+              {
+                key: 'delete',
+                label: 'Xoá đã chọn',
+                danger: true,
+                onSelect: (rows) => console.log('delete many', rows),
+              },
             ]}
             toolbarActions={[
               { key: 'create', label: 'Thêm mới', onSelect: () => console.log('create user') },
@@ -164,20 +210,22 @@ export default function AdminDashboard() {
           />
         </motion.div>
 
-        <motion.div variants={itemVariants} className="rounded-card border border-border bg-card p-5 shadow-card">
-          <h3 className="mb-4 font-semibold text-foreground">Nhật ký hoạt động gần đây</h3>
-          <ul className="relative space-y-5 pl-4">
-            {recentActivityLog.map((entry, i) => (
-              <li key={entry.id} className="relative pl-4">
-                {i < recentActivityLog.length - 1 && (
-                  <span className="absolute left-[3px] top-3 h-full w-px bg-border" />
-                )}
-                <span className="absolute left-0 top-1.5 h-2 w-2 rounded-full bg-primary" />
-                <p className="text-sm text-foreground">{entry.text}</p>
-                <p className="text-xs text-muted-foreground">{entry.time}</p>
-              </li>
-            ))}
-          </ul>
+        <motion.div variants={itemVariants}>
+          <Card>
+            <CardTitle className="mb-4">Nhật ký hoạt động gần đây</CardTitle>
+            <ul className="relative space-y-5 pl-4">
+              {recentActivityLog.map((entry, i) => (
+                <li key={entry.id} className="relative pl-4">
+                  {i < recentActivityLog.length - 1 && (
+                    <span className="absolute left-[3px] top-3 h-full w-px bg-border" />
+                  )}
+                  <span className="absolute left-0 top-1.5 h-2 w-2 rounded-full bg-primary" />
+                  <p className="text-sm text-foreground">{entry.text}</p>
+                  <p className="text-xs text-muted-foreground">{entry.time}</p>
+                </li>
+              ))}
+            </ul>
+          </Card>
         </motion.div>
       </motion.div>
     </AppShell>

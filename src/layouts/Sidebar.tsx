@@ -35,7 +35,9 @@ function MenuLeaf({ item, collapsed, active }: { item: MenuItem; collapsed: bool
       className={cn(
         'flex min-h-11 items-center gap-3 rounded-control px-3 py-2 text-[15px] leading-snug transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
         collapsed && 'justify-center px-0',
-        active ? 'bg-primary font-semibold text-primary-foreground shadow-card' : 'text-foreground hover:bg-muted',
+        active
+          ? 'bg-primary font-semibold text-primary-foreground shadow-card'
+          : 'text-foreground hover:bg-muted',
       )}
     >
       {Icon &&
@@ -54,7 +56,9 @@ function MenuLeaf({ item, collapsed, active }: { item: MenuItem; collapsed: bool
   return (
     <Tooltip delayDuration={200}>
       <TooltipTrigger asChild>{content}</TooltipTrigger>
-      <TooltipContent side="right" className="tw-scope">{item.label}</TooltipContent>
+      <TooltipContent side="right" className="tw-scope">
+        {item.label}
+      </TooltipContent>
     </Tooltip>
   );
 }
@@ -132,10 +136,16 @@ function MenuParent({ item, collapsed, pathname }: { item: MenuItem; collapsed: 
                   to={child.path ?? '#'}
                   className={cn(
                     'relative flex min-h-10 items-center rounded-control px-3 py-2 text-sm leading-snug text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
-                    isActive(pathname, child) && 'bg-primary/15 font-semibold text-foreground before:absolute before:-left-[13px] before:h-6 before:w-0.5 before:rounded-full before:bg-primary',
+                    isActive(pathname, child) &&
+                      'bg-primary/15 font-semibold text-foreground before:absolute before:-left-[13px] before:h-6 before:w-0.5 before:rounded-full before:bg-primary',
                   )}
                 >
-                  <span className={cn('mr-2 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/40', isActive(pathname, child) && 'bg-primary')} />
+                  <span
+                    className={cn(
+                      'mr-2 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/40',
+                      isActive(pathname, child) && 'bg-primary',
+                    )}
+                  />
                   <span className="break-words">{child.label}</span>
                 </Link>
               ))}
@@ -147,20 +157,35 @@ function MenuParent({ item, collapsed, pathname }: { item: MenuItem; collapsed: 
   );
 }
 
-function SidebarBody({ groups, collapsed, pathname }: { groups: MenuGroup[]; collapsed: boolean; pathname: string }) {
+function SidebarBody({
+  groups,
+  collapsed,
+  pathname,
+}: {
+  groups: MenuGroup[];
+  collapsed: boolean;
+  pathname: string;
+}) {
   return (
     <nav className="min-h-0 flex-1 space-y-5 overflow-y-auto px-3 py-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-border">
       {groups.map((group, gi) => (
         <div key={group.label ?? gi} className={cn(gi > 0 && 'border-t border-border/70 pt-4')}>
           {group.label && !collapsed && (
-            <div className="px-3 pb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">{group.label}</div>
+            <div className="px-3 pb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+              {group.label}
+            </div>
           )}
           <div className="space-y-1">
             {group.items.map((item) =>
               item.children?.length ? (
                 <MenuParent key={item.label} item={item} collapsed={collapsed} pathname={pathname} />
               ) : (
-                <MenuLeaf key={item.label} item={item} collapsed={collapsed} active={isActive(pathname, item)} />
+                <MenuLeaf
+                  key={item.label}
+                  item={item}
+                  collapsed={collapsed}
+                  active={isActive(pathname, item)}
+                />
               ),
             )}
           </div>
@@ -207,7 +232,9 @@ function ProfileFooter({
         {initial}
       </span>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-bold text-foreground" title={userName}>{userName}</div>
+        <div className="truncate text-sm font-bold text-foreground" title={userName}>
+          {userName}
+        </div>
         <div className="truncate text-xs text-muted-foreground">{roleLabel}</div>
       </div>
       <button
@@ -237,14 +264,21 @@ export function Sidebar({
   const dark = variant === 'dark';
 
   const header = (collapsedMode: boolean) => (
-    <div className={cn('flex h-[72px] shrink-0 flex-col justify-center gap-1.5 border-b border-border px-4', collapsedMode && 'items-center')}>
+    <div
+      className={cn(
+        'flex h-[72px] shrink-0 flex-col justify-center gap-1.5 border-b border-border px-4',
+        collapsedMode && 'items-center',
+      )}
+    >
       <div className="flex items-center gap-2 overflow-hidden">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary text-primary-foreground">
           <GraduationCap className="h-5 w-5" />
         </span>
         {!collapsedMode && <span className="truncate text-lg font-extrabold text-foreground">NaviLearn</span>}
       </div>
-      {!collapsedMode && tagline && <span className="pl-11 text-[11px] text-muted-foreground">{tagline}</span>}
+      {!collapsedMode && tagline && (
+        <span className="pl-11 text-[11px] text-muted-foreground">{tagline}</span>
+      )}
     </div>
   );
 
@@ -280,11 +314,19 @@ export function Sidebar({
               animate={{ x: 0 }}
               exit={{ x: -280 }}
               transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-              className={cn('fixed left-0 top-0 z-50 flex h-screen w-[288px] flex-col border-r border-border bg-card lg:hidden', dark && 'dark')}
+              className={cn(
+                'fixed left-0 top-0 z-50 flex h-screen w-[288px] flex-col border-r border-border bg-card lg:hidden',
+                dark && 'dark',
+              )}
             >
               {header(false)}
               <SidebarBody groups={groups} collapsed={false} pathname={pathname} />
-              <ProfileFooter collapsed={false} userName={userName} roleLabel={roleLabel} onLogout={onLogout} />
+              <ProfileFooter
+                collapsed={false}
+                userName={userName}
+                roleLabel={roleLabel}
+                onLogout={onLogout}
+              />
             </motion.aside>
           </>
         )}
