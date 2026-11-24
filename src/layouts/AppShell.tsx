@@ -22,7 +22,9 @@ interface AppShellProps {
   userName: string;
   roleLabel: string;
   notificationCount?: number;
-  /** Shown under the NaviLearn wordmark in the expanded sidebar. */
+  /** Shown under the NaviLearn wordmark in the expanded sidebar — defaults per `area` so every
+   * page's sidebar looks identical without each one having to pass it. Pass an explicit string to
+   * override, or `''` to force none. */
   tagline?: string;
   /** Use the compact single-row topbar instead of the colored heading banner — for pages whose
    * own content (e.g. a hero section) already carries the greeting/title. */
@@ -49,6 +51,9 @@ export function AppShell({
 }: AppShellProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  // Same sidebar, every student page — previously only Dashboard passed `tagline`, so its sidebar
+  // looked taller/different from every other menu. Defaulting it here means no page can forget it.
+  const resolvedTagline = tagline ?? (area === 'student' ? 'Explore. Learn. Master.' : undefined);
 
   return (
     <div className="tw-scope flex min-h-screen bg-background">
@@ -57,7 +62,7 @@ export function AppShell({
         collapsed={collapsed}
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
-        tagline={tagline}
+        tagline={resolvedTagline}
         userName={userName}
         roleLabel={roleLabel}
         onLogout={onLogout}

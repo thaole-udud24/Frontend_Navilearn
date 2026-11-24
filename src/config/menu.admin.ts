@@ -4,6 +4,7 @@ import {
   ClipboardList,
   Database,
   FileBarChart,
+  FileText,
   Flag,
   Home,
   LayoutList,
@@ -36,12 +37,14 @@ export const adminMenu: MenuGroup[] = [
         ],
       },
       { label: 'Kho tri thức', icon: LayoutList, path: PATHS.admin.knowledgeItems, roles: ['admin'] },
+      { label: 'Tài liệu nguồn', icon: FileText, path: PATHS.admin.assetItems, roles: ['admin'] },
       {
         label: 'Ngân hàng câu hỏi',
         icon: BookMarked,
         roles: ['admin'],
         children: [
           { label: 'Câu hỏi', path: PATHS.admin.questions, roles: ['admin'] },
+          { label: 'Thẻ ghi nhớ', path: PATHS.admin.flashcardItems, roles: ['admin'] },
           { label: 'Báo lỗi từ sinh viên', path: PATHS.admin.questionIssueReports, roles: ['admin'] },
         ],
       },
@@ -54,7 +57,15 @@ export const adminMenu: MenuGroup[] = [
           { label: 'Rubric chấm tự luận', path: PATHS.admin.rubrics, roles: ['admin'] },
         ],
       },
-      { label: 'Lộ trình mẫu', icon: LayoutTemplate, path: PATHS.admin.planTemplateItems, roles: ['admin'] },
+      {
+        label: 'Lộ trình mẫu',
+        icon: LayoutTemplate,
+        roles: ['admin'],
+        children: [
+          { label: 'Lộ trình', path: PATHS.admin.planTemplateItems, roles: ['admin'] },
+          { label: 'Thư viện bài học', path: PATHS.admin.lessonItems, roles: ['admin'] },
+        ],
+      },
     ],
   },
   {
