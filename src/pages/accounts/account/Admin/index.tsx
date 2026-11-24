@@ -460,7 +460,7 @@ export default function AdminAccountPage() {
       </Dialog>
 
       <Dialog open={!!logUser} onOpenChange={(open) => !open && setLogUser(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>Lịch sử đăng nhập — {logUser?.email}</DialogTitle>
           </DialogHeader>
@@ -497,7 +497,7 @@ export default function AdminAccountPage() {
       </Dialog>
 
       <Dialog open={auditOpen} onOpenChange={setAuditOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent size="xl">
           <DialogHeader>
             <DialogTitle>Nhật ký thao tác quản trị</DialogTitle>
           </DialogHeader>
