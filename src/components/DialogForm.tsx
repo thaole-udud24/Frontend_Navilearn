@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { DialogFooter, DialogTitle } from '@/components/ui/dialog';
+import type { StatTone } from '@/components/StatCard';
 import { cn } from '@/lib/utils';
 
 /** Icon + text, consistent across every Thêm mới/Chỉnh sửa/Chi tiết dialog in the admin area. */
@@ -15,6 +16,52 @@ export function FormDialogTitle({ icon: Icon, children }: { icon: LucideIcon; ch
       </span>
       {children}
     </DialogTitle>
+  );
+}
+
+const HEADER_TONE_CLASS: Record<StatTone, string> = {
+  blue: 'from-primary-soft to-card text-primary',
+  peach: 'from-accent-soft to-card text-accent',
+  mint: 'from-mint/40 to-card text-mint-foreground',
+  blush: 'from-blush/50 to-card text-blush-foreground',
+  lavender: 'from-lavender/60 to-card text-lavender-foreground',
+  amber: 'from-amber/50 to-card text-amber-foreground',
+  teal: 'from-teal/40 to-card text-teal-foreground',
+};
+
+/** A colour-blocked banner for a form dialog's header — "phân lớp màu" per the design brief,
+ * instead of a plain white title. Sits above the dialog's own content, offset by the content's
+ * `p-6`/`gap-4` so it reads as one continuous panel rather than a card nested in a card. */
+export function DialogColorHeader({
+  icon: Icon,
+  tone,
+  title,
+  description,
+  trailing,
+}: {
+  icon: LucideIcon;
+  tone: StatTone;
+  title: ReactNode;
+  description?: ReactNode;
+  /** Extra content pinned to the right of the title (e.g. a status badge). */
+  trailing?: ReactNode;
+}) {
+  return (
+    <div
+      className={cn(
+        '-mx-6 -mt-6 flex items-center gap-3 rounded-t-card bg-gradient-to-br px-6 py-5',
+        HEADER_TONE_CLASS[tone],
+      )}
+    >
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white shadow-card">
+        <Icon className="h-5 w-5" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <DialogTitle className="text-lg text-foreground">{title}</DialogTitle>
+        {description && <p className="text-sm text-muted-foreground">{description}</p>}
+      </div>
+      {trailing && <div className="mr-8 shrink-0">{trailing}</div>}
+    </div>
   );
 }
 

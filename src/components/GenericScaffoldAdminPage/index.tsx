@@ -50,7 +50,7 @@ function ViewScaffoldItemDialog<T extends ScaffoldItem>({
 }) {
   return (
     <Dialog open={!!item} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="tw-scope max-w-md">
+      <DialogContent size="md" className="tw-scope">
         <DialogHeader>
           <FormDialogTitle icon={Eye}>Chi tiết {itemLabel}</FormDialogTitle>
         </DialogHeader>

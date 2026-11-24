@@ -8,7 +8,7 @@ import { AppShell } from '@/layouts/AppShell';
 import { useAuthStore } from '@/hooks/useAuth';
 import { PATHS } from '@/routes/paths';
 import { studentMenu } from '@/config/menu.student';
-import { Button } from '@/components/ui/button';
+import { AddButton } from '@/components/ui/add-button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
 import { FormDialogFooter, FormDialogTitle, FormField } from '@/components/DialogForm';
@@ -115,9 +115,7 @@ export function GenericScaffoldStudentPage<T extends ScaffoldItem>({
     >
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-bold text-foreground">{pageTitle}</h1>
-        <Button type="button" onClick={() => setOpen(true)}>
-          <Plus className="h-4 w-4" /> {createLabel}
-        </Button>
+        <AddButton onClick={() => setOpen(true)}>{createLabel}</AddButton>
       </div>
       <DataTablePage<T>
         key={tableKey}
@@ -132,7 +130,7 @@ export function GenericScaffoldStudentPage<T extends ScaffoldItem>({
       />
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="tw-scope max-w-md">
+        <DialogContent size="md" className="tw-scope">
           <DialogHeader>
             <FormDialogTitle icon={Plus}>{createLabel}</FormDialogTitle>
           </DialogHeader>
