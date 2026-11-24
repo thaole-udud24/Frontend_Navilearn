@@ -19,6 +19,9 @@ import BusinessRuleAdmin from '@/pages/admin/BusinessRuleAdmin';
 import AdminReportItemsAdminPage from '@/pages/ops/admin-report/Admin';
 import ReviewItemsAdminPage from '@/pages/content/review/Admin';
 import PlanTemplateAdmin from '@/pages/admin/PlanTemplateAdmin';
+import LessonAdmin from '@/pages/admin/LessonAdmin';
+import FlashcardAdmin from '@/pages/admin/FlashcardAdmin';
+import AssetAdmin from '@/pages/admin/AssetAdmin';
 
 // The dashboard and the new QBK/ACF screens bring their own full AppShell (dark-navy sidebar +
 // header), so they must render as AdminLayout siblings, not nested inside its antd Sider — same
@@ -43,6 +46,9 @@ export const adminNewRoutes = [
   { path: 'admin-report-items', element: createElement(AdminReportItemsAdminPage) },
   { path: 'review-items', element: createElement(ReviewItemsAdminPage) },
   { path: 'plan-template-items', element: createElement(PlanTemplateAdmin) },
+  { path: 'lesson-items', element: createElement(LessonAdmin) },
+  { path: 'flashcard-items', element: createElement(FlashcardAdmin) },
+  { path: 'asset-items', element: createElement(AssetAdmin) },
 ];
 
 // Kept as a live reference for scaffolding new modules the same way (see backend routes/index.js);
