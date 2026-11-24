@@ -1,7 +1,7 @@
-import type { ConceptFilters } from '@/services/knowledge/types';
-
-export const conceptKeys = {
-  all: ['concepts'] as const,
-  list: (filters: ConceptFilters) => [...conceptKeys.all, 'list', filters] as const,
-  detail: (id: string) => [...conceptKeys.all, 'detail', id] as const,
+export const knowledgeKeys = {
+  all: ['knowledge-items'] as const,
+  lists: () => [...knowledgeKeys.all, 'list'] as const,
+  list: (filters: Record<string, unknown>) => [...knowledgeKeys.lists(), filters] as const,
+  detail: (id: string) => [...knowledgeKeys.all, 'detail', id] as const,
+  subjectGraph: (subjectId: string) => [...knowledgeKeys.all, 'subjectGraph', subjectId] as const,
 };
