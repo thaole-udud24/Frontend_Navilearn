@@ -1,12 +1,17 @@
 import { createElement } from 'react';
 import StudentDashboard from '@/pages/student/Dashboard';
 import StudentComingSoon from '@/pages/student/ComingSoon';
+import CoursesPage from '@/pages/student/Courses';
+import KnowledgeMapPage from '@/pages/student/KnowledgeMap';
 import ExamLibraryPage from '@/pages/student/ExamLibrary';
 import AssessmentPage from '@/pages/student/Assessment';
 import MasteryPage from '@/pages/student/Mastery';
 import AiAssistPage from '@/pages/student/AiAssist';
 import PracticePage from '@/pages/student/Practice';
 import PlannerPage from '@/pages/student/Planner';
+import ResourcesPage from '@/pages/student/Resources';
+import CourseResourcesPage from '@/pages/student/CourseResources';
+import LearningRoadmapPage from '@/pages/student/LearningRoadmap';
 import TemplateItemsPage from '@/pages/_template/Student';
 import StudentAccountItemsPage from '@/pages/accounts/account/Student';
 import StudentRiskItemsPage from '@/pages/planning/risk/Student';
@@ -23,15 +28,16 @@ export const studentIndexRoute = { index: true, element: createElement(StudentDa
 // under the legacy StudentLayout) so clicking them stays on the new design instead of jumping to
 // the old antd shell. Swap each entry for its real page, under the same path, once it ships.
 export const studentComingSoonRoutes = [
-  { path: 'courses', element: createElement(StudentComingSoon, { label: 'Khoá học của tôi' }) },
-  { path: 'knowledge-map', element: createElement(StudentComingSoon, { label: 'Bản đồ tri thức' }) },
+  { path: 'courses', element: createElement(CoursesPage) },
+  { path: 'learning-roadmap', element: createElement(LearningRoadmapPage) },
+  { path: 'knowledge-map', element: createElement(KnowledgeMapPage) },
   { path: 'practice', element: createElement(PracticePage) },
   { path: 'assessment', element: createElement(AssessmentPage) },
   { path: 'mastery', element: createElement(MasteryPage) },
   { path: 'planner', element: createElement(PlannerPage) },
-  { path: 'resources', element: createElement(StudentComingSoon, { label: 'Tài liệu học tập' }) },
+  { path: 'resources', element: createElement(ResourcesPage) },
   { path: 'exam-library', element: createElement(ExamLibraryPage) },
-  { path: 'course-resources', element: createElement(StudentComingSoon, { label: 'Tài nguyên khoá' }) },
+  { path: 'course-resources', element: createElement(CourseResourcesPage) },
   { path: 'ai-assist', element: createElement(AiAssistPage) },
   { path: 'notifications', element: createElement(StudentComingSoon, { label: 'Thông báo' }) },
   { path: 'settings', element: createElement(StudentAccountItemsPage) },
