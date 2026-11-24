@@ -102,7 +102,7 @@ export default function AdminReportItemsStudentPage() {
       />
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="tw-scope max-w-md">
+        <DialogContent size="md" className="tw-scope">
           <DialogHeader>
             <DialogTitle>Gửi báo cáo sự cố mới</DialogTitle>
           </DialogHeader>

@@ -86,7 +86,7 @@ function EditRuleDialog({
         if (!v) onClose();
       }}
     >
-      <DialogContent className="tw-scope max-w-md">
+      <DialogContent size="md" className="tw-scope">
         <DialogHeader>
           <FormDialogTitle icon={Pencil}>Chỉnh sửa Quy tắc nghiệp vụ</FormDialogTitle>
         </DialogHeader>
@@ -152,7 +152,7 @@ function ResetRuleDialog({
         if (!v) onClose();
       }}
     >
-      <DialogContent className="tw-scope max-w-md">
+      <DialogContent size="md" className="tw-scope">
         <DialogHeader>
           <FormDialogTitle icon={RotateCcw}>Khôi phục Quy tắc nghiệp vụ về mặc định</FormDialogTitle>
         </DialogHeader>
@@ -202,7 +202,7 @@ function HistoryDialog({ rule, onClose }: { rule: BusinessRule | null; onClose: 
         if (!v) onClose();
       }}
     >
-      <DialogContent className="tw-scope max-w-lg">
+      <DialogContent size="md" className="tw-scope">
         <DialogHeader>
           <FormDialogTitle icon={History}>Lịch sử thay đổi — {rule?.ruleCode}</FormDialogTitle>
         </DialogHeader>
@@ -319,7 +319,7 @@ function CreateRuleDialog({
         }
       }}
     >
-      <DialogContent className="tw-scope max-w-md">
+      <DialogContent size="md" className="tw-scope">
         <DialogHeader>
           <FormDialogTitle icon={Plus}>Thêm mới Quy tắc nghiệp vụ</FormDialogTitle>
         </DialogHeader>
@@ -404,7 +404,7 @@ function ValueCell({ rule }: { rule: BusinessRule }) {
         )}
       </div>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="tw-scope max-w-lg">
+        <DialogContent size="md" className="tw-scope">
           <DialogHeader>
             <FormDialogTitle icon={Eye}>Giá trị đầy đủ — {rule.ruleCode}</FormDialogTitle>
           </DialogHeader>

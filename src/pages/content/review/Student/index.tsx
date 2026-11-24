@@ -102,7 +102,7 @@ export default function ReviewItemsStudentPage() {
       />
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="tw-scope max-w-md">
+        <DialogContent size="md" className="tw-scope">
           <DialogHeader>
             <DialogTitle>Viết đánh giá mới</DialogTitle>
           </DialogHeader>

@@ -8,7 +8,7 @@ import { AppShell } from '@/layouts/AppShell';
 import { useAuthStore } from '@/hooks/useAuth';
 import { PATHS } from '@/routes/paths';
 import { adminMenu } from '@/config/menu.admin';
-import { Button } from '@/components/ui/button';
+import { AddButton } from '@/components/ui/add-button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
 import { DetailRow, FormDialogFooter, FormDialogTitle, FormField } from '@/components/DialogForm';
@@ -67,7 +67,7 @@ function RubricFormDialog({
         if (!v) onClose();
       }}
     >
-      <DialogContent className="tw-scope max-w-lg">
+      <DialogContent size="md" className="tw-scope">
         <DialogHeader>
           <FormDialogTitle icon={editing ? Pencil : Plus}>
             {editing ? 'Chỉnh sửa Rubric' : 'Thêm mới Rubric'}
@@ -119,15 +119,14 @@ function RubricFormDialog({
               </button>
             </div>
           ))}
-          <Button
-            type="button"
+          <AddButton
             variant="outline"
             size="sm"
             className="self-start"
             onClick={() => setCriteria([...criteria, { name: '', maxPoints: 10 }])}
           >
-            <Plus className="h-4 w-4" /> Thêm tiêu chí
-          </Button>
+            Thêm tiêu chí
+          </AddButton>
         </div>
         <FormDialogFooter
           onCancel={onClose}
@@ -142,7 +141,7 @@ function RubricFormDialog({
 function ViewRubricDialog({ rubric, onClose }: { rubric: Rubric | null; onClose: () => void }) {
   return (
     <Dialog open={!!rubric} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="tw-scope max-w-lg">
+      <DialogContent size="md" className="tw-scope">
         <DialogHeader>
           <FormDialogTitle icon={Eye}>Chi tiết Rubric</FormDialogTitle>
         </DialogHeader>
@@ -220,15 +219,14 @@ export default function RubricAdmin() {
     >
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-bold text-foreground">Rubric chấm tự luận</h1>
-        <Button
-          type="button"
+        <AddButton
           onClick={() => {
             setEditing(null);
             setFormOpen(true);
           }}
         >
-          <Plus className="h-4 w-4" /> Thêm mới
-        </Button>
+          Thêm mới
+        </AddButton>
       </div>
       <DataTablePage<Rubric>
         key={tableKey}

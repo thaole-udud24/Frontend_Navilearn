@@ -9,6 +9,7 @@ import { useAuthStore } from '@/hooks/useAuth';
 import { PATHS } from '@/routes/paths';
 import { adminMenu } from '@/config/menu.admin';
 import { Button } from '@/components/ui/button';
+import { AddButton } from '@/components/ui/add-button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
 import { DetailRow, FormDialogFooter, FormDialogTitle, FormField } from '@/components/DialogForm';
@@ -81,7 +82,7 @@ function CreateConceptDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="tw-scope max-w-md">
+      <DialogContent size="md" className="tw-scope">
         <DialogHeader>
           <FormDialogTitle icon={Plus}>Thêm mới Kiến thức</FormDialogTitle>
         </DialogHeader>
@@ -184,7 +185,7 @@ function EditConceptDialog({
         if (!v) onClose();
       }}
     >
-      <DialogContent className="tw-scope max-w-md">
+      <DialogContent size="md" className="tw-scope">
         <DialogHeader>
           <FormDialogTitle icon={Pencil}>Chỉnh sửa Kiến thức</FormDialogTitle>
         </DialogHeader>
@@ -241,7 +242,7 @@ function ViewConceptDialog({ concept, onClose }: { concept: Concept | null; onCl
         }
       }}
     >
-      <DialogContent className="tw-scope max-w-md">
+      <DialogContent size="md" className="tw-scope">
         <DialogHeader>
           <FormDialogTitle icon={Eye}>Chi tiết Kiến thức</FormDialogTitle>
         </DialogHeader>
@@ -338,7 +339,7 @@ function GenerateConceptAiDialog({
         }
       }}
     >
-      <DialogContent className="tw-scope max-w-md">
+      <DialogContent size="md" className="tw-scope">
         <DialogHeader>
           <FormDialogTitle icon={Sparkles}>Sinh Kiến thức bằng AI</FormDialogTitle>
         </DialogHeader>
@@ -455,9 +456,7 @@ export default function AdminKnowledgeItemsPage() {
     >
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-bold text-foreground">Kho tri thức</h1>
-        <Button type="button" onClick={() => setCreateOpen(true)}>
-          <Plus className="h-4 w-4" /> Thêm mới
-        </Button>
+        <AddButton onClick={() => setCreateOpen(true)}>Thêm mới</AddButton>
       </div>
       <DataTablePage<Concept>
         key={tableKey}
