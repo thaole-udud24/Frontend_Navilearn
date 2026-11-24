@@ -1,8 +1,12 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Bell, ChevronDown, Grid3x3, LogOut, Menu, Moon, Search, User } from 'lucide-react';
+import { Bell, ChevronDown, Grid3x3, KeyRound, LogOut, Menu, Moon, Search, User } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/hooks/useAuth';
+import { PATHS } from '@/routes/paths';
+import { assetUrl } from '@/utils/assetUrl';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,7 +46,23 @@ function AvatarMenu({
   onLogout?: () => void;
   light?: boolean;
 }) {
+  const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
   const initial = userName.trim().charAt(0).toUpperCase();
+  const avatar = assetUrl(user?.avatarUrl);
+  const isAdmin = user?.role === 'admin';
+  const profilePath = isAdmin ? PATHS.admin.profile : PATHS.student.profile;
+  const passwordPath = isAdmin ? PATHS.admin.changePassword : PATHS.student.changePassword;
+  // Pages may pass their own handler; otherwise the menu signs out by itself so it works everywhere.
+  const handleLogout = () => {
+    if (onLogout) {
+      onLogout();
+      return;
+    }
+    logout();
+    navigate(PATHS.login);
+  };
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -61,7 +81,11 @@ function AvatarMenu({
                 : 'bg-white/20',
             )}
           >
-            {initial}
+            {avatar ? (
+              <img src={avatar} alt="" className="h-full w-full rounded-full object-cover" />
+            ) : (
+              initial
+            )}
           </span>
           <span className="hidden text-left sm:block">
             <span
@@ -78,17 +102,17 @@ function AvatarMenu({
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="tw-scope w-48" align="end">
-        <DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => navigate(profilePath)}>
           <User className="h-4 w-4" /> Hồ sơ
         </DropdownMenuItem>
-        <DropdownMenuItem>
-          <User className="h-4 w-4" /> Đổi mật khẩu
+        <DropdownMenuItem onSelect={() => navigate(passwordPath)}>
+          <KeyRound className="h-4 w-4" /> Đổi mật khẩu
         </DropdownMenuItem>
         <DropdownMenuItem>
           <Moon className="h-4 w-4" /> Giao diện sáng/tối
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="text-danger" onSelect={onLogout}>
+        <DropdownMenuItem className="text-danger" onSelect={handleLogout}>
           <LogOut className="h-4 w-4" /> Đăng xuất
         </DropdownMenuItem>
       </DropdownMenuContent>

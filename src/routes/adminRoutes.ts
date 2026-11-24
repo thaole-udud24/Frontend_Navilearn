@@ -7,7 +7,10 @@ import RubricAdmin from '@/pages/admin/RubricAdmin';
 import TemplateItemsPage from '@/pages/_template/Admin';
 import AdminAccountItemsPage from '@/pages/accounts/account/Admin';
 import AdminRbacItemsPage from '@/pages/accounts/rbac/Admin';
-import AdminSubjectItemsPage from '@/pages/accounts/subject/Admin';
+import AdminSubjectCatalogPage from '@/pages/accounts/subject/Admin';
+import AdminSharedDocumentsPage from '@/pages/accounts/subject/Admin/SharedDocuments';
+import AdminProfilePage from '@/pages/accounts/account/Admin/Profile';
+import AdminChangePasswordPage from '@/pages/accounts/account/Admin/ChangePassword';
 import AdminKnowledgeItemsPage from '@/pages/content/knowledge/Admin';
 import AdminRiskItemsPage from '@/pages/planning/risk/Admin';
 import AdminMonitoringItemsPage from '@/pages/ops/monitoring/Admin';
@@ -32,7 +35,6 @@ export const adminNewRoutes = [
   { path: 'exam-configs', element: createElement(AssessmentConfigAdmin) },
   { path: 'exam-configs/rubrics', element: createElement(RubricAdmin) },
   { path: 'business-rule-items', element: createElement(BusinessRuleAdmin) },
-  { path: 'subject-items', element: createElement(AdminSubjectItemsPage) },
   { path: 'knowledge-items', element: createElement(AdminKnowledgeItemsPage) },
   { path: 'risk-items', element: createElement(AdminRiskItemsPage) },
   { path: 'monitoring-items', element: createElement(AdminMonitoringItemsPage) },
@@ -50,4 +52,12 @@ export const adminNewRoutes = [
 export const adminLegacyRoutes = [
   { path: 'template-items', element: createElement(TemplateItemsPage) },
   { path: 'rbac-items', element: createElement(AdminRbacItemsPage) },
+];
+
+// Pages that only provide their content: AdminAppShellLayout supplies the sidebar, header and sign-out.
+export const adminShellRoutes = [
+  { path: 'subject-catalog', element: createElement(AdminSubjectCatalogPage) },
+  { path: 'shared-documents', element: createElement(AdminSharedDocumentsPage) },
+  { path: 'profile', element: createElement(AdminProfilePage) },
+  { path: 'change-password', element: createElement(AdminChangePasswordPage) },
 ];

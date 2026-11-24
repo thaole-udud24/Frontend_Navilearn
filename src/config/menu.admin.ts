@@ -4,6 +4,7 @@ import {
   ClipboardList,
   Database,
   FileBarChart,
+  FileText,
   Flag,
   Home,
   LayoutList,
@@ -85,6 +86,9 @@ export const adminMenu: MenuGroup[] = [
   },
   {
     label: 'Danh mục',
-    items: [{ label: 'Môn học', icon: Settings, path: PATHS.admin.subjectItems, roles: ['admin'] }],
+    items: [
+      { label: 'Môn học', icon: Settings, path: PATHS.admin.subjectCatalog, roles: ['admin'] },
+      { label: 'Tài liệu chung', icon: FileText, path: PATHS.admin.sharedDocuments, roles: ['admin'] },
+    ],
   },
 ];

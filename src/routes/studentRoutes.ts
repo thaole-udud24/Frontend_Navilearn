@@ -10,7 +10,11 @@ import PlannerPage from '@/pages/student/Planner';
 import TemplateItemsPage from '@/pages/_template/Student';
 import StudentAccountItemsPage from '@/pages/accounts/account/Student';
 import StudentRiskItemsPage from '@/pages/planning/risk/Student';
-import StudentSubjectItemsPage from '@/pages/accounts/subject/Student';
+import StudentSubjectsPage from '@/pages/accounts/subject/Student';
+import StudentSubjectDetailPage from '@/pages/accounts/subject/Student/SubjectDetail';
+import StudentSharedLibraryPage from '@/pages/accounts/subject/Student/SharedLibrary';
+import StudentProfilePage from '@/pages/accounts/account/Student/Profile';
+import StudentChangePasswordPage from '@/pages/accounts/account/Student/ChangePassword';
 import StudentSupportItemsPage from '@/pages/ops/support/Student';
 import AdminReportItemsStudentPage from '@/pages/ops/admin-report/Student';
 import ReviewItemsStudentPage from '@/pages/content/review/Student';
@@ -23,23 +27,29 @@ export const studentIndexRoute = { index: true, element: createElement(StudentDa
 // under the legacy StudentLayout) so clicking them stays on the new design instead of jumping to
 // the old antd shell. Swap each entry for its real page, under the same path, once it ships.
 export const studentComingSoonRoutes = [
-  { path: 'courses', element: createElement(StudentComingSoon, { label: 'Khoá học của tôi' }) },
   { path: 'knowledge-map', element: createElement(StudentComingSoon, { label: 'Bản đồ tri thức' }) },
   { path: 'practice', element: createElement(PracticePage) },
   { path: 'assessment', element: createElement(AssessmentPage) },
   { path: 'mastery', element: createElement(MasteryPage) },
   { path: 'planner', element: createElement(PlannerPage) },
-  { path: 'resources', element: createElement(StudentComingSoon, { label: 'Tài liệu học tập' }) },
   { path: 'exam-library', element: createElement(ExamLibraryPage) },
   { path: 'course-resources', element: createElement(StudentComingSoon, { label: 'Tài nguyên khoá' }) },
   { path: 'ai-assist', element: createElement(AiAssistPage) },
   { path: 'notifications', element: createElement(StudentComingSoon, { label: 'Thông báo' }) },
   { path: 'settings', element: createElement(StudentAccountItemsPage) },
   { path: 'risk-items', element: createElement(StudentRiskItemsPage) },
-  { path: 'subject-items', element: createElement(StudentSubjectItemsPage) },
   { path: 'support-items', element: createElement(StudentSupportItemsPage) },
   { path: 'report-issue', element: createElement(AdminReportItemsStudentPage) },
   { path: 'reviews', element: createElement(ReviewItemsStudentPage) },
+];
+
+// Pages that only provide their content: StudentAppShellLayout supplies the sidebar, header and sign-out.
+export const studentShellRoutes = [
+  { path: 'courses', element: createElement(StudentSubjectsPage) },
+  { path: 'courses/:subjectId', element: createElement(StudentSubjectDetailPage) },
+  { path: 'resources', element: createElement(StudentSharedLibraryPage) },
+  { path: 'profile', element: createElement(StudentProfilePage) },
+  { path: 'change-password', element: createElement(StudentChangePasswordPage) },
 ];
 
 // Kept as a live reference for scaffolding new modules the same way; not linked from the sidebar.

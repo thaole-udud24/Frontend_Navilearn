@@ -1,16 +1,180 @@
-import { GenericScaffoldAdminPage } from '@/components/GenericScaffoldAdminPage';
-import { listSubjectItems, updateSubjectItemStatus } from '@/services/subject';
-import type { SubjectItem } from '@/services/subject/types';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import type { ColumnDef } from '@tanstack/react-table';
+import { ArchiveRestore, Ban, Download, FileText, Pencil, Plus } from 'lucide-react';
+import { toast } from 'sonner';
 
-export default function AdminSubjectItemsPage() {
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { DataTablePage } from '@/components/DataTablePage';
+import type { RowAction } from '@/components/DataTablePage/types';
+import { StatusBadge } from '@/components/StatusBadge';
+import { PATHS } from '@/routes/paths';
+import { toApiError } from '@/services/apiError';
+import { exportCatalog, listCatalog, type Subject } from '@/services/subject';
+import { SubjectFormDialog } from '../shared/SubjectFormDialog';
+import { useCatalogActions } from './hooks/useSharedLibrary';
+
+type StatusFilter = 'all' | 'active' | 'inactive';
+
+const columns: ColumnDef<Subject>[] = [
+  {
+    accessorKey: 'name',
+    header: 'Môn học',
+    size: 240,
+    cell: ({ row }) => <span className="font-semibold text-foreground">{row.original.name}</span>,
+  },
+  {
+    accessorKey: 'description',
+    header: 'Mô tả',
+    size: 320,
+    cell: ({ getValue }) => (
+      <span className="line-clamp-2 text-muted-foreground">{getValue<string>() || '—'}</span>
+    ),
+  },
+  { accessorKey: 'documentCount', header: 'Số tài liệu', size: 120 },
+  {
+    accessorKey: 'status',
+    header: 'Trạng thái',
+    size: 150,
+    cell: ({ getValue }) =>
+      getValue<string>() === 'active' ? (
+        <StatusBadge variant="success">Đang sử dụng</StatusBadge>
+      ) : (
+        <StatusBadge variant="neutral">Ngừng sử dụng</StatusBadge>
+      ),
+  },
+  {
+    accessorKey: 'updatedAt',
+    header: 'Cập nhật',
+    size: 170,
+    cell: ({ getValue }) => new Date(getValue<string>()).toLocaleString('vi-VN'),
+  },
+];
+
+/** FE-ADM-16/17/18: shared subject catalog — add, edit, stop using, restore, export. */
+export default function AdminSubjectCatalogPage() {
+  const navigate = useNavigate();
+  const [status, setStatus] = useState<StatusFilter>('all');
+  const [tableKey, setTableKey] = useState(0);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<Subject | null>(null);
+  const [deactivating, setDeactivating] = useState<Subject | null>(null);
+
+  const actions = useCatalogActions(() => setTableKey((k) => k + 1));
+
+  const openCreate = () => {
+    setEditing(null);
+    setFormOpen(true);
+  };
+
+  const rowActions: RowAction<Subject>[] = [
+    {
+      key: 'edit',
+      label: 'Chỉnh sửa',
+      icon: <Pencil />,
+      onSelect: (subject) => {
+        setEditing(subject);
+        setFormOpen(true);
+      },
+    },
+    {
+      key: 'documents',
+      label: 'Xem tài liệu',
+      icon: <FileText />,
+      onSelect: (subject) => navigate(`${PATHS.admin.sharedDocuments}?subjectId=${subject.id}`),
+    },
+    {
+      key: 'deactivate',
+      label: 'Ngừng sử dụng',
+      icon: <Ban />,
+      danger: true,
+      hidden: (subject) => subject.status !== 'active',
+      onSelect: setDeactivating,
+    },
+    {
+      key: 'restore',
+      label: 'Khôi phục',
+      icon: <ArchiveRestore />,
+      hidden: (subject) => subject.status === 'active',
+      onSelect: (subject) => actions.restore.mutate(subject.id),
+    },
+  ];
+
   return (
-    <GenericScaffoldAdminPage<SubjectItem>
-      pageTitle="Môn học"
-      breadcrumb={['Trang chủ', 'Danh mục', 'Môn học']}
-      searchPlaceholder="Tìm theo tên môn học…"
-      emptyLabel="Chưa có môn học nào"
-      list={listSubjectItems}
-      updateStatus={updateSubjectItemStatus}
-    />
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+        <div>
+          <h1 className="text-xl font-bold text-foreground">Danh mục môn học chung</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Môn học dùng chung để sinh viên chọn vào không gian học tập cá nhân.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Select value={status} onValueChange={(value) => setStatus(value as StatusFilter)}>
+            <SelectTrigger className="w-44" aria-label="Lọc theo trạng thái">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả trạng thái</SelectItem>
+              <SelectItem value="active">Đang sử dụng</SelectItem>
+              <SelectItem value="inactive">Ngừng sử dụng</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            onClick={() => void exportCatalog().catch((e: unknown) => toast.error(toApiError(e).message))}
+          >
+            <Download />
+            Xuất danh mục
+          </Button>
+          <Button onClick={openCreate}>
+            <Plus />
+            Thêm môn học
+          </Button>
+        </div>
+      </div>
+
+      <DataTablePage<Subject>
+        key={`${tableKey}-${status}`}
+        columns={columns}
+        getRowId={(subject) => subject.id}
+        rowActions={rowActions}
+        searchPlaceholder="Tìm theo tên môn học…"
+        emptyLabel="Chưa có môn học nào trong danh mục"
+        fetcher={async ({ page, pageSize, search }) => {
+          const res = await listCatalog({
+            page,
+            limit: pageSize,
+            q: search || undefined,
+            status: status === 'all' ? undefined : status,
+          });
+          return { data: res.data, total: res.meta?.total ?? res.data.length };
+        }}
+      />
+
+      <SubjectFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        subject={editing}
+        noun="môn học chung"
+        submitting={actions.create.isPending || actions.update.isPending}
+        onSubmit={(input) => {
+          const done = { onSuccess: () => setFormOpen(false) };
+          if (editing) actions.update.mutate({ id: editing.id, input }, done);
+          else actions.create.mutate(input, done);
+        }}
+      />
+
+      <ConfirmDialog
+        open={!!deactivating}
+        onOpenChange={(open) => !open && setDeactivating(null)}
+        title="Ngừng sử dụng môn học?"
+        description={`Môn "${deactivating?.name ?? ''}" sẽ không còn xuất hiện trong danh mục cho sinh viên. Môn học sinh viên đã thêm trước đó được giữ nguyên.`}
+        confirmLabel="Ngừng sử dụng"
+        onConfirm={() => deactivating && actions.deactivate.mutate(deactivating.id)}
+      />
+    </div>
   );
 }
