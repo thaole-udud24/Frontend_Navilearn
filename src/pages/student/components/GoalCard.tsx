@@ -32,7 +32,7 @@ export function GoalCard({ title, description, percent, segments, onViewDetail }
   });
 
   return (
-    <div className="relative flex flex-1 items-center gap-5 overflow-hidden rounded-card bg-gradient-to-br from-primary to-primary-hover p-5 text-white shadow-card">
+    <div className="relative flex flex-1 items-center gap-4 overflow-hidden rounded-card bg-gradient-to-br from-primary to-primary-hover p-4 text-white shadow-card">
       <span
         className="pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full bg-white/10"
         aria-hidden
@@ -55,7 +55,7 @@ export function GoalCard({ title, description, percent, segments, onViewDetail }
         </button>
       </div>
 
-      <div className="relative h-20 w-20 shrink-0">
+      <div className="relative h-16 w-16 shrink-0">
         <svg viewBox="0 0 80 80" className="h-full w-full -rotate-90">
           {arcs.map((arc, i) => (
             <circle

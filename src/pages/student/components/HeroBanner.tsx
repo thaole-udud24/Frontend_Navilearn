@@ -13,18 +13,18 @@ interface HeroBannerProps {
  * plain left side — no hand-drawn decoration needed anymore. */
 export function HeroBanner({ name, onStart }: HeroBannerProps) {
   return (
-    <div className="relative aspect-[1800/360] w-full overflow-hidden rounded-card shadow-card">
+    <div className="relative aspect-[1800/260] w-full overflow-hidden rounded-card shadow-card">
       <img src={heroBanner} alt="" className="absolute inset-0 h-full w-full object-cover" />
 
       <div className="absolute inset-0 flex items-center">
-        <div className="max-w-md px-6 sm:px-8">
-          <h2 className="text-[26px] font-extrabold leading-tight text-foreground sm:text-3xl">
+        <div className="max-w-md px-5 sm:px-7">
+          <h2 className="text-xl font-extrabold leading-tight text-foreground sm:text-2xl">
             Xin chào, {name}!
           </h2>
-          <p className="mt-2 text-sm font-medium text-muted-foreground sm:text-base">
+          <p className="mt-1 text-xs font-medium text-muted-foreground sm:text-sm">
             Cùng khám phá hành trình tri thức của bạn nhé!
           </p>
-          <Button size="lg" onClick={onStart} className="mt-5 text-base font-bold tracking-wide shadow-card">
+          <Button onClick={onStart} className="mt-3.5 font-bold tracking-wide shadow-card">
             Bắt đầu học ngay
             <ArrowRight />
           </Button>

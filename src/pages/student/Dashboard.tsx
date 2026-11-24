@@ -259,7 +259,6 @@ export default function StudentDashboard() {
       userName={user?.fullName ?? ''}
       roleLabel="Sinh viên"
       notificationCount={0}
-      tagline="Explore. Learn. Master."
       compactHeader
       onLogout={() => {
         logout();

@@ -29,7 +29,7 @@ function ScoreHistoryDialog({ assessmentId, onClose }: { assessmentId: string | 
 
   return (
     <Dialog open={!!assessmentId} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="tw-scope max-w-sm">
+      <DialogContent size="sm" className="tw-scope">
         <DialogHeader>
           <DialogTitle>Điểm trước và sau khi chấm lại</DialogTitle>
         </DialogHeader>

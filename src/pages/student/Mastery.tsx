@@ -171,7 +171,7 @@ export default function MasteryPage() {
       </div>
 
       <Dialog open={!!goalTarget} onOpenChange={(v) => !v && setGoalTarget(null)}>
-        <DialogContent className="tw-scope max-w-sm">
+        <DialogContent size="sm" className="tw-scope">
           <DialogHeader>
             <DialogTitle>Đặt mục tiêu Mastery — {goalTarget && conceptName(goalTarget.concept)}</DialogTitle>
           </DialogHeader>
@@ -195,7 +195,7 @@ export default function MasteryPage() {
       </Dialog>
 
       <Dialog open={!!trendTarget} onOpenChange={(v) => !v && setTrendTarget(null)}>
-        <DialogContent className="tw-scope max-w-lg">
+        <DialogContent size="md" className="tw-scope">
           <DialogHeader>
             <DialogTitle>Xu hướng Mastery — {trendTarget && conceptName(trendTarget.concept)}</DialogTitle>
           </DialogHeader>
