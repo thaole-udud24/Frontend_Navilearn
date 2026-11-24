@@ -1,6 +1,15 @@
 import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { AlertTriangle, BookOpen, CheckCircle2, Circle, ListChecks, Trash2, XCircle } from 'lucide-react';
+import {
+  AlertTriangle,
+  BookOpen,
+  CheckCircle2,
+  Circle,
+  ListChecks,
+  Lock,
+  Trash2,
+  XCircle,
+} from 'lucide-react';
 import { pickVariants, slideInLeft, slideInRight, staggerContainer } from '@/lib/motion';
 import { Button } from '@/components/ui/button';
 import { TheoryBlockViewer } from '@/components/TheoryBlockViewer';
@@ -44,6 +53,16 @@ const STATUS_STYLE: Record<SessionStatus, { card: string; dot: string; icon: typ
     },
   };
 
+// Chặng (stage) lock state wins over the raw session status for display — a 'planned' session that
+// is still 'locked' shows as locked, not as "Sắp tới". The BE also rejects completing/quizzing a
+// locked session, so this is a label, not the only guard.
+const LOCKED_STYLE = {
+  card: 'border-border bg-muted/30 opacity-70',
+  dot: 'bg-muted-foreground text-background',
+  icon: Lock,
+  label: 'Cần hoàn thành buổi trước',
+};
+
 /** Zigzag roadmap: sessions alternate left/right along a central axis, connected by one line
  * that draws in on mount — the "cây lộ trình" the student picks a goal's plan from (manual/AI/mẫu). */
 export function RoadmapTree({ sessions, readOnly = false, onSessionAction, onStartQuiz }: RoadmapTreeProps) {
@@ -76,7 +95,8 @@ export function RoadmapTree({ sessions, readOnly = false, onSessionAction, onSta
 
       <div className="flex flex-col gap-6">
         {ordered.map((s, i) => {
-          const style = STATUS_STYLE[s.status];
+          const isLocked = s.stageStatus === 'locked';
+          const style = isLocked ? LOCKED_STYLE : STATUS_STYLE[s.status];
           const Icon = style.icon;
           const isLeft = i % 2 === 0;
           const start = new Date(s.startAt);
@@ -89,8 +109,11 @@ export function RoadmapTree({ sessions, readOnly = false, onSessionAction, onSta
             >
               <div className={isLeft ? 'flex justify-end' : 'col-start-3 flex justify-start'}>
                 <div className={`w-full max-w-sm rounded-card border p-3 shadow-card ${style.card}`}>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-semibold text-foreground">
+                  <p className="text-sm font-semibold text-foreground">
+                    {s.title ?? s.note ?? 'Buổi học'}
+                  </p>
+                  <div className="mt-0.5 flex items-center justify-between gap-2">
+                    <span className="text-xs text-muted-foreground">
                       {start.toLocaleDateString('vi-VN', {
                         weekday: 'short',
                         day: '2-digit',
@@ -101,10 +124,25 @@ export function RoadmapTree({ sessions, readOnly = false, onSessionAction, onSta
                     </span>
                     <span className="text-xs text-muted-foreground">{s.durationMin} phút</span>
                   </div>
-                  {s.note && <p className="mt-1 text-sm text-muted-foreground">{s.note}</p>}
-                  <p className="mt-1 text-xs font-medium text-muted-foreground">{style.label}</p>
+                  <p className="mt-1 flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                    {isLocked && <Lock className="h-3 w-3" />} {style.label}
+                  </p>
+                  {(s.objectives?.length ?? 0) > 0 && (
+                    <div className="mt-1.5">
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">
+                        Sau buổi này bạn có thể
+                      </p>
+                      <ul className="mt-0.5 flex flex-col gap-0.5">
+                        {s.objectives!.map((o, idx) => (
+                          <li key={idx} className="text-xs text-foreground">
+                            • {o}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
-                  {(s.theoryContent || (s.questions?.length ?? 0) > 0) && (
+                  {!isLocked && (s.theoryContent || (s.questions?.length ?? 0) > 0) && (
                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                       {s.theoryContent && (
                         <button
@@ -130,8 +168,11 @@ export function RoadmapTree({ sessions, readOnly = false, onSessionAction, onSta
                       className="mt-1.5 rounded-control bg-info/5 p-2"
                     />
                   )}
+                  {s.status === 'done' && s.note && (
+                    <p className="mt-1.5 text-xs text-muted-foreground">Ghi chú: {s.note}</p>
+                  )}
 
-                  {!readOnly && s.status === 'planned' && onSessionAction && (
+                  {!isLocked && !readOnly && s.status === 'planned' && onSessionAction && (
                     <div className="mt-2 flex gap-1.5 border-t border-border pt-2">
                       {(s.questions?.length ?? 0) > 0 && !s.quizPassed ? (
                         <Button type="button" variant="ghost" size="sm" onClick={() => onStartQuiz?.(s._id)}>
