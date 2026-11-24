@@ -4,13 +4,16 @@ import { ArrowDownRight, ArrowRight, ArrowUpRight, type LucideIcon } from 'lucid
 
 import { cn } from '@/lib/utils';
 
-export type StatTone = 'blue' | 'peach' | 'mint' | 'blush';
+export type StatTone = 'blue' | 'peach' | 'mint' | 'blush' | 'lavender' | 'amber' | 'teal';
 
 const TONE_CARD: Record<StatTone, string> = {
   blue: 'bg-gradient-to-br from-primary-soft to-white border-primary/15',
   peach: 'bg-gradient-to-br from-accent-soft to-white border-accent/20',
   mint: 'bg-gradient-to-br from-mint/35 to-white border-mint-foreground/15',
   blush: 'bg-gradient-to-br from-blush/60 to-white border-blush-foreground/15',
+  lavender: 'bg-gradient-to-br from-lavender/70 to-white border-lavender-foreground/15',
+  amber: 'bg-gradient-to-br from-amber/60 to-white border-amber-foreground/15',
+  teal: 'bg-gradient-to-br from-teal/50 to-white border-teal-foreground/15',
 };
 
 const TONE_ICON: Record<StatTone, string> = {
@@ -18,6 +21,9 @@ const TONE_ICON: Record<StatTone, string> = {
   peach: 'text-accent',
   mint: 'text-mint-foreground',
   blush: 'text-blush-foreground',
+  lavender: 'text-lavender-foreground',
+  amber: 'text-amber-foreground',
+  teal: 'text-teal-foreground',
 };
 
 const TONE_ORBIT: Record<StatTone, string> = {
@@ -25,6 +31,9 @@ const TONE_ORBIT: Record<StatTone, string> = {
   peach: 'border-accent/25',
   mint: 'border-mint-foreground/25',
   blush: 'border-blush-foreground/25',
+  lavender: 'border-lavender-foreground/25',
+  amber: 'border-amber-foreground/25',
+  teal: 'border-teal-foreground/25',
 };
 
 const TREND_CLASS: Record<'up' | 'down', string> = {
@@ -86,6 +95,8 @@ interface StatCardProps {
   iconSrc?: string;
   label: string;
   value: number;
+  /** Appended right after the counted-up number, e.g. "%". */
+  suffix?: string;
   iconClassName?: string;
   sparkline?: number[];
   className?: string;
@@ -102,6 +113,7 @@ export function StatCard({
   iconSrc,
   label,
   value,
+  suffix,
   iconClassName,
   sparkline,
   className,
@@ -118,7 +130,7 @@ export function StatCard({
       whileHover={{ y: -2, boxShadow: '0 12px 32px rgba(32, 59, 112, 0.12)' }}
       transition={{ duration: 0.2 }}
       className={cn(
-        'relative overflow-hidden rounded-card border border-border bg-card p-5 shadow-card',
+        'relative overflow-hidden rounded-card border border-border bg-card p-4 shadow-card',
         tone && TONE_CARD[tone],
         className,
       )}
@@ -152,7 +164,7 @@ export function StatCard({
       <div className="relative flex min-w-0 items-center gap-2.5">
         <span
           className={cn(
-            'flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white shadow-card',
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white shadow-card',
             TONE_ICON[tone ?? 'blue'],
             !iconSrc && iconClassName,
           )}
@@ -164,8 +176,9 @@ export function StatCard({
         </span>
       </div>
 
-      <div className="relative mt-3 text-[28px] font-bold leading-tight text-foreground">
+      <div className="relative mt-2 text-2xl font-bold leading-tight text-foreground">
         {display.toLocaleString('vi-VN')}
+        {suffix}
       </div>
 
       {trend && (
