@@ -3,6 +3,7 @@ import {
   BookMarked,
   CheckSquare,
   FileText,
+  Flag,
   Home,
   LayoutGrid,
   LifeBuoy,
@@ -79,6 +80,7 @@ export const studentMenu: MenuGroup[] = [
             path: PATHS.student.riskItems,
             roles: ['student'],
           },
+          { label: 'Đề xuất môn học', icon: Flag, path: PATHS.student.subjectItems, roles: ['student'] },
           { label: 'Yêu cầu hỗ trợ', icon: LifeBuoy, path: PATHS.student.supportItems, roles: ['student'] },
           {
             label: 'Báo cáo sự cố',

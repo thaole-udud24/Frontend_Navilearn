@@ -20,6 +20,7 @@ export const PATHS = {
     settings: '/student/settings',
     templateItems: '/student/template-items',
     riskItems: '/student/risk-items',
+    subjectItems: '/student/subject-items',
     profile: '/student/profile',
     changePassword: '/student/change-password',
     supportItems: '/student/support-items',
