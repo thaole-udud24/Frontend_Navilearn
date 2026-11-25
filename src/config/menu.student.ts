@@ -1,7 +1,6 @@
 import {
   AlertTriangle,
   BookMarked,
-  CalendarDays,
   CheckSquare,
   FileText,
   Home,
@@ -32,7 +31,12 @@ export const studentMenu: MenuGroup[] = [
     items: [
       { label: 'Khoá học của tôi', icon: GraduationCap, path: PATHS.student.courses, roles: ['student'] },
       { label: 'Bản đồ tri thức', icon: Network, path: PATHS.student.knowledgeMap, roles: ['student'] },
-      { label: 'Lộ kế hoạch học tập', icon: CalendarDays, path: PATHS.student.planner, roles: ['student'] },
+      {
+        label: 'Lộ trình học tập',
+        icon: Flag,
+        path: PATHS.student.learningRoadmap,
+        roles: ['student'],
+      },
       { label: 'Luyện tập', icon: Percent, path: PATHS.student.practice, roles: ['student'] },
       { label: 'Đánh giá', icon: CheckSquare, path: PATHS.student.assessment, roles: ['student'] },
       { label: 'Mức độ thành thạo', icon: TrendingUp, path: PATHS.student.mastery, roles: ['student'] },
