@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Clock,
   Flag,
+  GitBranch,
   ListChecks,
   Lock,
   Play,
@@ -24,7 +25,7 @@ import { useAuthStore } from '@/hooks/useAuth';
 import { PATHS } from '@/routes/paths';
 import { studentMenu } from '@/config/menu.student';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { TheoryBlockViewer } from '@/components/TheoryBlockViewer';
 import { cn } from '@/lib/utils';
 import { listPlans, listGoals, updateSession } from '@/services/planning';
@@ -32,6 +33,7 @@ import { planningKeys } from '@/services/planning/queryKeys';
 import { listConcepts } from '@/services/knowledge';
 import { knowledgeKeys } from '@/services/knowledge/queryKeys';
 import { getQuestion } from '@/services/question-bank';
+import { RoadmapTree } from './components/RoadmapTree';
 import { SessionQuizDialog } from './components/SessionQuizDialog';
 import type { Goal, Plan, PlanSession } from '@/services/planning/types';
 import type { Concept } from '@/services/knowledge/types';
@@ -56,12 +58,6 @@ function stageState(s: PlanSession): StageState {
   return 'active';
 }
 
-const STATE_RING: Record<StageState, string> = {
-  done: 'bg-success/10 border-success/40 text-success',
-  active: 'bg-primary/10 border-primary/40 text-primary',
-  locked: 'bg-muted/60 border-border text-muted-foreground opacity-70',
-};
-
 const STATE_DOT: Record<StageState, string> = {
   done: 'bg-success text-white',
   active: 'bg-primary text-primary-foreground',
@@ -75,11 +71,17 @@ interface ChapterPanelProps {
   sessions: PlanSession[];
   selectedConceptId: string | null;
   onSelect: (id: string) => void;
+  /** The goal's own subject (a top-level Concept) — "chapters" are ITS direct children, not every
+   * top-level Concept in the bank (that would mix every subject's chapters into one flat list). */
+  subjectId?: string;
 }
 
-function ChapterPanel({ concepts, sessions, selectedConceptId, onSelect }: ChapterPanelProps) {
-  // Group by parentConcept — top-level chapters + their children
-  const chapters = concepts.filter((c) => !c.parentConcept);
+function ChapterPanel({ concepts, sessions, selectedConceptId, onSelect, subjectId }: ChapterPanelProps) {
+  // Group by parentConcept — chapters are the subject's direct children, their children are topics.
+  const chapters = concepts.filter((c) => {
+    const p = c.parentConcept;
+    return (typeof p === 'string' ? p : p?._id) === subjectId;
+  });
   const childrenOf = (parentId: string) =>
     concepts.filter((c) => {
       const p = c.parentConcept;
@@ -87,18 +89,14 @@ function ChapterPanel({ concepts, sessions, selectedConceptId, onSelect }: Chapt
     });
 
   const sessionConceptIds = new Set(sessions.map((s) => s.concept));
-  const doneConceptIds = new Set(
-    sessions.filter((s) => s.status === 'done').map((s) => s.concept),
-  );
+  const doneConceptIds = new Set(sessions.filter((s) => s.status === 'done').map((s) => s.concept));
 
   const [expanded, setExpanded] = useState<Set<string>>(new Set(chapters.slice(0, 1).map((c) => c._id)));
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="shrink-0 border-b border-border px-3 py-2.5">
-        <p className="text-xs font-semibold text-muted-foreground">
-          Giáo trình môn học
-        </p>
+        <p className="text-xs font-semibold text-muted-foreground">Giáo trình môn học</p>
         <p className="text-xs text-muted-foreground">
           {chapters.length} chương · {concepts.length} chủ đề
         </p>
@@ -131,15 +129,14 @@ function ChapterPanel({ concepts, sessions, selectedConceptId, onSelect }: Chapt
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-[10px] font-bold text-muted-foreground">
                   {ci + 1}
                 </span>
-                <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
-                  {ch.name}
-                </span>
+                <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">{ch.name}</span>
                 {chDone && <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-success" />}
-                {kids.length > 0 && (
-                  isOpen
-                    ? <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                    : <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                )}
+                {kids.length > 0 &&
+                  (isOpen ? (
+                    <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  ))}
               </button>
 
               {isOpen && kids.length > 0 && (
@@ -154,9 +151,7 @@ function ChapterPanel({ concepts, sessions, selectedConceptId, onSelect }: Chapt
                         onClick={() => onSelect(kid._id)}
                         className={cn(
                           'flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-muted/50',
-                          isSelected
-                            ? 'bg-primary/10 font-semibold text-primary'
-                            : 'text-foreground',
+                          isSelected ? 'bg-primary/10 font-semibold text-primary' : 'text-foreground',
                         )}
                       >
                         {kidDone ? (
@@ -202,9 +197,7 @@ function StagePanel({ sessions, selectedId, onSelect, filterConceptId }: StagePa
 
   // Group by "parent concept" (chapter) — sessions don't have chapter info so we group by startAt date roughly
   // We show all, optionally filtered
-  const visible = filterConceptId
-    ? ordered.filter((s) => s.concept === filterConceptId)
-    : ordered;
+  const visible = filterConceptId ? ordered.filter((s) => s.concept === filterConceptId) : ordered;
 
   // Further group by concept for chapter headings
   const groups: { conceptId: string; sessions: PlanSession[] }[] = [];
@@ -269,7 +262,8 @@ function StagePanel({ sessions, selectedId, onSelect, filterConceptId }: StagePa
                   )}
                 </span>
                 <p className="text-xs font-semibold text-muted-foreground">
-                  Chặng {idx + 1} · {new Date(s.startAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
+                  Chặng {idx + 1} ·{' '}
+                  {new Date(s.startAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
                 </p>
               </div>
               <span
@@ -293,9 +287,7 @@ function StagePanel({ sessions, selectedId, onSelect, filterConceptId }: StagePa
 
             {/* Description / objectives */}
             {(s.objectives?.length ?? 0) > 0 && (
-              <p className="mb-2 line-clamp-2 text-xs text-muted-foreground">
-                {s.objectives![0]}
-              </p>
+              <p className="mb-2 line-clamp-2 text-xs text-muted-foreground">{s.objectives![0]}</p>
             )}
 
             {/* Stats row */}
@@ -323,9 +315,7 @@ function StagePanel({ sessions, selectedId, onSelect, filterConceptId }: StagePa
                     style={{ width: `${progressPct}%` }}
                   />
                 </div>
-                <p className="mt-0.5 text-right text-[10px] text-muted-foreground">
-                  {progressPct}%
-                </p>
+                <p className="mt-0.5 text-right text-[10px] text-muted-foreground">{progressPct}%</p>
               </div>
             )}
           </button>
@@ -467,12 +457,7 @@ function StageInspectorPanel({ session, onClose, onStartQuiz, onDone }: StageIns
                     ))}
                   </ul>
                 )}
-                <Button
-                  type="button"
-                  size="sm"
-                  disabled={locked}
-                  onClick={() => onStartQuiz(session._id)}
-                >
+                <Button type="button" size="sm" disabled={locked} onClick={() => onStartQuiz(session._id)}>
                   <ListChecks className="h-4 w-4" />
                   {session.quizPassed ? 'Làm lại bài tập' : 'Bắt đầu luyện tập'}
                 </Button>
@@ -486,15 +471,24 @@ function StageInspectorPanel({ session, onClose, onStartQuiz, onDone }: StageIns
             <div className="flex flex-col gap-1.5 rounded-card border border-border p-3 text-xs text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Clock className="h-3.5 w-3.5" />
-                <span>Thời lượng: <strong className="text-foreground">{session.durationMin} phút</strong></span>
+                <span>
+                  Thời lượng: <strong className="text-foreground">{session.durationMin} phút</strong>
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <ListChecks className="h-3.5 w-3.5" />
-                <span>Câu hỏi: <strong className="text-foreground">{session.questions?.length ?? 0}</strong></span>
+                <span>
+                  Câu hỏi: <strong className="text-foreground">{session.questions?.length ?? 0}</strong>
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <Flag className="h-3.5 w-3.5" />
-                <span>Ngày: <strong className="text-foreground">{new Date(session.startAt).toLocaleDateString('vi-VN')}</strong></span>
+                <span>
+                  Ngày:{' '}
+                  <strong className="text-foreground">
+                    {new Date(session.startAt).toLocaleDateString('vi-VN')}
+                  </strong>
+                </span>
               </div>
             </div>
 
@@ -547,9 +541,10 @@ function StageInspectorPanel({ session, onClose, onStartQuiz, onDone }: StageIns
 interface OverviewStripProps {
   plan: Plan;
   goal?: Goal;
+  onViewRoadmapTree: () => void;
 }
 
-function OverviewStrip({ plan, goal }: OverviewStripProps) {
+function OverviewStrip({ plan, goal, onViewRoadmapTree }: OverviewStripProps) {
   const ordered = plan.sessions;
   const done = ordered.filter((s) => s.status === 'done').length;
   const totalMin = ordered.reduce((s, x) => s + x.durationMin, 0);
@@ -558,14 +553,19 @@ function OverviewStrip({ plan, goal }: OverviewStripProps) {
 
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-card border border-border bg-card px-4 py-3 shadow-card">
-      {/* Subject selector placeholder */}
       <div className="flex shrink-0 items-center gap-2 rounded-control border border-border bg-muted/40 px-3 py-1.5">
         <BookOpen className="h-4 w-4 text-primary" />
         <span className="text-sm font-medium text-foreground">
           {goal ? (typeof goal.concept === 'string' ? goal.concept : goal.concept.name) : plan.title}
         </span>
-        <ChevronDown className="h-4 w-4 text-muted-foreground" />
       </div>
+
+      {/* The plan's own chặng sequence (zigzag tree), same component/style as Admin's "Bản đồ lộ
+       * trình" for a Plan Template — a different diagram from Bản đồ tri thức, which is about
+       * Concept prerequisite relationships, not the built study plan. */}
+      <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={onViewRoadmapTree}>
+        <GitBranch className="h-3.5 w-3.5" /> Xem sơ đồ cây lộ trình
+      </Button>
 
       <div className="flex flex-1 flex-wrap items-center gap-4">
         {/* Progress bar */}
@@ -596,12 +596,12 @@ function OverviewStrip({ plan, goal }: OverviewStripProps) {
           <span className="text-xs text-muted-foreground">Thời gian học</span>
         </div>
 
-        {goal && (
+        {/* Real targetScore the student set when creating the goal — never goal.importance (a 1-5
+         * priority, not a score) and never shown at all when the goal has no target set. */}
+        {goal?.targetScore != null && (
           <div className="flex items-center gap-1.5 rounded-control border border-border px-2.5 py-1.5">
             <Star className="h-4 w-4 text-yellow-500" />
-            <span className="text-xs font-semibold text-foreground">
-              Mục tiêu: ≥ {goal.importance}.0
-            </span>
+            <span className="text-xs font-semibold text-foreground">Mục tiêu: ≥ {goal.targetScore}%</span>
           </div>
         )}
       </div>
@@ -641,6 +641,7 @@ export default function LearningRoadmapPage() {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [filterConceptId, setFilterConceptId] = useState<string | null>(null);
   const [quizSessionId, setQuizSessionId] = useState<string | null>(null);
+  const [roadmapTreeOpen, setRoadmapTreeOpen] = useState(false);
 
   // Data fetching
   const { data: plansRes } = useQuery({
@@ -679,12 +680,10 @@ export default function LearningRoadmapPage() {
   const concepts = conceptsRes?.data ?? [];
 
   // Session actions
-  const invalidatePlans = () =>
-    queryClient.invalidateQueries({ queryKey: planningKeys.all });
+  const invalidatePlans = () => queryClient.invalidateQueries({ queryKey: planningKeys.all });
 
   const doneMutation = useMutation({
-    mutationFn: (sessionId: string) =>
-      updateSession(activePlan!._id, sessionId, { status: 'done' }),
+    mutationFn: (sessionId: string) => updateSession(activePlan!._id, sessionId, { status: 'done' }),
     onSuccess: () => {
       toast.success('Đã hoàn thành chặng học!');
       invalidatePlans();
@@ -701,9 +700,7 @@ export default function LearningRoadmapPage() {
   );
 
   const selectedSession = ordered.find((s) => s._id === selectedSessionId) ?? null;
-  const nextSession = ordered.find(
-    (s) => s.status === 'planned' && s.stageStatus !== 'locked',
-  );
+  const nextSession = ordered.find((s) => s.status === 'planned' && s.stageStatus !== 'locked');
 
   return (
     <AppShell
@@ -731,144 +728,148 @@ export default function LearningRoadmapPage() {
             </p>
           </div>
         </div>
-        <Button
-          type="button"
-          size="sm"
-          onClick={() => navigate(PATHS.student.planner)}
-        >
-          <Plus className="h-4 w-4" /> Tạo lộ trình mới
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={() => navigate(PATHS.student.planner)}>
+            Mục tiêu &amp; lịch học
+          </Button>
+          <Button type="button" size="sm" onClick={() => navigate(PATHS.student.planner)}>
+            <Plus className="h-4 w-4" /> Tạo lộ trình mới
+          </Button>
+        </div>
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="roadmap" className="flex flex-col gap-4">
-        <TabsList className="w-fit">
-          <TabsTrigger value="roadmap">Lộ trình của tôi</TabsTrigger>
-          <TabsTrigger value="plan" onClick={() => navigate(PATHS.student.planner)}>
-            Kế hoạch học tập
-          </TabsTrigger>
-          <TabsTrigger value="goal" onClick={() => navigate(PATHS.student.planner)}>
-            Mục tiêu
-          </TabsTrigger>
-        </TabsList>
+      {/* This page only has one real view (the plan's own chặng tree) — "Mục tiêu & lịch học" above
+       * is a plain link to Planner, not a fake tab: Tabs hijacked by onClick-navigate used to fight
+       * Radix's own tab-switch animation and glitch mid-click before the route actually changed. */}
+      {!activePlan ? (
+        <EmptyState onGoPlanner={() => navigate(PATHS.student.planner)} />
+      ) : (
+        <div className="flex flex-col gap-3">
+          {/* Overview strip */}
+          <OverviewStrip
+            plan={activePlan}
+            goal={activeGoal}
+            onViewRoadmapTree={() => setRoadmapTreeOpen(true)}
+          />
 
-        <TabsContent value="roadmap">
-          {!activePlan ? (
-            <EmptyState onGoPlanner={() => navigate(PATHS.student.planner)} />
-          ) : (
-            <div className="flex flex-col gap-3">
-              {/* Overview strip */}
-              <OverviewStrip plan={activePlan} goal={activeGoal} />
-
-              {/* "Học tiếp" CTA */}
-              {nextSession && (
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => setSelectedSessionId(nextSession._id)}
-                    className="w-fit"
-                  >
-                    <PlayCircle className="h-4 w-4" />
-                    Học tiếp: {nextSession.title ?? 'Chặng tiếp theo'}
-                  </Button>
-                </div>
-              )}
-
-              {/* Three-panel layout */}
-              <div
-                className={cn(
-                  'grid overflow-hidden rounded-card border border-border bg-card shadow-card',
-                  'transition-all duration-200',
-                  selectedSession
-                    ? 'grid-cols-[220px_1fr_320px] lg:grid-cols-[240px_1fr_340px]'
-                    : 'grid-cols-[220px_1fr] lg:grid-cols-[240px_1fr]',
-                )}
-                style={{ minHeight: '60vh', maxHeight: '72vh' }}
+          {/* "Học tiếp" CTA */}
+          {nextSession && (
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setSelectedSessionId(nextSession._id)}
+                className="w-fit"
               >
-                {/* Panel 1: Chapter tree */}
-                <div className="overflow-hidden border-r border-border">
-                  <ChapterPanel
-                    concepts={concepts}
-                    sessions={ordered}
-                    selectedConceptId={filterConceptId}
-                    onSelect={(id) => {
-                      setFilterConceptId((prev) => (prev === id ? null : id));
-                      setSelectedSessionId(null);
-                    }}
-                  />
-                </div>
-
-                {/* Panel 2: Stage list */}
-                <div className="overflow-hidden">
-                  {/* Sub-header */}
-                  <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">
-                        {filterConceptId
-                          ? (concepts.find((c) => c._id === filterConceptId)?.name ?? 'Chặng học')
-                          : 'Tất cả các chặng'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {ordered.filter((s) =>
-                          filterConceptId ? s.concept === filterConceptId : true,
-                        ).length}{' '}
-                        chặng · ước tính{' '}
-                        {fmtH(
-                          ordered
-                            .filter((s) => (filterConceptId ? s.concept === filterConceptId : true))
-                            .reduce((sum, s) => sum + s.durationMin, 0),
-                        )}
-                      </p>
-                    </div>
-                    {filterConceptId && (
-                      <button
-                        type="button"
-                        onClick={() => setFilterConceptId(null)}
-                        className="text-xs text-muted-foreground hover:text-foreground"
-                      >
-                        Xem tất cả
-                      </button>
-                    )}
-                  </div>
-                  <StagePanel
-                    sessions={ordered}
-                    selectedId={selectedSessionId}
-                    onSelect={setSelectedSessionId}
-                    filterConceptId={filterConceptId}
-                  />
-                </div>
-
-                {/* Panel 3: Stage inspector (conditional) */}
-                {selectedSession && (
-                  <StageInspectorPanel
-                    session={selectedSession}
-                    planId={activePlan._id}
-                    onClose={() => setSelectedSessionId(null)}
-                    onStartQuiz={(id) => setQuizSessionId(id)}
-                    onDone={(id) => doneMutation.mutate(id)}
-                  />
-                )}
-              </div>
+                <PlayCircle className="h-4 w-4" />
+                Học tiếp: {nextSession.title ?? 'Chặng tiếp theo'}
+              </Button>
             </div>
           )}
-        </TabsContent>
-      </Tabs>
+
+          {/* Three-panel layout */}
+          <div
+            className={cn(
+              'grid overflow-hidden rounded-card border border-border bg-card shadow-card',
+              'transition-all duration-200',
+              selectedSession
+                ? 'grid-cols-[220px_1fr_320px] lg:grid-cols-[240px_1fr_340px]'
+                : 'grid-cols-[220px_1fr] lg:grid-cols-[240px_1fr]',
+            )}
+            style={{ minHeight: '60vh', maxHeight: '72vh' }}
+          >
+            {/* Panel 1: Chapter tree */}
+            <div className="overflow-hidden border-r border-border">
+              <ChapterPanel
+                concepts={concepts}
+                sessions={ordered}
+                subjectId={goalConceptId}
+                selectedConceptId={filterConceptId}
+                onSelect={(id) => {
+                  setFilterConceptId((prev) => (prev === id ? null : id));
+                  setSelectedSessionId(null);
+                }}
+              />
+            </div>
+
+            {/* Panel 2: Stage list */}
+            <div className="overflow-hidden">
+              {/* Sub-header */}
+              <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    {filterConceptId
+                      ? (concepts.find((c) => c._id === filterConceptId)?.name ?? 'Chặng học')
+                      : 'Tất cả các chặng'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {ordered.filter((s) => (filterConceptId ? s.concept === filterConceptId : true)).length}{' '}
+                    chặng · ước tính{' '}
+                    {fmtH(
+                      ordered
+                        .filter((s) => (filterConceptId ? s.concept === filterConceptId : true))
+                        .reduce((sum, s) => sum + s.durationMin, 0),
+                    )}
+                  </p>
+                </div>
+                {filterConceptId && (
+                  <button
+                    type="button"
+                    onClick={() => setFilterConceptId(null)}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Xem tất cả
+                  </button>
+                )}
+              </div>
+              <StagePanel
+                sessions={ordered}
+                selectedId={selectedSessionId}
+                onSelect={setSelectedSessionId}
+                filterConceptId={filterConceptId}
+              />
+            </div>
+
+            {/* Panel 3: Stage inspector (conditional) */}
+            {selectedSession && (
+              <StageInspectorPanel
+                session={selectedSession}
+                planId={activePlan._id}
+                onClose={() => setSelectedSessionId(null)}
+                onStartQuiz={(id) => setQuizSessionId(id)}
+                onDone={(id) => doneMutation.mutate(id)}
+              />
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Quiz dialog */}
       {activePlan && (
         <SessionQuizDialog
           planId={activePlan._id}
           sessionId={quizSessionId}
-          questionIds={
-            activePlan.sessions.find((s) => s._id === quizSessionId)?.questions ?? []
-          }
+          questionIds={activePlan.sessions.find((s) => s._id === quizSessionId)?.questions ?? []}
           onClose={() => setQuizSessionId(null)}
           onPassed={() => {
             doneMutation.mutate(quizSessionId!);
             setQuizSessionId(null);
           }}
         />
+      )}
+
+      {/* Roadmap tree — same zigzag chặng diagram pattern as Admin's "Bản đồ lộ trình" for a plan
+       * template, applied to this student's own built plan sessions. Not the Knowledge Map: that
+       * diagram is about Concept prerequisite relationships, a different thing entirely. */}
+      {activePlan && (
+        <Dialog open={roadmapTreeOpen} onOpenChange={setRoadmapTreeOpen}>
+          <DialogContent size="xl" className="max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Sơ đồ cây lộ trình</DialogTitle>
+            </DialogHeader>
+            <RoadmapTree sessions={activePlan.sessions} readOnly />
+          </DialogContent>
+        </Dialog>
       )}
     </AppShell>
   );

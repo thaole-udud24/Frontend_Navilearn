@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Network, Percent, TrendingUp, X } from 'lucide-react';
 
@@ -184,6 +184,7 @@ export default function KnowledgeMapPage() {
   const navigate = useNavigate();
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
+  const [searchParams] = useSearchParams();
 
   const { data: subjectsRes } = useQuery({
     queryKey: ['knowledge-map-subjects'],
@@ -192,7 +193,9 @@ export default function KnowledgeMapPage() {
   const subjects = useMemo(() => subjectsRes?.data ?? [], [subjectsRes]);
 
   const [subjectId, setSubjectId] = useState<string | null>(null);
-  const effectiveSubjectId = subjectId ?? subjects[0]?._id ?? null;
+  // Deep-link from other pages (e.g. "Xem sơ đồ cây lộ trình" on Lộ trình học tập) — real query
+  // param, not just a cosmetic default; falls back to the first subject when absent/unknown.
+  const effectiveSubjectId = subjectId ?? searchParams.get('subject') ?? subjects[0]?._id ?? null;
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<NodeState | null>(null);
