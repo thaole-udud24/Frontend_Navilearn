@@ -36,6 +36,7 @@ export default function StudentAccountPage() {
       breadcrumb={['Trang chủ', 'Cài đặt']}
       userName={authUser?.fullName ?? 'Sinh viên'}
       roleLabel="Sinh viên"
+      compactHeader
       onLogout={signOut}
     >
       <div className="mx-auto flex max-w-4xl flex-col gap-6">

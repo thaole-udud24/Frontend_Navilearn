@@ -1,5 +1,7 @@
 export type PlanStatus = 'proposed' | 'active' | 'superseded';
 export type SessionStatus = 'planned' | 'done' | 'missed' | 'cancelled';
+/** Chặng (stage) lock state, computed by the BE from the plan's sessions — never set by the client. */
+export type StageStatus = 'locked' | 'available' | 'completed';
 
 export interface PlanSession {
   _id: string;
@@ -7,6 +9,13 @@ export interface PlanSession {
   startAt: string;
   durationMin: number;
   status: SessionStatus;
+  /** Stage name — fall back to `note` for sessions created before this field existed. */
+  title?: string;
+  /** Chapter this stage belongs to, copied from the plan-template step on apply — display grouping
+   * only, absent for sessions created before this field existed. */
+  chapterTitle?: string;
+  /** "Sau buổi này bạn có thể…" — read-only for the student, carried from the plan template. */
+  objectives?: string[];
   note?: string;
   /** Short reading material for this session (UC-PLN-TPL-03), usually copied from a plan template step. */
   theoryContent?: string;
@@ -14,6 +23,8 @@ export interface PlanSession {
   questions?: string[];
   /** True once the attached quiz has been passed; gates marking the session "done" when questions.length > 0. */
   quizPassed?: boolean;
+  /** Sequential stage gate — BE also rejects "done"/quiz submit for a 'locked' session, this is just the label. */
+  stageStatus?: StageStatus;
 }
 
 export interface Plan {
@@ -35,13 +46,15 @@ export interface PlanFilters {
 
 export interface CreatePlanInput {
   title: string;
-  sessions?: Array<{ concept: string; startAt: string; durationMin: number }>;
+  sessions?: Array<{ concept: string; startAt: string; durationMin: number; title: string }>;
 }
 
 export interface AddSessionInput {
   concept: string;
   startAt: string;
   durationMin: number;
+  title: string;
+  objectives?: string[];
   theoryContent?: string;
   questions?: string[];
 }
@@ -50,6 +63,8 @@ export interface UpdateSessionInput {
   concept?: string;
   startAt?: string;
   durationMin?: number;
+  title?: string;
+  objectives?: string[];
   status?: 'done' | 'cancelled';
   note?: string;
 }
@@ -61,6 +76,8 @@ export interface Goal {
   title: string;
   deadline: string;
   importance: number;
+  /** Student-set aspiration (e.g. "Mastery ≥ 80%") — never the measured Mastery score itself. */
+  targetScore?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -75,6 +92,7 @@ export interface CreateGoalInput {
   title: string;
   deadline: string;
   importance?: number;
+  targetScore?: number;
 }
 
 export type UpdateGoalInput = Partial<CreateGoalInput>;

@@ -42,6 +42,18 @@ export async function removePlanTemplate(id: string): Promise<void> {
   await request.delete(ENDPOINTS.planTemplateItems.remove(id));
 }
 
+export async function publishPlanTemplate(id: string, changeLog?: string): Promise<PlanTemplate> {
+  const { data } = await request.patch<ApiSuccess<PlanTemplate>>(ENDPOINTS.planTemplateItems.publish(id), {
+    changeLog,
+  });
+  return data.data;
+}
+
+export async function archivePlanTemplate(id: string): Promise<PlanTemplate> {
+  const { data } = await request.patch<ApiSuccess<PlanTemplate>>(ENDPOINTS.planTemplateItems.archive(id), {});
+  return data.data;
+}
+
 // UC-PLN-TPL-02: học sinh áp dụng lộ trình mẫu — kết quả là Plan 'proposed' giống luồng AI, chờ xác nhận.
 export async function applyPlanTemplate(id: string, goalId?: string): Promise<Plan> {
   const { data } = await request.post<ApiSuccess<Plan>>(ENDPOINTS.planTemplateItems.apply(id), { goalId });

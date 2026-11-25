@@ -26,6 +26,8 @@ export interface ConceptFilters {
   page?: number;
   limit?: number;
   status?: ConceptStatus;
+  /** 'null' = top-level concepts only; an id = direct children of that concept. */
+  parentConcept?: string | 'null';
 }
 
 export interface CreateConceptInput {

@@ -6,6 +6,10 @@ const baseURL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000/api/
 
 export const request = axios.create({ baseURL, withCredentials: false });
 
+// Server origin (baseURL without the /api/v1 suffix) — needed to build absolute links to files the
+// backend serves outside the API itself, like uploaded assets under /uploads/*.
+export const apiOrigin = baseURL.replace(/\/api\/v\d+\/?$/, '');
+
 request.interceptors.request.use((config) => {
   const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
   if (token) config.headers.Authorization = `Bearer ${token}`;

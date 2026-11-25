@@ -4,7 +4,14 @@ import { toast } from 'sonner';
 import { CheckCircle2, XCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { PATHS } from '@/routes/paths';
 import { getQuestion } from '@/services/question-bank';
 import type { Question } from '@/services/question-bank/types';
@@ -79,63 +86,65 @@ export function SessionQuizDialog({
 
   return (
     <Dialog open={!!sessionId} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="tw-scope max-h-[85vh] max-w-lg overflow-y-auto">
+      <DialogContent size="md" className="tw-scope flex max-h-[85vh] flex-col">
         <DialogHeader>
           <DialogTitle>Trắc nghiệm trước khi hoàn thành</DialogTitle>
         </DialogHeader>
 
-        {loading && <p className="py-6 text-center text-sm text-muted-foreground">Đang tải câu hỏi…</p>}
+        <DialogBody>
+          {loading && <p className="py-6 text-center text-sm text-muted-foreground">Đang tải câu hỏi…</p>}
 
-        {!loading && result && (
-          <div className="flex flex-col items-center gap-3 py-4 text-center">
-            {result.passed ? (
-              <CheckCircle2 className="h-12 w-12 text-success" />
-            ) : (
-              <XCircle className="h-12 w-12 text-danger" />
-            )}
-            <p className="text-2xl font-bold text-foreground">{result.scorePercent}%</p>
-            <p className="text-sm text-muted-foreground">
-              Đúng {result.correctCount}/{result.totalCount} câu
-            </p>
-            {result.passed ? (
-              <Button type="button" variant="outline" onClick={() => navigate(PATHS.student.practice)}>
-                Luyện tập thêm bài tập
-              </Button>
-            ) : (
-              <Button type="button" variant="outline" onClick={() => setResult(null)}>
-                Làm lại
-              </Button>
-            )}
-          </div>
-        )}
+          {!loading && result && (
+            <div className="flex flex-col items-center gap-3 py-4 text-center">
+              {result.passed ? (
+                <CheckCircle2 className="h-12 w-12 text-success" />
+              ) : (
+                <XCircle className="h-12 w-12 text-danger" />
+              )}
+              <p className="text-2xl font-bold text-foreground">{result.scorePercent}%</p>
+              <p className="text-sm text-muted-foreground">
+                Đúng {result.correctCount}/{result.totalCount} câu
+              </p>
+              {result.passed ? (
+                <Button type="button" variant="outline" onClick={() => navigate(PATHS.student.practice)}>
+                  Luyện tập thêm bài tập
+                </Button>
+              ) : (
+                <Button type="button" variant="outline" onClick={() => setResult(null)}>
+                  Làm lại
+                </Button>
+              )}
+            </div>
+          )}
 
-        {!loading && !result && (
-          <div className="flex flex-col gap-4">
-            {questions.map((q, qi) => (
-              <div key={q._id} className="flex flex-col gap-2">
-                <p className="text-sm font-medium text-foreground">
-                  Câu {qi + 1}. {q.text}
-                </p>
-                <div className="flex flex-col gap-1.5">
-                  {q.options.map((opt, oi) => (
-                    <label
-                      key={oi}
-                      className="flex cursor-pointer items-center gap-2 rounded-control border border-border p-2 text-sm hover:bg-muted/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
-                    >
-                      <input
-                        type="radio"
-                        name={`q-${q._id}`}
-                        checked={answers[q._id] === oi}
-                        onChange={() => setAnswers((prev) => ({ ...prev, [q._id]: oi }))}
-                      />
-                      {opt.text}
-                    </label>
-                  ))}
+          {!loading && !result && (
+            <div className="flex flex-col gap-4">
+              {questions.map((q, qi) => (
+                <div key={q._id} className="flex flex-col gap-2">
+                  <p className="text-sm font-medium text-foreground">
+                    Câu {qi + 1}. {q.text}
+                  </p>
+                  <div className="flex flex-col gap-1.5">
+                    {q.options.map((opt, oi) => (
+                      <label
+                        key={oi}
+                        className="flex cursor-pointer items-center gap-2 rounded-control border border-border p-2 text-sm hover:bg-muted/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                      >
+                        <input
+                          type="radio"
+                          name={`q-${q._id}`}
+                          checked={answers[q._id] === oi}
+                          onChange={() => setAnswers((prev) => ({ ...prev, [q._id]: oi }))}
+                        />
+                        {opt.text}
+                      </label>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </DialogBody>
 
         {!loading && !result && (
           <DialogFooter>

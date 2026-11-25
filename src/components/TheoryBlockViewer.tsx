@@ -25,30 +25,31 @@ export function TheoryBlockViewer({ raw, className }: { raw?: string; className?
         }
         if (b.type === 'image') {
           return (
-            <img
-              key={i}
-              src={b.content}
-              alt=""
-              className="max-h-56 w-full rounded-control border border-border object-cover"
-            />
+            <figure key={i} className="flex flex-col gap-1">
+              <img
+                src={b.content}
+                alt={b.caption ?? ''}
+                className="max-h-56 w-full rounded-control border border-border object-cover"
+              />
+              {b.caption && <figcaption className="text-xs text-muted-foreground">{b.caption}</figcaption>}
+            </figure>
           );
         }
         if (b.type === 'video') {
           const embed = toEmbedUrl(b.content);
-          return embed ? (
-            <div key={i} className="aspect-video w-full overflow-hidden rounded-control border border-border">
-              <iframe src={embed} title="Video bài giảng" className="h-full w-full" allowFullScreen />
-            </div>
-          ) : (
-            <a
-              key={i}
-              href={b.content}
-              target="_blank"
-              rel="noreferrer"
-              className="text-sm text-primary underline"
-            >
-              {b.content}
-            </a>
+          return (
+            <figure key={i} className="flex flex-col gap-1">
+              {embed ? (
+                <div className="aspect-video w-full overflow-hidden rounded-control border border-border">
+                  <iframe src={embed} title="Video bài giảng" className="h-full w-full" allowFullScreen />
+                </div>
+              ) : (
+                <a href={b.content} target="_blank" rel="noreferrer" className="text-sm text-primary underline">
+                  {b.content}
+                </a>
+              )}
+              {b.caption && <figcaption className="text-xs text-muted-foreground">{b.caption}</figcaption>}
+            </figure>
           );
         }
         return (

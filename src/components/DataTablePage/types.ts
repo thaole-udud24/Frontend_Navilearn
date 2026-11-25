@@ -63,6 +63,9 @@ export interface DataTablePageProps<T> {
   bulkActions?: BulkAction<T>[];
   searchPlaceholder?: string;
   emptyLabel?: string;
+  /** Extra class names for a row — e.g. to highlight the row matching a selection made outside the
+   * table (FlashcardAdmin's "currently viewing" deck). */
+  rowClassName?: (row: T) => string | undefined;
   /** Fires with each fetcher result — for a caller that needs the current page's rows/total
    * outside the table too (e.g. stat cards), since the table otherwise keeps fetched data to itself. */
   onDataChange?: (data: T[], meta: { total: number }) => void;

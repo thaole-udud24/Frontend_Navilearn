@@ -133,6 +133,7 @@ export function DataTablePage<T>({
   searchPlaceholder = 'Tìm theo: Mã, Tên…',
   emptyLabel = 'Không có dữ liệu',
   onDataChange,
+  rowClassName,
 }: DataTablePageProps<T>) {
   const reduced = useReducedMotion();
   const isManual = !!fetcher;
@@ -529,7 +530,7 @@ export function DataTablePage<T>({
               rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  className="group h-14 border-b border-border hover:bg-muted/40"
+                  className={cn('group h-14 border-b border-border hover:bg-muted/40', rowClassName?.(row.original))}
                   data-state={row.getIsSelected() ? 'selected' : undefined}
                 >
                   {row.getVisibleCells().map((cell) => (

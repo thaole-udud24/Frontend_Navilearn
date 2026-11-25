@@ -39,6 +39,13 @@ export async function updateConcept(id: string, input: UpdateConceptInput): Prom
   return data.data;
 }
 
+/** Every leaf Concept under a subject (real cross-chapter prerequisite DAG), not one
+ * parentConcept level at a time — see knowledge.service.getSubjectGraph for why. */
+export async function getSubjectGraph(subjectId: string): Promise<ApiSuccess<Concept[]>> {
+  const { data } = await request.get<ApiSuccess<Concept[]>>(ENDPOINTS.knowledgeItems.subjectGraph(subjectId));
+  return data;
+}
+
 export async function removeConcept(id: string): Promise<void> {
   await request.delete(ENDPOINTS.knowledgeItems.detail(id));
 }

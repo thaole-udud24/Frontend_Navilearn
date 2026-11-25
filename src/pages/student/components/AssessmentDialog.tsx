@@ -4,7 +4,14 @@ import { toast } from 'sonner';
 import { CheckCircle2, Flag, XCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import {
   getAssessment,
@@ -112,103 +119,105 @@ export function AssessmentDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="tw-scope max-h-[85vh] max-w-2xl overflow-y-auto">
+      <DialogContent expandable size="lg" className="tw-scope flex max-h-[85vh] flex-col">
         <DialogHeader>
           <DialogTitle>{view ? 'Kết quả bài làm' : 'Làm bài đánh giá'}</DialogTitle>
         </DialogHeader>
 
-        {loadingAttempt && <p className="text-sm text-muted-foreground">Đang tải…</p>}
+        <DialogBody>
+          {loadingAttempt && <p className="text-sm text-muted-foreground">Đang tải…</p>}
 
-        {view && (
-          <div className="flex flex-col gap-4">
-            <div
-              className={cn(
-                'flex items-center gap-3 rounded-card border p-4',
-                view.passed ? 'border-success/30 bg-success/5' : 'border-danger/30 bg-danger/5',
-              )}
-            >
-              {view.passed ? (
-                <CheckCircle2 className="h-6 w-6 text-success" />
-              ) : (
-                <XCircle className="h-6 w-6 text-danger" />
-              )}
-              <div>
-                <div className="text-lg font-bold text-foreground">{view.score}%</div>
-                <div className="text-sm text-muted-foreground">{view.passed ? 'Đạt' : 'Chưa đạt'}</div>
-              </div>
-            </div>
-
-            {view.answers.map((a) => (
-              <div key={a.question} className="rounded-card border border-border p-4">
-                <div className="mb-1 flex items-center justify-between gap-2">
-                  <p className="font-medium text-foreground">{a.questionText || a.question}</p>
-                  {a.isCorrect ? (
-                    <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
-                  ) : (
-                    <XCircle className="h-4 w-4 shrink-0 text-danger" />
-                  )}
-                </div>
-                {a.essayText && <p className="text-sm text-muted-foreground">Bài làm: {a.essayText}</p>}
-                {a.correctAnswer && (
-                  <p className="text-sm text-muted-foreground">Đáp án đúng: {a.correctAnswer}</p>
+          {view && (
+            <div className="flex flex-col gap-4">
+              <div
+                className={cn(
+                  'flex items-center gap-3 rounded-card border p-4',
+                  view.passed ? 'border-success/30 bg-success/5' : 'border-danger/30 bg-danger/5',
                 )}
-                {a.feedback && (
-                  <p className="mt-1 text-sm italic text-muted-foreground">Nhận xét AI: {a.feedback}</p>
-                )}
-                <ReportQuestionIssueButton questionId={a.question} />
-              </div>
-            ))}
-          </div>
-        )}
-
-        {!view && !loadingAttempt && questions && (
-          <div className="flex flex-col gap-4">
-            {questions.map((q: Question, idx) => (
-              <div key={q._id} className="rounded-card border border-border p-4">
-                <div className="mb-2 flex items-start justify-between gap-2">
-                  <p className="font-medium text-foreground">
-                    Câu {idx + 1}. {q.text}
-                  </p>
-                  <button
-                    type="button"
-                    aria-label="Đánh dấu xem lại"
-                    onClick={() => toggleFlag(q._id)}
-                    className={cn('shrink-0', flags[q._id] ? 'text-warning' : 'text-muted-foreground')}
-                  >
-                    <Flag className="h-4 w-4" />
-                  </button>
-                </div>
-
-                {q.type === 'mcq' || q.type === 'true_false' ? (
-                  <div className="flex flex-col gap-2">
-                    {q.options.map((opt, optIdx) => (
-                      <label key={optIdx} className="flex items-center gap-2 text-sm text-foreground">
-                        <input
-                          type="radio"
-                          name={`q-${q._id}`}
-                          checked={drafts[q._id]?.selectedOptionIndex === optIdx}
-                          onChange={() =>
-                            setDrafts((d) => ({ ...d, [q._id]: { selectedOptionIndex: optIdx } }))
-                          }
-                        />
-                        {opt.text}
-                      </label>
-                    ))}
-                  </div>
+              >
+                {view.passed ? (
+                  <CheckCircle2 className="h-6 w-6 text-success" />
                 ) : (
-                  <textarea
-                    value={drafts[q._id]?.essayText ?? ''}
-                    onChange={(e) => setDrafts((d) => ({ ...d, [q._id]: { essayText: e.target.value } }))}
-                    rows={4}
-                    placeholder="Nhập câu trả lời của bạn…"
-                    className="w-full rounded-control border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  />
+                  <XCircle className="h-6 w-6 text-danger" />
                 )}
-                <ReportQuestionIssueButton questionId={q._id} />
+                <div>
+                  <div className="text-lg font-bold text-foreground">{view.score}%</div>
+                  <div className="text-sm text-muted-foreground">{view.passed ? 'Đạt' : 'Chưa đạt'}</div>
+                </div>
               </div>
-            ))}
-          </div>
-        )}
+
+              {view.answers.map((a) => (
+                <div key={a.question} className="rounded-card border border-border p-4">
+                  <div className="mb-1 flex items-center justify-between gap-2">
+                    <p className="font-medium text-foreground">{a.questionText || a.question}</p>
+                    {a.isCorrect ? (
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
+                    ) : (
+                      <XCircle className="h-4 w-4 shrink-0 text-danger" />
+                    )}
+                  </div>
+                  {a.essayText && <p className="text-sm text-muted-foreground">Bài làm: {a.essayText}</p>}
+                  {a.correctAnswer && (
+                    <p className="text-sm text-muted-foreground">Đáp án đúng: {a.correctAnswer}</p>
+                  )}
+                  {a.feedback && (
+                    <p className="mt-1 text-sm italic text-muted-foreground">Nhận xét AI: {a.feedback}</p>
+                  )}
+                  <ReportQuestionIssueButton questionId={a.question} />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!view && !loadingAttempt && questions && (
+            <div className="flex flex-col gap-4">
+              {questions.map((q: Question, idx) => (
+                <div key={q._id} className="rounded-card border border-border p-4">
+                  <div className="mb-2 flex items-start justify-between gap-2">
+                    <p className="font-medium text-foreground">
+                      Câu {idx + 1}. {q.text}
+                    </p>
+                    <button
+                      type="button"
+                      aria-label="Đánh dấu xem lại"
+                      onClick={() => toggleFlag(q._id)}
+                      className={cn('shrink-0', flags[q._id] ? 'text-warning' : 'text-muted-foreground')}
+                    >
+                      <Flag className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  {q.type === 'mcq' || q.type === 'true_false' ? (
+                    <div className="flex flex-col gap-2">
+                      {q.options.map((opt, optIdx) => (
+                        <label key={optIdx} className="flex items-center gap-2 text-sm text-foreground">
+                          <input
+                            type="radio"
+                            name={`q-${q._id}`}
+                            checked={drafts[q._id]?.selectedOptionIndex === optIdx}
+                            onChange={() =>
+                              setDrafts((d) => ({ ...d, [q._id]: { selectedOptionIndex: optIdx } }))
+                            }
+                          />
+                          {opt.text}
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <textarea
+                      value={drafts[q._id]?.essayText ?? ''}
+                      onChange={(e) => setDrafts((d) => ({ ...d, [q._id]: { essayText: e.target.value } }))}
+                      rows={4}
+                      placeholder="Nhập câu trả lời của bạn…"
+                      className="w-full rounded-control border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    />
+                  )}
+                  <ReportQuestionIssueButton questionId={q._id} />
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogBody>
 
         {!view && (
           <DialogFooter>

@@ -8,7 +8,7 @@ import { AppShell } from '@/layouts/AppShell';
 import { useAuthStore } from '@/hooks/useAuth';
 import { PATHS } from '@/routes/paths';
 import { adminMenu } from '@/config/menu.admin';
-import { Button } from '@/components/ui/button';
+import { AddButton } from '@/components/ui/add-button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
@@ -97,7 +97,7 @@ function ConfigFormDialog({
         if (!v) onClose();
       }}
     >
-      <DialogContent className="tw-scope max-w-lg">
+      <DialogContent size="md" className="tw-scope">
         <DialogHeader>
           <FormDialogTitle icon={editing ? Pencil : Plus}>
             {editing ? 'Chỉnh sửa Cấu hình bài kiểm tra' : 'Thêm mới Cấu hình bài kiểm tra'}
@@ -174,7 +174,7 @@ function ConfigFormDialog({
 function ViewConfigDialog({ config, onClose }: { config: AssessmentConfig | null; onClose: () => void }) {
   return (
     <Dialog open={!!config} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="tw-scope max-w-lg">
+      <DialogContent size="md" className="tw-scope">
         <DialogHeader>
           <FormDialogTitle icon={Eye}>Chi tiết Cấu hình bài kiểm tra</FormDialogTitle>
         </DialogHeader>
@@ -251,7 +251,7 @@ function PolicyDialog({
         if (!v) onClose();
       }}
     >
-      <DialogContent className="tw-scope max-w-sm">
+      <DialogContent size="sm" className="tw-scope">
         <DialogHeader>
           <FormDialogTitle icon={Settings2}>Chính sách làm lại &amp; hiển thị đáp án</FormDialogTitle>
         </DialogHeader>
@@ -363,15 +363,14 @@ export default function AssessmentConfigAdmin() {
     >
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-bold text-foreground">Cấu hình bài kiểm tra</h1>
-        <Button
-          type="button"
+        <AddButton
           onClick={() => {
             setEditing(null);
             setFormOpen(true);
           }}
         >
-          <Plus className="h-4 w-4" /> Thêm mới
-        </Button>
+          Thêm mới
+        </AddButton>
       </div>
       <DataTablePage<AssessmentConfig>
         key={tableKey}

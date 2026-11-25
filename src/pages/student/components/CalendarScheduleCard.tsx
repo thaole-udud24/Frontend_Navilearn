@@ -134,8 +134,8 @@ export function CalendarScheduleCard({ year, month, today, events, schedule }: C
     <div className="grid items-start gap-4 lg:grid-cols-[1.3fr_1fr]">
       <Card>
         <div className="flex items-center gap-2">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary-soft text-primary">
-            <CalendarDays className="h-4.5 w-4.5" />
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control bg-primary-soft text-primary">
+            <CalendarDays className="h-4 w-4" />
           </span>
           <div className="min-w-0">
             <h3 className="font-semibold text-foreground">Lịch học tập &amp; Hạn nộp bài</h3>
@@ -158,7 +158,7 @@ export function CalendarScheduleCard({ year, month, today, events, schedule }: C
             type="button"
             onClick={() => setOffset((o) => o - 1)}
             aria-label="Tháng trước"
-            className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -169,7 +169,7 @@ export function CalendarScheduleCard({ year, month, today, events, schedule }: C
             <button
               type="button"
               onClick={() => setOffset(0)}
-              className="rounded-control border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="rounded-control border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               Hôm nay
             </button>
@@ -177,19 +177,19 @@ export function CalendarScheduleCard({ year, month, today, events, schedule }: C
               type="button"
               onClick={() => setOffset((o) => o + 1)}
               aria-label="Tháng sau"
-              className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-7 gap-y-2 text-center text-[11px] font-semibold text-muted-foreground">
+        <div className="mt-3 grid grid-cols-7 gap-y-1 text-center text-[11px] font-semibold text-muted-foreground">
           {WEEKDAYS.map((d) => (
             <span key={d}>{d}</span>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-y-2">
+        <div className="grid grid-cols-7 gap-y-1">
           {cells.map((cell, i) => {
             const dots = isCurrentMonth && cell.inMonth ? (eventsByDay.get(cell.day) ?? []) : [];
             const isToday = isCurrentMonth && cell.inMonth && cell.day === today;
@@ -197,7 +197,7 @@ export function CalendarScheduleCard({ year, month, today, events, schedule }: C
               <div key={i} className="flex flex-col items-center gap-1 py-0.5">
                 <span
                   className={cn(
-                    'flex h-9 w-9 items-center justify-center rounded-full text-sm transition-colors',
+                    'flex h-7 w-7 items-center justify-center rounded-full text-xs transition-colors',
                     !cell.inMonth && 'text-muted-foreground/35',
                     cell.inMonth && !isToday && 'text-foreground hover:bg-muted',
                     isToday &&

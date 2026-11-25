@@ -1,23 +1,39 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Ban, Copy, Eye, Pencil, RefreshCcw, RotateCcw, Plus, Sparkles, Trash2 } from 'lucide-react';
+import {
+  Archive,
+  Ban,
+  BookMarked,
+  Copy,
+  Eye,
+  ListChecks,
+  PenLine,
+  Pencil,
+  RefreshCcw,
+  RotateCcw,
+  Plus,
+  Sparkles,
+  Trash2,
+} from 'lucide-react';
 
 import { AppShell } from '@/layouts/AppShell';
 import { useAuthStore } from '@/hooks/useAuth';
 import { PATHS } from '@/routes/paths';
 import { adminMenu } from '@/config/menu.admin';
 import { Button } from '@/components/ui/button';
+import { AddButton } from '@/components/ui/add-button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
+import { Dialog, DialogBody, DialogContent, DialogHeader } from '@/components/ui/dialog';
 import { DetailRow, FormDialogFooter, FormDialogTitle, FormField } from '@/components/DialogForm';
-import { DataTablePage } from '@/components/DataTablePage';
+import { ClampLine, DataTablePage } from '@/components/DataTablePage';
 import { StatusBadge } from '@/components/StatusBadge';
 import { SourceBadge } from '@/components/SourceBadge';
+import { StatCard } from '@/components/StatCard';
 import {
   approveFromAiDraft,
   archiveQuestion,
@@ -128,143 +144,144 @@ function QuestionFormDialog({
         if (!v) onClose();
       }}
     >
-      <DialogContent className="tw-scope max-h-[85vh] max-w-xl overflow-y-auto">
+      <DialogContent expandable size="lg" className="tw-scope flex max-h-[85vh] flex-col">
         <DialogHeader>
           <FormDialogTitle icon={editing ? Pencil : Plus}>
             {editing ? 'Chỉnh sửa Câu hỏi' : 'Thêm mới Câu hỏi'}
           </FormDialogTitle>
         </DialogHeader>
-        <div className="flex flex-col gap-4">
-          <FormField label="Kiến thức" required>
-            <Input
-              value={form.concept}
-              onChange={(e) => setForm({ ...form, concept: e.target.value })}
-              placeholder="Mã kiến thức (concept id)"
-            />
-          </FormField>
-          <FormField label="Nội dung câu hỏi" required>
-            <textarea
-              value={form.text}
-              onChange={(e) => setForm({ ...form, text: e.target.value })}
-              placeholder="Nhập nội dung câu hỏi"
-              rows={2}
-              className="w-full rounded-control border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-          </FormField>
-          <div className="flex gap-2">
-            <Select
-              value={form.type}
-              onValueChange={(v) => {
-                const type = v as QuestionType;
-                setForm({
-                  ...form,
-                  type,
-                  options:
-                    type === 'true_false'
-                      ? [{ text: 'Đúng', isCorrect: true }, { text: 'Sai' }]
-                      : form.options,
-                });
-              }}
-            >
-              <SelectTrigger className="flex-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="tw-scope">
-                <SelectItem value="mcq">Trắc nghiệm</SelectItem>
-                <SelectItem value="true_false">Đúng/sai</SelectItem>
-                <SelectItem value="essay">Tự luận</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={form.difficulty}
-              onValueChange={(v) => setForm({ ...form, difficulty: v as QuestionDifficulty })}
-            >
-              <SelectTrigger className="flex-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="tw-scope">
-                <SelectItem value="easy">Dễ</SelectItem>
-                <SelectItem value="medium">Trung bình</SelectItem>
-                <SelectItem value="hard">Khó</SelectItem>
-              </SelectContent>
-            </Select>
-            <Input
-              type="number"
-              min={1}
-              max={100}
-              value={form.points}
-              onChange={(e) => setForm({ ...form, points: Number(e.target.value) })}
-              placeholder="Điểm"
-              className="w-24"
-            />
-          </div>
+        <DialogBody>
+          <div className="flex flex-col gap-4">
+            <FormField label="Kiến thức" required>
+              <Input
+                value={form.concept}
+                onChange={(e) => setForm({ ...form, concept: e.target.value })}
+                placeholder="Mã kiến thức (concept id)"
+              />
+            </FormField>
+            <FormField label="Nội dung câu hỏi" required>
+              <textarea
+                value={form.text}
+                onChange={(e) => setForm({ ...form, text: e.target.value })}
+                placeholder="Nhập nội dung câu hỏi"
+                rows={2}
+                className="w-full rounded-control border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </FormField>
+            <div className="flex gap-2">
+              <Select
+                value={form.type}
+                onValueChange={(v) => {
+                  const type = v as QuestionType;
+                  setForm({
+                    ...form,
+                    type,
+                    options:
+                      type === 'true_false'
+                        ? [{ text: 'Đúng', isCorrect: true }, { text: 'Sai' }]
+                        : form.options,
+                  });
+                }}
+              >
+                <SelectTrigger className="flex-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="tw-scope">
+                  <SelectItem value="mcq">Trắc nghiệm</SelectItem>
+                  <SelectItem value="true_false">Đúng/sai</SelectItem>
+                  <SelectItem value="essay">Tự luận</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                value={form.difficulty}
+                onValueChange={(v) => setForm({ ...form, difficulty: v as QuestionDifficulty })}
+              >
+                <SelectTrigger className="flex-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="tw-scope">
+                  <SelectItem value="easy">Dễ</SelectItem>
+                  <SelectItem value="medium">Trung bình</SelectItem>
+                  <SelectItem value="hard">Khó</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                type="number"
+                min={1}
+                max={100}
+                value={form.points}
+                onChange={(e) => setForm({ ...form, points: Number(e.target.value) })}
+                placeholder="Điểm"
+                className="w-24"
+              />
+            </div>
 
-          {form.type === 'mcq' || form.type === 'true_false' ? (
-            <div className="flex flex-col gap-2">
-              <p className="text-sm font-medium text-foreground">
-                {form.type === 'true_false' ? 'Chọn đáp án đúng' : 'Phương án (chọn đúng 1 đáp án đúng)'}
-              </p>
-              {form.options.map((opt, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <Checkbox
-                    checked={!!opt.isCorrect}
-                    onCheckedChange={() =>
-                      setForm({
-                        ...form,
-                        options: form.options.map((o, idx) => ({ ...o, isCorrect: idx === i })),
-                      })
-                    }
-                  />
-                  {form.type === 'true_false' ? (
-                    <span className="flex-1 text-sm text-foreground">{opt.text}</span>
-                  ) : (
-                    <Input
-                      value={opt.text}
-                      onChange={(e) =>
+            {form.type === 'mcq' || form.type === 'true_false' ? (
+              <div className="flex flex-col gap-2">
+                <p className="text-sm font-medium text-foreground">
+                  {form.type === 'true_false' ? 'Chọn đáp án đúng' : 'Phương án (chọn đúng 1 đáp án đúng)'}
+                </p>
+                {form.options.map((opt, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Checkbox
+                      checked={!!opt.isCorrect}
+                      onCheckedChange={() =>
                         setForm({
                           ...form,
-                          options: form.options.map((o, idx) =>
-                            idx === i ? { ...o, text: e.target.value } : o,
-                          ),
+                          options: form.options.map((o, idx) => ({ ...o, isCorrect: idx === i })),
                         })
                       }
-                      placeholder={`Phương án ${i + 1}`}
                     />
-                  )}
-                  {form.type === 'mcq' && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setForm({ ...form, options: form.options.filter((_, idx) => idx !== i) })
-                      }
-                    >
-                      <Trash2 className="h-4 w-4 text-muted-foreground hover:text-danger" />
-                    </button>
-                  )}
-                </div>
-              ))}
-              {form.type === 'mcq' && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="self-start"
-                  onClick={() => setForm({ ...form, options: [...form.options, { text: '' }] })}
-                >
-                  <Plus className="h-4 w-4" /> Thêm phương án
-                </Button>
-              )}
-            </div>
-          ) : (
-            <textarea
-              value={form.referenceAnswer}
-              onChange={(e) => setForm({ ...form, referenceAnswer: e.target.value })}
-              placeholder="Đáp án tham khảo (để AI chấm bài dựa vào)"
-              rows={3}
-              className="w-full rounded-control border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-          )}
-        </div>
+                    {form.type === 'true_false' ? (
+                      <span className="flex-1 text-sm text-foreground">{opt.text}</span>
+                    ) : (
+                      <Input
+                        value={opt.text}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            options: form.options.map((o, idx) =>
+                              idx === i ? { ...o, text: e.target.value } : o,
+                            ),
+                          })
+                        }
+                        placeholder={`Phương án ${i + 1}`}
+                      />
+                    )}
+                    {form.type === 'mcq' && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setForm({ ...form, options: form.options.filter((_, idx) => idx !== i) })
+                        }
+                      >
+                        <Trash2 className="h-4 w-4 text-muted-foreground hover:text-danger" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {form.type === 'mcq' && (
+                  <AddButton
+                    variant="outline"
+                    size="sm"
+                    className="self-start"
+                    onClick={() => setForm({ ...form, options: [...form.options, { text: '' }] })}
+                  >
+                    Thêm phương án
+                  </AddButton>
+                )}
+              </div>
+            ) : (
+              <textarea
+                value={form.referenceAnswer}
+                onChange={(e) => setForm({ ...form, referenceAnswer: e.target.value })}
+                placeholder="Đáp án tham khảo (để AI chấm bài dựa vào)"
+                rows={3}
+                className="w-full rounded-control border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            )}
+          </div>
+        </DialogBody>
         <FormDialogFooter
           onCancel={onClose}
           submitLabel={editing ? 'Lưu lại' : 'Thêm mới'}
@@ -280,40 +297,42 @@ function ViewQuestionDialog({ question, onClose }: { question: Question | null; 
     question && (typeof question.concept === 'string' ? question.concept : question.concept.name);
   return (
     <Dialog open={!!question} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="tw-scope max-h-[85vh] max-w-xl overflow-y-auto">
+      <DialogContent size="lg" className="tw-scope flex max-h-[85vh] flex-col">
         <DialogHeader>
           <FormDialogTitle icon={Eye}>Chi tiết Câu hỏi</FormDialogTitle>
         </DialogHeader>
         {question && (
-          <div className="flex flex-col">
-            <DetailRow label="Nội dung">{question.text}</DetailRow>
-            <DetailRow label="Kiến thức">{conceptName}</DetailRow>
-            <DetailRow label="Loại">{TYPE_LABEL[question.type]}</DetailRow>
-            <DetailRow label="Độ khó">{question.difficulty}</DetailRow>
-            <DetailRow label="Điểm">{question.points}</DetailRow>
-            <DetailRow label="Trạng thái">
-              <StatusBadge variant={question.status === 'active' ? 'success' : 'neutral'}>
-                {question.status === 'active' ? 'Hoạt động' : 'Đã ngừng'}
-              </StatusBadge>
-            </DetailRow>
-            {question.type === 'mcq' || question.type === 'true_false' ? (
-              <DetailRow label="Phương án">
-                <div className="flex flex-col gap-1">
-                  {question.options.map((o, i) => (
-                    <span
-                      key={i}
-                      className={o.isCorrect ? 'font-semibold text-success' : 'text-muted-foreground'}
-                    >
-                      {o.isCorrect ? '✓ ' : '• '}
-                      {o.text}
-                    </span>
-                  ))}
-                </div>
+          <DialogBody>
+            <div className="flex flex-col">
+              <DetailRow label="Nội dung">{question.text}</DetailRow>
+              <DetailRow label="Kiến thức">{conceptName}</DetailRow>
+              <DetailRow label="Loại">{TYPE_LABEL[question.type]}</DetailRow>
+              <DetailRow label="Độ khó">{question.difficulty}</DetailRow>
+              <DetailRow label="Điểm">{question.points}</DetailRow>
+              <DetailRow label="Trạng thái">
+                <StatusBadge variant={question.status === 'active' ? 'success' : 'neutral'}>
+                  {question.status === 'active' ? 'Hoạt động' : 'Đã ngừng'}
+                </StatusBadge>
               </DetailRow>
-            ) : (
-              <DetailRow label="Đáp án tham khảo">{question.referenceAnswer || '—'}</DetailRow>
-            )}
-          </div>
+              {question.type === 'mcq' || question.type === 'true_false' ? (
+                <DetailRow label="Phương án">
+                  <div className="flex flex-col gap-1">
+                    {question.options.map((o, i) => (
+                      <span
+                        key={i}
+                        className={o.isCorrect ? 'font-semibold text-success' : 'text-muted-foreground'}
+                      >
+                        {o.isCorrect ? '✓ ' : '• '}
+                        {o.text}
+                      </span>
+                    ))}
+                  </div>
+                </DetailRow>
+              ) : (
+                <DetailRow label="Đáp án tham khảo">{question.referenceAnswer || '—'}</DetailRow>
+              )}
+            </div>
+          </DialogBody>
         )}
       </DialogContent>
     </Dialog>
@@ -386,74 +405,76 @@ function GenerateQuestionAiDialog({
         }
       }}
     >
-      <DialogContent className="tw-scope max-h-[85vh] max-w-xl overflow-y-auto">
+      <DialogContent expandable size="lg" className="tw-scope flex max-h-[85vh] flex-col">
         <DialogHeader>
           <FormDialogTitle icon={Sparkles}>Sinh Câu hỏi bằng AI</FormDialogTitle>
         </DialogHeader>
-        <div className="flex flex-col gap-3">
-          <div className="flex gap-2">
-            <Input
-              value={concept}
-              onChange={(e) => setConcept(e.target.value)}
-              placeholder="Mã kiến thức (concept id)"
-              className="flex-1"
-            />
-            <Select value={difficulty} onValueChange={(v) => setDifficulty(v as QuestionDifficulty)}>
-              <SelectTrigger className="w-36">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="tw-scope">
-                <SelectItem value="easy">Dễ</SelectItem>
-                <SelectItem value="medium">Trung bình</SelectItem>
-                <SelectItem value="hard">Khó</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <Button type="button" variant="outline" onClick={generate} disabled={!concept || generating}>
-            {generating ? 'Đang sinh…' : draft ? 'Sinh lại' : 'Sinh câu hỏi'}
-          </Button>
-
-          {draft && (
-            <div className="flex flex-col gap-2 rounded-control border border-border bg-muted/40 p-3">
-              {!draft.valid && (
-                <p className="text-xs font-medium text-warning">
-                  AI trả về không đúng định dạng — kiểm tra lại trước khi duyệt.
-                </p>
-              )}
-              <textarea
-                value={draft.text}
-                onChange={(e) => setDraft({ ...draft, text: e.target.value })}
-                rows={2}
-                className="w-full rounded-control border border-input bg-card px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        <DialogBody>
+          <div className="flex flex-col gap-3">
+            <div className="flex gap-2">
+              <Input
+                value={concept}
+                onChange={(e) => setConcept(e.target.value)}
+                placeholder="Mã kiến thức (concept id)"
+                className="flex-1"
               />
-              {draft.options.map((opt, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <Checkbox
-                    checked={!!opt.isCorrect}
-                    onCheckedChange={() =>
-                      setDraft({
-                        ...draft,
-                        options: draft.options.map((o, idx) => ({ ...o, isCorrect: idx === i })),
-                      })
-                    }
-                  />
-                  <Input
-                    value={opt.text}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        options: draft.options.map((o, idx) =>
-                          idx === i ? { ...o, text: e.target.value } : o,
-                        ),
-                      })
-                    }
-                    placeholder={`Phương án ${i + 1}`}
-                  />
-                </div>
-              ))}
+              <Select value={difficulty} onValueChange={(v) => setDifficulty(v as QuestionDifficulty)}>
+                <SelectTrigger className="w-36">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="tw-scope">
+                  <SelectItem value="easy">Dễ</SelectItem>
+                  <SelectItem value="medium">Trung bình</SelectItem>
+                  <SelectItem value="hard">Khó</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          )}
-        </div>
+            <Button type="button" variant="outline" onClick={generate} disabled={!concept || generating}>
+              {generating ? 'Đang sinh…' : draft ? 'Sinh lại' : 'Sinh câu hỏi'}
+            </Button>
+
+            {draft && (
+              <div className="flex flex-col gap-2 rounded-control border border-border bg-muted/40 p-3">
+                {!draft.valid && (
+                  <p className="text-xs font-medium text-warning">
+                    AI trả về không đúng định dạng — kiểm tra lại trước khi duyệt.
+                  </p>
+                )}
+                <textarea
+                  value={draft.text}
+                  onChange={(e) => setDraft({ ...draft, text: e.target.value })}
+                  rows={2}
+                  className="w-full rounded-control border border-input bg-card px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                {draft.options.map((opt, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Checkbox
+                      checked={!!opt.isCorrect}
+                      onCheckedChange={() =>
+                        setDraft({
+                          ...draft,
+                          options: draft.options.map((o, idx) => ({ ...o, isCorrect: idx === i })),
+                        })
+                      }
+                    />
+                    <Input
+                      value={opt.text}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          options: draft.options.map((o, idx) =>
+                            idx === i ? { ...o, text: e.target.value } : o,
+                          ),
+                        })
+                      }
+                      placeholder={`Phương án ${i + 1}`}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogBody>
         <FormDialogFooter
           onCancel={onClose}
           submitLabel="Duyệt vào ngân hàng chung"
@@ -502,8 +523,13 @@ function QualityStatsPanel() {
     correctRatePercent: number | null;
     openIssueCount: number;
   }>[] = [
-    { accessorKey: 'text', header: 'Câu hỏi' },
-    { accessorKey: 'attempts', header: 'Số lần làm' },
+    {
+      accessorKey: 'text',
+      header: 'Câu hỏi',
+      size: 360,
+      cell: ({ getValue }) => <ClampLine text={getValue<string>()} />,
+    },
+    { accessorKey: 'attempts', header: 'Số lần làm', size: 110 },
     {
       accessorKey: 'correctRatePercent',
       header: 'Tỉ lệ đúng',
@@ -536,17 +562,41 @@ export default function QuestionBankAdmin() {
   const [editing, setEditing] = useState<Question | null>(null);
   const [aiDraftOpen, setAiDraftOpen] = useState(false);
   const [viewing, setViewing] = useState<Question | null>(null);
+  const [stats, setStats] = useState({ total: 0, mcq: 0, essay: 0, archived: 0 });
 
   const reload = () => setTableKey((k) => k + 1);
 
+  // Lightweight real-data overview for the stat cards — the paginated table fetcher below only
+  // ever sees one page, so breakdown counts need their own (small-scale) full fetch. Never fabricated.
+  useEffect(() => {
+    listQuestions({ limit: 1000 }).then((res) => {
+      setStats({
+        total: res.meta?.total ?? res.data.length,
+        mcq: res.data.filter((q) => q.type !== 'essay').length,
+        essay: res.data.filter((q) => q.type === 'essay').length,
+        archived: res.data.filter((q) => q.status === 'archived').length,
+      });
+    });
+  }, [tableKey]);
+
   const columns: ColumnDef<Question>[] = [
     { accessorKey: 'text', header: 'Nội dung', meta: { enableColumnSearch: true } },
-    { accessorKey: 'type', header: 'Loại', cell: ({ getValue }) => TYPE_LABEL[getValue<QuestionType>()] },
-    { accessorKey: 'difficulty', header: 'Độ khó' },
+    {
+      accessorKey: 'type',
+      header: 'Loại',
+      meta: { filterOptions: ['mcq', 'true_false', 'essay'] },
+      cell: ({ getValue }) => TYPE_LABEL[getValue<QuestionType>()],
+    },
+    {
+      accessorKey: 'difficulty',
+      header: 'Độ khó',
+      meta: { filterOptions: ['easy', 'medium', 'hard'] },
+    },
     { accessorKey: 'points', header: 'Điểm' },
     {
       accessorKey: 'status',
       header: 'Trạng thái',
+      meta: { filterOptions: ['active', 'archived'] },
       cell: ({ getValue }) =>
         getValue<string>() === 'active' ? (
           <StatusBadge variant="success">Hoạt động</StatusBadge>
@@ -577,16 +627,23 @@ export default function QuestionBankAdmin() {
     >
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-bold text-foreground">Ngân hàng câu hỏi</h1>
-        <Button
-          type="button"
+        <AddButton
           onClick={() => {
             setEditing(null);
             setFormOpen(true);
           }}
         >
-          <Plus className="h-4 w-4" /> Thêm mới
-        </Button>
+          Thêm mới
+        </AddButton>
       </div>
+
+      <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard icon={BookMarked} label="Tổng số câu hỏi" value={stats.total} tone="blue" />
+        <StatCard icon={ListChecks} label="Trắc nghiệm / Đúng-sai" value={stats.mcq} tone="mint" />
+        <StatCard icon={PenLine} label="Tự luận" value={stats.essay} tone="amber" />
+        <StatCard icon={Archive} label="Đã ngừng sử dụng" value={stats.archived} tone="blush" />
+      </div>
+
       <Tabs defaultValue="list">
         <TabsList className="mb-4">
           <TabsTrigger value="list">Câu hỏi</TabsTrigger>
@@ -601,8 +658,16 @@ export default function QuestionBankAdmin() {
             getRowId={(r) => r._id}
             searchPlaceholder="Tìm câu hỏi…"
             emptyLabel="Chưa có câu hỏi nào"
-            fetcher={async ({ page, pageSize, search }) => {
-              const res = await listQuestions({ page, limit: pageSize });
+            fetcher={async ({ page, pageSize, search, filters }) => {
+              // Column filter popovers allow multi-select, but the API only takes one value per
+              // field — best-effort: apply whichever is picked first.
+              const res = await listQuestions({
+                page,
+                limit: pageSize,
+                type: filters.type?.[0] as QuestionType | undefined,
+                difficulty: filters.difficulty?.[0] as QuestionDifficulty | undefined,
+                status: filters.status?.[0] as Question['status'] | undefined,
+              });
               const filtered = search
                 ? res.data.filter((q) => q.text.toLowerCase().includes(search.toLowerCase()))
                 : res.data;

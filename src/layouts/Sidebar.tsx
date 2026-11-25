@@ -22,13 +22,19 @@ interface SidebarProps {
   variant?: 'light' | 'dark';
 }
 
+// Exact match only — `startsWith` previously meant the root item ('/student', '/admin') matched
+// every route underneath it too, so it stayed highlighted no matter which page was actually open.
+// No menu item currently points at a route with its own nested sub-pages, so there is nothing to
+// prefix-match against; revisit this if one is added later.
 function isActive(pathname: string, item: MenuItem): boolean {
-  if (item.path && pathname.startsWith(item.path)) return true;
+  if (item.path && pathname === item.path) return true;
   return item.children?.some((c) => isActive(pathname, c)) ?? false;
 }
 
 function MenuLeaf({ item, collapsed, active }: { item: MenuItem; collapsed: boolean; active: boolean }) {
   const Icon = item.icon;
+  // Every leaf renders the same way regardless of any other flag on it — only the route that's
+  // actually open gets the "selected" look, so no item ever stands out as its own special case.
   const content = (
     <Link
       to={item.path ?? '#'}

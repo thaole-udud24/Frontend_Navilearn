@@ -25,6 +25,7 @@ export const PATHS = {
     supportItems: '/student/support-items',
     adminReportItems: '/student/report-issue',
     reviewItems: '/student/reviews',
+    learningRoadmap: '/student/learning-roadmap',
   },
   admin: {
     root: '/admin',
@@ -50,5 +51,8 @@ export const PATHS = {
     adminReportItems: '/admin/admin-report-items',
     reviewItems: '/admin/review-items',
     planTemplateItems: '/admin/plan-template-items',
+    lessonItems: '/admin/lesson-items',
+    flashcardItems: '/admin/flashcard-items',
+    assetItems: '/admin/asset-items',
   },
 };

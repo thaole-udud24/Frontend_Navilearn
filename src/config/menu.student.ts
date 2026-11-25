@@ -26,13 +26,16 @@ export const studentMenu: MenuGroup[] = [
   },
   {
     label: 'Học tập của tôi',
+    // Order follows the real learning flow: pick a subject, see what it covers, plan it, practice,
+    // get assessed, then track mastery — "Lộ kế hoạch học tập" used to sit in its own group after
+    // this whole block, out of step with where planning actually happens.
     items: [
       { label: 'Khoá học của tôi', icon: GraduationCap, path: PATHS.student.courses, roles: ['student'] },
       { label: 'Bản đồ tri thức', icon: Network, path: PATHS.student.knowledgeMap, roles: ['student'] },
+      { label: 'Lộ kế hoạch học tập', icon: CalendarDays, path: PATHS.student.planner, roles: ['student'] },
       { label: 'Luyện tập', icon: Percent, path: PATHS.student.practice, roles: ['student'] },
       { label: 'Đánh giá', icon: CheckSquare, path: PATHS.student.assessment, roles: ['student'] },
       { label: 'Mức độ thành thạo', icon: TrendingUp, path: PATHS.student.mastery, roles: ['student'] },
-      { label: 'Lộ kế hoạch học tập', icon: CalendarDays, path: PATHS.student.planner, roles: ['student'] },
     ],
   },
   {

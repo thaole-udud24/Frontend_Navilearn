@@ -75,6 +75,14 @@
   --blush: #f7d9e8;
   --blush-foreground: #a24d78;
   --lavender: #e6e0fb;
+  --lavender-foreground: #6b4fc4;
+
+  /* Teal (tài liệu, kho tri thức) and amber (mục tiêu, ghi nhớ) — section 10.2's remaining two
+     content-color groups, alongside the blue/mint/peach/pink/lavender already above. */
+  --teal: #c9eef0;
+  --teal-foreground: #117a81;
+  --amber: #fde8b8;
+  --amber-foreground: #92650a;
 
   --muted: #eef3fc;
   --muted-foreground: #6b7a99;
@@ -120,6 +128,12 @@
   --blush: #4a2c40;
   --blush-foreground: #f3c9df;
   --lavender: #241f3d;
+  --lavender-foreground: #c3b4f5;
+
+  --teal: #16343a;
+  --teal-foreground: #6fd9e0;
+  --amber: #3a2c12;
+  --amber-foreground: #f3c05f;
 
   --muted: #1a2238;
   --muted-foreground: #8a94a8;
@@ -156,6 +170,11 @@
   --color-blush: var(--blush);
   --color-blush-foreground: var(--blush-foreground);
   --color-lavender: var(--lavender);
+  --color-lavender-foreground: var(--lavender-foreground);
+  --color-teal: var(--teal);
+  --color-teal-foreground: var(--teal-foreground);
+  --color-amber: var(--amber);
+  --color-amber-foreground: var(--amber-foreground);
 
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
