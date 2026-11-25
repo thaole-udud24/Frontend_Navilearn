@@ -8,6 +8,7 @@ export const PATHS = {
     courses: '/student/courses',
     courseDetail: (subjectId: string) => `/student/courses/${subjectId}`,
     knowledgeMap: '/student/knowledge-map',
+    knowledgeStructure: '/student/knowledge-structure',
     practice: '/student/practice',
     assessment: '/student/assessment',
     mastery: '/student/mastery',

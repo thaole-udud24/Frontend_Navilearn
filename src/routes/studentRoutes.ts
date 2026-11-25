@@ -15,6 +15,7 @@ import LearningRoadmapPage from '@/pages/student/LearningRoadmap';
 import TemplateItemsPage from '@/pages/_template/Student';
 import StudentAccountItemsPage from '@/pages/accounts/account/Student';
 import StudentRiskItemsPage from '@/pages/planning/risk/Student';
+import StudentKnowledgeStructurePage from '@/pages/content/knowledge/Student';
 import StudentProfilePage from '@/pages/accounts/account/Student/Profile';
 import StudentChangePasswordPage from '@/pages/accounts/account/Student/ChangePassword';
 import StudentSupportItemsPage from '@/pages/ops/support/Student';
@@ -50,6 +51,7 @@ export const studentComingSoonRoutes = [
 
 // Pages that only provide their content: StudentAppShellLayout supplies the sidebar, header and sign-out.
 export const studentShellRoutes = [
+  { path: 'knowledge-structure', element: createElement(StudentKnowledgeStructurePage) },
   { path: 'profile', element: createElement(StudentProfilePage) },
   { path: 'change-password', element: createElement(StudentChangePasswordPage) },
 ];

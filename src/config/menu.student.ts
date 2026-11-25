@@ -6,6 +6,7 @@ import {
   Flag,
   Home,
   LayoutGrid,
+  ListTree,
   LifeBuoy,
   Network,
   Percent,
@@ -32,6 +33,7 @@ export const studentMenu: MenuGroup[] = [
     items: [
       { label: 'Khoá học của tôi', icon: GraduationCap, path: PATHS.student.courses, roles: ['student'] },
       { label: 'Bản đồ tri thức', icon: Network, path: PATHS.student.knowledgeMap, roles: ['student'] },
+      { label: 'Cấu trúc kiến thức', icon: ListTree, path: PATHS.student.knowledgeStructure, roles: ['student'] },
       {
         label: 'Lộ trình học tập',
         icon: Flag,
