@@ -7,12 +7,17 @@ import { Card } from '@/components/ui/card';
 import { PATHS } from '@/routes/paths';
 import { getNextBestAction, startNextBestAction } from '@/services/adaptive';
 
+import { dashboardMockEnabled, mockNextBestAction } from '../dashboard.mock';
+
 /** AP-ADP-01/02: real "việc tiếp theo nên làm" recommendation, ranked by BR-40 priority. */
 export function NextBestActionCard() {
   const navigate = useNavigate();
   const { data: action, isLoading } = useQuery({
     queryKey: ['adaptive', 'next-best-action'],
-    queryFn: getNextBestAction,
+    queryFn: () =>
+      dashboardMockEnabled
+        ? Promise.resolve(mockNextBestAction)
+        : getNextBestAction(),
   });
 
   const startMutation = useMutation({
@@ -46,10 +51,14 @@ export function NextBestActionCard() {
             <button
               type="button"
               onClick={() => startMutation.mutate()}
-              disabled={startMutation.isPending}
+              disabled={dashboardMockEnabled || startMutation.isPending}
               className="mt-3 inline-flex items-center gap-1.5 rounded-control bg-accent px-3.5 py-2 text-xs font-semibold text-accent-foreground transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50"
             >
-              {startMutation.isPending ? 'Đang bắt đầu…' : 'Bắt đầu học'}
+              {dashboardMockEnabled
+                ? 'Dữ liệu xem thử'
+                : startMutation.isPending
+                  ? 'Đang bắt đầu…'
+                  : 'Bắt đầu học'}
               <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </>
