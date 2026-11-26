@@ -25,6 +25,7 @@ import {
   createPlan,
   listGoals,
   listPlans,
+  rejectPlan,
   removeGoal,
   removeSession,
   updateSession,
@@ -336,6 +337,14 @@ export default function PlannerPage() {
     },
     onError: () => toast.error('Xác nhận kế hoạch thất bại'),
   });
+  const rejectMutation = useMutation({
+    mutationFn: (id: string) => rejectPlan(id),
+    onSuccess: () => {
+      toast.success('Đã từ chối đề xuất — kế hoạch hiện tại được giữ nguyên');
+      invalidatePlans();
+    },
+    onError: () => toast.error('Từ chối đề xuất thất bại'),
+  });
 
   const createPlanMutation = useMutation({
     mutationFn: (title: string) => createPlan({ title }),
@@ -487,10 +496,26 @@ export default function PlannerPage() {
                   >
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-semibold text-foreground">{p.title}</p>
-                      <Button type="button" size="sm" onClick={() => confirmMutation.mutate(p._id)}>
-                        Xác nhận
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={rejectMutation.isPending}
+                          onClick={() => rejectMutation.mutate(p._id)}
+                        >
+                          Từ chối
+                        </Button>
+                        <Button type="button" size="sm" onClick={() => confirmMutation.mutate(p._id)}>
+                          Xác nhận
+                        </Button>
+                      </div>
                     </div>
+                    {p.confirmReminder && (
+                      <p className="text-sm text-warning">
+                        Đề xuất này đã chờ hơn 5 phút — kế hoạch hiện tại vẫn được áp dụng cho tới khi bạn xác nhận.
+                      </p>
+                    )}
                     <RoadmapTree sessions={p.sessions} readOnly />
                   </div>
                 ))}

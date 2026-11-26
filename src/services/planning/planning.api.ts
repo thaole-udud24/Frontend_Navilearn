@@ -34,6 +34,11 @@ export async function confirmPlan(id: string): Promise<Plan> {
   const { data } = await request.patch<ApiSuccess<Plan>>(ENDPOINTS.planningItems.confirm(id), {});
   return data.data;
 }
+// UC-PLN-10 AF1: từ chối đề xuất; kế hoạch đang hoạt động giữ nguyên.
+export async function rejectPlan(id: string): Promise<Plan> {
+  const { data } = await request.patch<ApiSuccess<Plan>>(ENDPOINTS.planningItems.reject(id), {});
+  return data.data;
+}
 
 export async function removePlan(id: string): Promise<void> {
   await request.delete(ENDPOINTS.planningItems.detail(id));

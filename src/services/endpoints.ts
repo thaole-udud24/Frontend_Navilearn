@@ -165,6 +165,7 @@ export const ENDPOINTS = {
     create: '/planning-items',
     detail: (id: string) => `/planning-items/${id}`,
     confirm: (id: string) => `/planning-items/${id}/confirm`,
+    reject: (id: string) => `/planning-items/${id}/reject`,
     sessions: (id: string) => `/planning-items/${id}/sessions`,
     session: (id: string, sessionId: string) => `/planning-items/${id}/sessions/${sessionId}`,
     sessionQuiz: (id: string, sessionId: string) => `/planning-items/${id}/sessions/${sessionId}/quiz`,
