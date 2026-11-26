@@ -1,4 +1,4 @@
-export type PlanStatus = 'proposed' | 'active' | 'superseded';
+export type PlanStatus = 'proposed' | 'active' | 'superseded' | 'rejected';
 export type SessionStatus = 'planned' | 'done' | 'missed' | 'cancelled';
 /** Chặng (stage) lock state, computed by the BE from the plan's sessions — never set by the client. */
 export type StageStatus = 'locked' | 'available' | 'completed';
@@ -33,6 +33,8 @@ export interface Plan {
   title: string;
   status: PlanStatus;
   replaces: string | null;
+  /** BR-54: BE bật khi đề xuất 'proposed' chờ quá 5 phút chưa được xác nhận/từ chối — FE hiện nhắc. */
+  confirmReminder?: boolean;
   sessions: PlanSession[];
   createdAt: string;
   updatedAt: string;
