@@ -153,6 +153,7 @@ export const ENDPOINTS = {
     complete: '/mastery-items/complete',
     open: '/mastery-items/open',
     export: '/mastery-items/export',
+    dashboard: '/mastery-items/dashboard',
   },
   notificationItems: {
     list: '/notification-items',
