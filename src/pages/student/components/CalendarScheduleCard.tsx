@@ -75,6 +75,9 @@ interface CalendarScheduleCardProps {
   today: number;
   events: CalendarEventDay[];
   schedule: ScheduleItem[];
+  /** "Hôm nay" no longer has its own sidebar entry — this links to the real Today page (mark
+   * done/cancel/quiz actions) instead of duplicating those actions in the card. */
+  onViewToday?: () => void;
 }
 
 function ScheduleRow({ item }: { item: ScheduleItem }) {
@@ -101,11 +104,30 @@ function ScheduleRow({ item }: { item: ScheduleItem }) {
   );
 }
 
-function ScheduleGroup({ label, items }: { label: string; items: ScheduleItem[] }) {
+function ScheduleGroup({
+  label,
+  items,
+  onViewDetail,
+}: {
+  label: string;
+  items: ScheduleItem[];
+  onViewDetail?: () => void;
+}) {
   if (!items.length) return null;
   return (
     <div className="flex flex-col gap-2.5">
-      <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
+        {onViewDetail && (
+          <button
+            type="button"
+            onClick={onViewDetail}
+            className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+          >
+            Xem chi tiết <ArrowRight className="h-3 w-3" />
+          </button>
+        )}
+      </div>
       {items.map((item) => (
         <ScheduleRow key={item.id} item={item} />
       ))}
@@ -113,7 +135,14 @@ function ScheduleGroup({ label, items }: { label: string; items: ScheduleItem[] 
   );
 }
 
-export function CalendarScheduleCard({ year, month, today, events, schedule }: CalendarScheduleCardProps) {
+export function CalendarScheduleCard({
+  year,
+  month,
+  today,
+  events,
+  schedule,
+  onViewToday,
+}: CalendarScheduleCardProps) {
   const [offset, setOffset] = useState(0);
   const viewDate = useMemo(() => new Date(year, month + offset, 1), [year, month, offset]);
   const cells = useMemo(() => buildMonthGrid(viewDate.getFullYear(), viewDate.getMonth()), [viewDate]);
@@ -131,8 +160,8 @@ export function CalendarScheduleCard({ year, month, today, events, schedule }: C
   const upcomingItems = schedule.filter((s) => !todayItems.includes(s));
 
   return (
-    <div className="grid items-start gap-4 lg:grid-cols-[1.3fr_1fr]">
-      <Card>
+    <div className="grid items-stretch gap-4 lg:grid-cols-[1.3fr_1fr]">
+      <Card className="h-full flex flex-col">
         <div className="flex items-center gap-2">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control bg-primary-soft text-primary">
             <CalendarDays className="h-4 w-4" />
@@ -217,7 +246,7 @@ export function CalendarScheduleCard({ year, month, today, events, schedule }: C
         </div>
       </Card>
 
-      <Card>
+      <Card className="h-full flex flex-col">
         <div className="mb-4 flex items-center justify-between">
           <CardTitle>Hôm nay &amp; sắp tới</CardTitle>
           <button
@@ -228,7 +257,7 @@ export function CalendarScheduleCard({ year, month, today, events, schedule }: C
           </button>
         </div>
         <div className="flex flex-col gap-5">
-          <ScheduleGroup label="Hôm nay" items={todayItems} />
+          <ScheduleGroup label="Hôm nay" items={todayItems} onViewDetail={onViewToday} />
           <ScheduleGroup label="Sắp tới" items={upcomingItems} />
           {schedule.length === 0 && <p className="text-sm text-muted-foreground">Chưa có lịch trình nào.</p>}
         </div>

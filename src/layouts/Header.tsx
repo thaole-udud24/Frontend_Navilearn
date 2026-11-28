@@ -1,12 +1,37 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Bell, ChevronDown, Grid3x3, KeyRound, LogOut, Menu, Moon, Search, User } from 'lucide-react';
+import {
+  Bell,
+  CheckCheck,
+  ChevronDown,
+  Flame,
+  Globe,
+  Grid3x3,
+  KeyRound,
+  LogOut,
+  Menu,
+  Moon,
+  Search,
+  Trophy,
+  User,
+} from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/hooks/useAuth';
 import { PATHS } from '@/routes/paths';
 import { assetUrl } from '@/utils/assetUrl';
+import { accountKeys, getBadges, getStreak } from '@/services/account';
+import {
+  listNotificationItems,
+  markAllNotificationsRead,
+  markNotificationRead,
+  notificationItemKeys,
+} from '@/services/notification';
+import type { NotificationItem } from '@/services/notification/types';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,9 +56,152 @@ interface HeaderProps {
 }
 
 const LANGUAGES = [
-  { code: 'vi', flag: '🇻🇳', label: 'Tiếng Việt' },
-  { code: 'en', flag: '🇬🇧', label: 'English' },
+  { code: 'vi', short: 'VI', label: 'Tiếng Việt' },
+  { code: 'en', short: 'EN', label: 'English' },
 ];
+
+function NotificationBell({ compact, notificationCountOverride }: { compact?: boolean; notificationCountOverride?: number }) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const reduced = useReducedMotion();
+  const user = useAuthStore((state) => state.user);
+  const [open, setOpen] = useState(false);
+
+  const { data: listRes, isLoading } = useQuery({
+    queryKey: notificationItemKeys.list({ limit: 8 }),
+    queryFn: () => listNotificationItems({ limit: 8 }),
+    enabled: !!user,
+    staleTime: 30_000,
+  });
+
+  const { data: unreadRes } = useQuery({
+    queryKey: notificationItemKeys.list({ read: false, limit: 1 }),
+    queryFn: () => listNotificationItems({ read: false, limit: 1 }),
+    enabled: !!user,
+    staleTime: 30_000,
+  });
+
+  const items = listRes?.data ?? [];
+  const unreadCount =
+    notificationCountOverride && notificationCountOverride > 0
+      ? notificationCountOverride
+      : (unreadRes?.meta?.total ?? items.filter((n) => !n.read).length);
+
+  const markAllMutation = useMutation({
+    mutationFn: markAllNotificationsRead,
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: notificationItemKeys.all }),
+  });
+
+  const readMutation = useMutation({
+    mutationFn: markNotificationRead,
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: notificationItemKeys.all }),
+  });
+
+  const handleOpenItem = (item: NotificationItem) => {
+    if (!item.read) readMutation.mutate(item._id);
+    setOpen(false);
+    if (item.link) navigate(item.link);
+  };
+
+  const notificationsPath = user?.role === 'admin' ? PATHS.admin.notificationItems : PATHS.student.notifications;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <motion.button
+          type="button"
+          aria-label="Thông báo"
+          data-testid="header-notification-bell"
+          animate={unreadCount > 0 && !reduced ? { rotate: [0, -8, 8, -8, 0] } : undefined}
+          transition={{ duration: 0.5, repeat: unreadCount > 0 ? Infinity : 0, repeatDelay: 3 }}
+          className={cn(
+            'relative flex h-10 w-10 shrink-0 items-center justify-center bg-card text-foreground focus-visible:outline-none focus-visible:ring-2',
+            compact
+              ? 'rounded-full border border-border shadow-card focus-visible:ring-ring'
+              : 'rounded-control bg-white focus-visible:ring-white',
+          )}
+        >
+          <Bell className="h-5 w-5" />
+          {unreadCount > 0 && (
+            <span
+              data-testid="header-notification-badge"
+              className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white"
+            >
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
+        </motion.button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="tw-scope w-80 p-0 sm:w-96">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <span className="text-sm font-bold text-foreground">Thông báo</span>
+          {unreadCount > 0 && (
+            <button
+              type="button"
+              disabled={markAllMutation.isPending}
+              onClick={() => markAllMutation.mutate()}
+              className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline disabled:opacity-50"
+            >
+              <CheckCheck className="h-3.5 w-3.5" /> Đánh dấu đã đọc tất cả
+            </button>
+          )}
+        </div>
+        <div className="max-h-80 divide-y divide-border overflow-y-auto">
+          {isLoading ? (
+            <div className="p-4 text-center text-xs text-muted-foreground">Đang tải thông báo…</div>
+          ) : items.length === 0 ? (
+            <div className="p-6 text-center text-xs text-muted-foreground">Chưa có thông báo nào.</div>
+          ) : (
+            items.map((item) => (
+              <button
+                key={item._id}
+                type="button"
+                onClick={() => handleOpenItem(item)}
+                className={cn(
+                  'flex w-full items-start gap-2.5 px-4 py-3 text-left transition-colors hover:bg-muted/60',
+                  !item.read && 'bg-primary/5',
+                )}
+              >
+                <span
+                  className={cn(
+                    'mt-1.5 h-2 w-2 shrink-0 rounded-full',
+                    item.read ? 'bg-transparent' : 'bg-primary',
+                  )}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className={cn('line-clamp-1 text-xs text-foreground', !item.read ? 'font-bold' : 'font-medium')}>
+                    {item.title}
+                  </p>
+                  {item.content && <p className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">{item.content}</p>}
+                  <p className="mt-1 text-[10px] text-muted-foreground">
+                    {new Date(item.createdAt).toLocaleString('vi-VN', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+        <div className="border-t border-border p-2 text-center">
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              navigate(notificationsPath);
+            }}
+            className="w-full rounded-control py-1.5 text-xs font-semibold text-primary hover:bg-muted"
+          >
+            Xem tất cả thông báo
+          </button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 function AvatarMenu({
   userName,
@@ -75,14 +243,14 @@ function AvatarMenu({
         >
           <span
             className={cn(
-              'flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold',
+              'flex h-9 w-9 items-center justify-center overflow-hidden rounded-full text-sm font-bold',
               light
                 ? 'bg-gradient-to-br from-primary to-primary-hover text-primary-foreground'
                 : 'bg-white/20',
             )}
           >
             {avatar ? (
-              <img src={avatar} alt="" className="h-full w-full rounded-full object-cover" />
+              <img src={avatar} alt={userName} className="h-full w-full object-cover" />
             ) : (
               initial
             )}
@@ -132,7 +300,22 @@ export function Header({
   onLogout,
 }: HeaderProps) {
   const [lang, setLang] = useState(LANGUAGES[0]);
-  const reduced = useReducedMotion();
+  const [badgesOpen, setBadgesOpen] = useState(false);
+  const user = useAuthStore((state) => state.user);
+  const isStudent = user?.role === 'student';
+
+  const { data: streak } = useQuery({
+    queryKey: accountKeys.streak,
+    queryFn: getStreak,
+    enabled: isStudent,
+    staleTime: 60_000,
+  });
+
+  const { data: badgesData } = useQuery({
+    queryKey: accountKeys.badges,
+    queryFn: getBadges,
+    enabled: isStudent && badgesOpen,
+  });
 
   if (compact) {
     return (
@@ -170,20 +353,80 @@ export function Header({
 
           <div className="flex-1" />
 
-          <motion.button
-            type="button"
-            aria-label="Thông báo"
-            animate={notificationCount > 0 && !reduced ? { rotate: [0, -8, 8, -8, 0] } : undefined}
-            transition={{ duration: 0.5, repeat: notificationCount > 0 ? Infinity : 0, repeatDelay: 3 }}
-            className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <Bell className="h-5 w-5" />
-            {notificationCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[10px] font-bold text-white">
-                {notificationCount}
-              </span>
-            )}
-          </motion.button>
+          {isStudent && (
+            <>
+              <button
+                type="button"
+                onClick={() => setBadgesOpen(true)}
+                title={`Chuỗi ngày học: ${streak?.current ?? 0} ngày · Kỷ lục: ${streak?.longest ?? 0} ngày`}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors hover:opacity-90',
+                  streak?.activeToday
+                    ? 'border-amber-300 bg-amber-50 text-amber-700'
+                    : 'border-border bg-muted/40 text-muted-foreground',
+                )}
+              >
+                <Flame className={cn('h-3.5 w-3.5', streak?.activeToday ? 'fill-amber-500 text-amber-500' : '')} />
+                <span>{streak?.current ?? 0} ngày</span>
+              </button>
+              <Dialog open={badgesOpen} onOpenChange={setBadgesOpen}>
+                <DialogContent className="tw-scope max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Chuỗi ngày học & Tủ huy hiệu</DialogTitle>
+                  </DialogHeader>
+                  <div className="flex flex-col gap-4 py-2">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-center">
+                        <p className="flex items-center justify-center gap-1.5 text-2xl font-bold text-amber-700">
+                          <Flame className="h-6 w-6 fill-amber-500 text-amber-500" />
+                          <span>{streak?.current ?? 0}</span>
+                        </p>
+                        <p className="text-xs text-amber-800">Chuỗi hiện tại (ngày)</p>
+                      </div>
+                      <div className="rounded-xl border border-border bg-muted/30 p-3 text-center">
+                        <p className="text-2xl font-bold text-foreground">{streak?.longest ?? 0}</p>
+                        <p className="text-xs text-muted-foreground">Kỷ lục dài nhất (ngày)</p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="mb-2 text-xs font-bold uppercase text-muted-foreground">
+                        Huy hiệu mốc chuỗi
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(badgesData?.catalog ?? []).map((b) => {
+                          const earned = (badgesData?.earned ?? []).find((e) => e.code === b.code);
+                          return (
+                            <div
+                              key={b.code}
+                              className={cn(
+                                'flex items-center gap-2 rounded-xl border p-2.5 text-xs',
+                                earned
+                                  ? 'border-amber-300 bg-amber-50/60 text-foreground'
+                                  : 'border-border bg-muted/20 text-muted-foreground opacity-65',
+                              )}
+                            >
+                              <Trophy
+                                className={cn(
+                                  'h-4 w-4 shrink-0',
+                                  earned ? 'text-amber-500' : 'text-muted-foreground',
+                                )}
+                              />
+                              <div className="min-w-0">
+                                <p className="truncate font-semibold">{b.name}</p>
+                                <p className="text-[11px]">Mốc {b.thresholdDays} ngày</p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </>
+          )}
+
+          <NotificationBell compact notificationCountOverride={notificationCount} />
 
           <AvatarMenu userName={userName} roleLabel={roleLabel} onLogout={onLogout} light />
         </div>
@@ -224,35 +467,23 @@ export function Header({
           <Grid3x3 className="h-5 w-5" />
         </button>
 
-        <motion.button
-          type="button"
-          aria-label="Thông báo"
-          animate={notificationCount > 0 && !reduced ? { rotate: [0, -8, 8, -8, 0] } : undefined}
-          transition={{ duration: 0.5, repeat: notificationCount > 0 ? Infinity : 0, repeatDelay: 3 }}
-          className="relative flex h-10 w-10 items-center justify-center rounded-control bg-white text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-        >
-          <Bell className="h-5 w-5" />
-          {notificationCount > 0 && (
-            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1 text-[11px] font-bold text-white">
-              {notificationCount}
-            </span>
-          )}
-        </motion.button>
+        <NotificationBell notificationCountOverride={notificationCount} />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
               aria-label="Chọn ngôn ngữ"
-              className="flex h-10 items-center gap-1 rounded-control px-2 text-lg hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              className="flex h-10 items-center gap-1.5 rounded-control px-2.5 text-xs font-semibold hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
-              {lang.flag}
+              <Globe className="h-4 w-4" />
+              <span>{lang.short}</span>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="tw-scope" align="end">
             {LANGUAGES.map((l) => (
               <DropdownMenuItem key={l.code} onSelect={() => setLang(l)}>
-                <span className="mr-2">{l.flag}</span>
+                <span className="mr-2 font-mono text-xs font-semibold text-muted-foreground">{l.short}</span>
                 {l.label}
               </DropdownMenuItem>
             ))}

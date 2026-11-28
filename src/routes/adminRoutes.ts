@@ -8,7 +8,6 @@ import TemplateItemsPage from '@/pages/_template/Admin';
 import AdminAccountItemsPage from '@/pages/accounts/account/Admin';
 import AdminRbacItemsPage from '@/pages/accounts/rbac/Admin';
 import AdminSubjectCatalogPage from '@/pages/accounts/subject/Admin';
-import AdminSharedDocumentsPage from '@/pages/accounts/subject/Admin/SharedDocuments';
 import AdminProfilePage from '@/pages/accounts/account/Admin/Profile';
 import AdminChangePasswordPage from '@/pages/accounts/account/Admin/ChangePassword';
 import AdminKnowledgeItemsPage from '@/pages/content/knowledge/Admin';
@@ -53,8 +52,9 @@ export const adminNewRoutes = [
   { path: 'asset-items', element: createElement(AssetAdmin) },
 ];
 
-// Kept as a live reference for scaffolding new modules the same way (see backend routes/index.js);
-// not linked from the sidebar.
+// template-items is kept as a live reference for scaffolding new modules the same way (see backend
+// routes/index.js) and is not linked from the sidebar. rbac-items IS linked — menu.admin.ts's "Tài
+// khoản và phân quyền › Vai trò" item points at PATHS.admin.rbacItems (verified B13, this session).
 export const adminLegacyRoutes = [
   { path: 'template-items', element: createElement(TemplateItemsPage) },
   { path: 'rbac-items', element: createElement(AdminRbacItemsPage) },
@@ -63,7 +63,6 @@ export const adminLegacyRoutes = [
 // Pages that only provide their content: AdminAppShellLayout supplies the sidebar, header and sign-out.
 export const adminShellRoutes = [
   { path: 'subject-catalog', element: createElement(AdminSubjectCatalogPage) },
-  { path: 'shared-documents', element: createElement(AdminSharedDocumentsPage) },
   { path: 'profile', element: createElement(AdminProfilePage) },
   { path: 'change-password', element: createElement(AdminChangePasswordPage) },
 ];

@@ -5,6 +5,7 @@ import { studentMenu } from '@/config/menu.student';
 import { useAuthStore } from '@/hooks/useAuth';
 import { PATHS } from '@/routes/paths';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   deleteMyAccount,
   listSessions,
@@ -14,6 +15,8 @@ import {
 import { accountKeys } from '@/services/account/queryKeys';
 import { PasswordSection } from '../components/PasswordSection';
 import { ProfileSection } from '../components/ProfileSection';
+import { StudyReminderSection } from '../components/StudyReminderSection';
+import { AppearanceSection } from '../components/AppearanceSection';
 
 const SECTION = 'rounded-card border border-border bg-card p-5 shadow-card';
 
@@ -40,6 +43,26 @@ export default function StudentAccountPage() {
       onLogout={signOut}
     >
       <div className="mx-auto flex max-w-4xl flex-col gap-6">
+      <Tabs defaultValue="account">
+        <TabsList className="mb-4">
+          <TabsTrigger value="account">Tài khoản</TabsTrigger>
+          <TabsTrigger value="reminder">Nhắc học</TabsTrigger>
+          <TabsTrigger value="appearance">Giao diện</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="reminder">
+          <section className={SECTION}>
+            <StudyReminderSection />
+          </section>
+        </TabsContent>
+
+        <TabsContent value="appearance">
+          <section className={SECTION}>
+            <AppearanceSection />
+          </section>
+        </TabsContent>
+
+        <TabsContent value="account" className="flex flex-col gap-6">
         <section className={SECTION}>
           <h2 className="mb-4 text-lg font-semibold">Hồ sơ và thiết lập học tập</h2>
           <ProfileSection variant="student" />
@@ -110,6 +133,8 @@ export default function StudentAccountPage() {
             Xóa tài khoản
           </Button>
         </section>
+        </TabsContent>
+      </Tabs>
       </div>
     </AppShell>
   );

@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AnimatePresence,
@@ -105,12 +105,20 @@ export default function AuthPage() {
     return () => window.removeEventListener('mousemove', handleMove);
   }, [parallaxEnabled, mvX, mvY]);
 
+  const redirectTimerRef = useRef<number | null>(null);
+  useEffect(
+    () => () => {
+      if (redirectTimerRef.current !== null) window.clearTimeout(redirectTimerRef.current);
+    },
+    [],
+  );
+
   async function completeAuth(result: LoginResponse) {
     localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, result.accessToken);
     localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, result.refreshToken);
     setUser(result.user);
     setRevealing(true);
-    window.setTimeout(() => {
+    redirectTimerRef.current = window.setTimeout(() => {
       navigate(result.user.role === ROLES.ADMIN ? PATHS.admin.root : PATHS.student.root);
     }, 650);
   }

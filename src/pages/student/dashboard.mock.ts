@@ -68,6 +68,7 @@ export const mockPlan: Plan = {
   owner: 'mock-student',
   title: 'Kế hoạch ôn tập Giải tích',
   status: 'active',
+  goal: 'mock-goal-1',
   replaces: null,
   createdAt: dateAt(-5),
   updatedAt: dateAt(-1),

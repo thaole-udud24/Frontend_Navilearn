@@ -26,6 +26,12 @@ export async function getBusinessRuleDetail(id: string): Promise<ApiSuccess<Busi
   return data;
 }
 
+// Lấy quy tắc theo mã (B14 dùng để tải đúng 3 ngưỡng cảnh báo rủi ro)
+export async function getBusinessRuleByCode(code: string): Promise<BusinessRule> {
+  const { data } = await request.get<ApiSuccess<BusinessRule>>(ENDPOINTS.businessRuleItems.byCode(code));
+  return data.data;
+}
+
 // Cập nhật quy tắc
 export async function updateBusinessRule(id: string, input: UpdateBusinessRuleInput): Promise<BusinessRule> {
   const { data } = await request.patch<ApiSuccess<BusinessRule>>(

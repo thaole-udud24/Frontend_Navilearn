@@ -1,9 +1,11 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import {
+  ArrowDown,
+  ArrowUp,
   BookOpen,
   CalendarClock,
   CheckCircle2,
@@ -12,17 +14,25 @@ import {
   Clock,
   Flag,
   GraduationCap,
+  History,
   LayoutGrid,
   MoreVertical,
+  Pencil,
   PlayCircle,
+  RotateCcw,
   Search,
   Sparkles,
+  Star,
   Target,
   Trash2,
+  TrendingUp,
 } from 'lucide-react';
 
 import { AppShell } from '@/layouts/AppShell';
+import { GlobalSubjectFilter } from '@/components/GlobalSubjectFilter';
 import { useAuthStore } from '@/hooks/useAuth';
+import { useSubjectStore } from '@/hooks/useSubjectStore';
+import { toConceptId } from '@/lib/subjectUtils';
 import { PATHS } from '@/routes/paths';
 import { studentMenu } from '@/config/menu.student';
 import { Button } from '@/components/ui/button';
@@ -41,18 +51,21 @@ import { StatCard } from '@/components/StatCard';
 import type { StatTone } from '@/components/StatCard';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { listGoals, listPlans } from '@/services/planning';
+import { getOpenDraft, listGoals, listPlans } from '@/services/planning';
 import { planningKeys } from '@/services/planning/queryKeys';
 import { exportMasteryReport } from '@/services/mastery';
 import {
   addStudentSubject,
   listStudentSubjects,
+  listTrashedStudentSubjects,
   removeStudentSubject,
+  restoreStudentSubject,
   studentSubjectKeys,
+  updateStudentSubject,
 } from '@/services/student-subject';
 import type { StudentSubject } from '@/services/student-subject/types';
 
-const conceptOf = (s: StudentSubject) => (typeof s.concept === 'string' ? null : s.concept);
+const conceptOf = (s: StudentSubject) => (!s.concept || typeof s.concept === 'string' ? null : s.concept);
 
 type CourseStatus = 'active' | 'upcoming' | 'done';
 
@@ -112,18 +125,34 @@ interface CourseCardData {
   remainingMinutes: number;
   goalCount: number;
   planTitle?: string;
+  /** Active (status 'active') goal for this subject, if any — drives the "Mục tiêu: …" line. */
+  activeGoal?: { examName?: string | null; targetScore?: number | null; daysLeft: number };
 }
 
 function CourseCard({
   data,
   tone,
   onCta,
+  onViewRoadmap,
   onRemove,
+  onEdit,
+  onTogglePin,
+  onMoveUp,
+  onMoveDown,
+  canMoveUp,
+  canMoveDown,
 }: {
   data: CourseCardData;
   tone: StatTone;
   onCta: () => void;
+  onViewRoadmap: () => void;
   onRemove: () => void;
+  onEdit: () => void;
+  onTogglePin: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
 }) {
   const meta = STATUS_META[data.status];
   const Icon = meta.icon;
@@ -131,9 +160,9 @@ function CourseCard({
     data.status === 'done'
       ? 'Xem lại'
       : data.status === 'active'
-        ? 'Tiếp tục học'
+        ? 'Vào học'
         : data.goalCount === 0
-          ? 'Tạo mục tiêu'
+          ? '+ Thiết lập mục tiêu'
           : 'Tạo lộ trình';
   const CtaIcon = data.status === 'upcoming' ? Target : PlayCircle;
 
@@ -151,22 +180,45 @@ function CourseCard({
 
       <div className="relative flex items-start justify-between gap-2">
         <StatusBadge variant={meta.variant}>{meta.label}</StatusBadge>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              aria-label="Thao tác môn học"
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-control text-muted-foreground hover:bg-card/70"
-            >
-              <MoreVertical className="h-4 w-4" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="tw-scope w-44" align="end">
-            <DropdownMenuItem className="text-danger" onSelect={onRemove}>
-              <Trash2 className="h-4 w-4" /> Bỏ môn này
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            aria-label={data.subject.pinned ? 'Bỏ ghim môn học' : 'Ghim môn học'}
+            aria-pressed={data.subject.pinned}
+            onClick={onTogglePin}
+            className={cn(
+              'flex h-7 w-7 shrink-0 items-center justify-center rounded-control hover:bg-card/70',
+              data.subject.pinned ? 'text-amber-foreground' : 'text-muted-foreground',
+            )}
+          >
+            <Star className="h-4 w-4" fill={data.subject.pinned ? 'currentColor' : 'none'} />
+          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label="Thao tác môn học"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-control text-muted-foreground hover:bg-card/70"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="tw-scope w-48" align="end">
+              <DropdownMenuItem onSelect={onEdit}>
+                <Pencil className="h-4 w-4" /> Đổi tên / mô tả
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled={!canMoveUp} onSelect={onMoveUp}>
+                <ArrowUp className="h-4 w-4" /> Chuyển lên
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled={!canMoveDown} onSelect={onMoveDown}>
+                <ArrowDown className="h-4 w-4" /> Chuyển xuống
+              </DropdownMenuItem>
+              <DropdownMenuItem className="text-danger" onSelect={onRemove}>
+                <Trash2 className="h-4 w-4" /> Bỏ môn này
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       <div className="relative min-w-0 flex-1">
@@ -177,6 +229,15 @@ function CourseCard({
             : data.description || 'Chưa có mô tả'}
         </p>
       </div>
+
+      {data.activeGoal && (
+        <p className="relative flex items-center gap-1 text-xs font-medium text-foreground">
+          <Flag className="h-3 w-3 text-primary" />
+          Mục tiêu: {data.activeGoal.examName || 'Ôn thi'}
+          {data.activeGoal.targetScore != null && ` · ${data.activeGoal.targetScore} điểm`}
+          {` · còn ${Math.max(data.activeGoal.daysLeft, 0)} ngày`}
+        </p>
+      )}
 
       {data.status !== 'upcoming' ? (
         <div className="relative">
@@ -201,23 +262,29 @@ function CourseCard({
         </div>
       ) : (
         <div className="relative flex items-center gap-2 text-xs text-muted-foreground">
-          <Flag className="h-3 w-3" /> {data.goalCount} mục tiêu
+          <Flag className="h-3 w-3" />
+          {data.goalCount === 0 ? 'Chưa có mục tiêu ôn thi' : `${data.goalCount} mục tiêu`}
         </div>
       )}
 
       {data.isCustom ? (
-        <p className="relative mt-auto text-xs italic text-muted-foreground">
-          Môn tự tạo — chưa hỗ trợ lộ trình/mục tiêu.
-        </p>
+        <p className="relative mt-auto text-xs italic text-muted-foreground">Môn cá nhân</p>
       ) : (
-        <Button
-          type="button"
-          size="sm"
-          className="relative mt-auto self-start bg-primary text-primary-foreground hover:bg-primary-hover"
-          onClick={onCta}
-        >
-          <CtaIcon className="h-3.5 w-3.5" /> {ctaLabel}
-        </Button>
+        <div className="relative mt-auto flex items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            className="self-start bg-primary text-primary-foreground hover:bg-primary-hover"
+            onClick={onCta}
+          >
+            <CtaIcon className="h-3.5 w-3.5" /> {ctaLabel}
+          </Button>
+          {data.status === 'active' && (
+            <Button type="button" size="sm" variant="outline" onClick={onViewRoadmap}>
+              Xem lộ trình
+            </Button>
+          )}
+        </div>
       )}
     </div>
   );
@@ -384,6 +451,146 @@ function CustomSubjectDialog({
   );
 }
 
+// Rename/redescribe a self-made subject's custom* label (concept-backed subjects keep the shared
+// Concept's name, so this only changes anything for `isCustom` subjects — see `name` in `cards`).
+function EditSubjectDialog({
+  open,
+  onOpenChange,
+  subject,
+  onSaved,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  subject: StudentSubject | null;
+  onSaved: () => void;
+}) {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+
+  useEffect(() => {
+    if (subject) {
+      setTitle(subject.customTitle ?? '');
+      setDescription(subject.customDescription ?? '');
+    }
+  }, [subject]);
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      updateStudentSubject(subject!._id, {
+        customTitle: title.trim(),
+        customDescription: description.trim(),
+      }),
+    onSuccess: () => {
+      toast.success('Đã lưu thay đổi');
+      onOpenChange(false);
+      onSaved();
+    },
+    onError: () => toast.error('Lưu thay đổi thất bại'),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent size="sm" className="tw-scope">
+        <DialogHeader>
+          <DialogTitle>Đổi tên / mô tả môn học</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-3">
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-foreground">Tên môn *</span>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="h-10 rounded-control border border-input bg-card px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-foreground">Mô tả</span>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+              className="rounded-control border border-input bg-card px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </label>
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Hủy
+          </Button>
+          <Button type="button" disabled={!title.trim() || mutation.isPending} onClick={() => mutation.mutate()}>
+            Lưu
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// "Đã xóa gần đây": soft-deleted môn học (StudentSubjectItem.deletedAt), with a one-click restore —
+// the only recovery path, since the backend has no separate ACTIVE/ARCHIVED status for this model.
+function TrashDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: [...studentSubjectKeys.all, 'trash'],
+    queryFn: () => listTrashedStudentSubjects({ limit: 50 }),
+    enabled: open,
+  });
+  const items = data?.data ?? [];
+
+  const restoreMutation = useMutation({
+    mutationFn: (id: string) => restoreStudentSubject(id),
+    onSuccess: () => {
+      toast.success('Đã khôi phục môn học');
+      void queryClient.invalidateQueries({ queryKey: studentSubjectKeys.all });
+    },
+    onError: () => toast.error('Khôi phục thất bại'),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent size="sm" className="tw-scope">
+        <DialogHeader>
+          <DialogTitle>Đã xóa gần đây</DialogTitle>
+        </DialogHeader>
+        {isLoading ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">Đang tải…</p>
+        ) : items.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">Chưa có môn học nào đã xóa.</p>
+        ) : (
+          <ul className="flex max-h-80 flex-col gap-2 overflow-y-auto">
+            {items.map((s) => {
+              const concept = conceptOf(s);
+              const name = concept?.name ?? s.customTitle ?? 'Môn học';
+              return (
+                <li
+                  key={s._id}
+                  className="flex items-center justify-between gap-3 rounded-control border border-border p-2.5 text-sm"
+                >
+                  <span className="truncate font-medium text-foreground">{name}</span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={restoreMutation.isPending}
+                    onClick={() => restoreMutation.mutate(s._id)}
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" /> Khôi phục
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Đóng
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ST-01: "+ Thêm môn ▾" opens a menu with the two real ways to add a subject — never adds one
 // directly, since "Tạo môn của riêng tôi" needs its own form.
 function AddSubjectMenu({
@@ -497,7 +704,7 @@ function CourseCarousel({
 
 const TAB_LABEL: Record<'all' | CourseStatus, string> = {
   all: 'Tất cả',
-  active: 'Đang học',
+  active: 'Đang ôn',
   upcoming: 'Sắp học',
   done: 'Đã hoàn thành',
 };
@@ -509,6 +716,8 @@ export default function CoursesPage() {
   const queryClient = useQueryClient();
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [customOpen, setCustomOpen] = useState(false);
+  const [trashOpen, setTrashOpen] = useState(false);
+  const [editing, setEditing] = useState<StudentSubject | null>(null);
   const [removing, setRemoving] = useState<StudentSubject | null>(null);
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<'all' | 'active' | 'done'>('all');
@@ -539,7 +748,16 @@ export default function CoursesPage() {
     queryFn: () => exportMasteryReport({}),
   });
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: studentSubjectKeys.all });
+  // B2: the draft-continuation banner — an unfinished goal wizard, auto-saved with its wizardStep.
+  const { data: openDraft } = useQuery({
+    queryKey: ['planning-goal-draft'],
+    queryFn: getOpenDraft,
+  });
+
+  const invalidate = () => {
+    void queryClient.invalidateQueries({ queryKey: studentSubjectKeys.all });
+    void useSubjectStore.getState().loadSubjects(true);
+  };
 
   const removeMutation = useMutation({
     mutationFn: (id: string) => removeStudentSubject(id),
@@ -551,14 +769,38 @@ export default function CoursesPage() {
     onSettled: () => setRemoving(null),
   });
 
+  const pinMutation = useMutation({
+    mutationFn: ({ id, pinned }: { id: string; pinned: boolean }) => updateStudentSubject(id, { pinned }),
+    onSuccess: invalidate,
+    onError: () => toast.error('Thao tác thất bại'),
+  });
+
+  // Manual order (ST-01 "kéo-thả" alternative: up/down buttons) re-numbers every item's
+  // displayOrder as its new array index — swapping just the two raw values would be a no-op the
+  // first time (every item starts at displayOrder 0, so same-value ties break by createdAt instead).
+  const moveMutation = useMutation({
+    mutationFn: (reordered: StudentSubject[]) =>
+      Promise.all(reordered.map((s, index) => updateStudentSubject(s._id, { displayOrder: index }))),
+    onSuccess: invalidate,
+    onError: () => toast.error('Sắp xếp lại thất bại'),
+  });
+  const moveSubject = (subject: StudentSubject, direction: -1 | 1) => {
+    const index = allSubjects.findIndex((s) => s._id === subject._id);
+    const target = index + direction;
+    if (target < 0 || target >= allSubjects.length) return;
+    const reordered = [...allSubjects];
+    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+    moveMutation.mutate(reordered);
+  };
+
   const cards: CourseCardData[] = useMemo(
     () =>
       allSubjects.map((s) => {
         const concept = conceptOf(s);
-        const conceptId = s.concept ? (typeof s.concept === 'string' ? s.concept : s.concept._id) : s._id;
+        const conceptId = toConceptId(s.concept) ?? s._id;
         const isCustom = !s.concept;
         const goalCount = goals.filter(
-          (g) => (typeof g.concept === 'string' ? g.concept : g.concept._id) === conceptId,
+          (g) => toConceptId(g.concept) === conceptId,
         ).length;
         const activePlan = plans.find(
           (p) => p.status === 'active' && p.sessions.some((sess) => sess.concept === conceptId),
@@ -570,7 +812,14 @@ export default function CoursesPage() {
           activePlan?.sessions
             .filter((sess) => sess.status !== 'done')
             .reduce((sum, sess) => sum + sess.durationMin, 0) ?? 0;
-        const status: CourseStatus = !activePlan ? 'upcoming' : percent >= 100 ? 'done' : 'active';
+        // "Đang ôn": a goal with status 'active' AND an active (confirmed) plan in progress.
+        const activeGoalForConcept = goals.find(
+          (g) =>
+            toConceptId(g.concept) === conceptId &&
+            (g.status ?? 'active') === 'active',
+        );
+        const status: CourseStatus =
+          !activePlan || !activeGoalForConcept ? 'upcoming' : percent >= 100 ? 'done' : 'active';
         return {
           subject: s,
           conceptId,
@@ -583,13 +832,25 @@ export default function CoursesPage() {
           remainingMinutes,
           goalCount,
           planTitle: activePlan?.title,
+          activeGoal: activeGoalForConcept
+            ? {
+                examName: activeGoalForConcept.examName,
+                targetScore: activeGoalForConcept.targetScore,
+                daysLeft: Math.ceil(
+                  (new Date(activeGoalForConcept.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+                ),
+              }
+            : undefined,
         };
       }),
     [allSubjects, goals, plans],
   );
 
+  const selectedSubjectId = useSubjectStore((s) => s.selectedSubjectId);
+
   const filtered = useMemo(() => {
     let items = cards;
+    if (selectedSubjectId) items = items.filter((c) => c.conceptId === selectedSubjectId);
     if (tab !== 'all') items = items.filter((c) => c.status === tab);
     if (search.trim()) {
       const q = search.trim().toLowerCase();
@@ -600,7 +861,7 @@ export default function CoursesPage() {
         ? a.name.localeCompare(b.name, 'vi')
         : b.subject.createdAt.localeCompare(a.subject.createdAt),
     );
-  }, [cards, tab, search, sort]);
+  }, [cards, selectedSubjectId, tab, search, sort]);
 
   const activeCount = cards.filter((c) => c.status === 'active').length;
   const doneCount = cards.filter((c) => c.status === 'done').length;
@@ -639,7 +900,7 @@ export default function CoursesPage() {
       id: g._id,
       title: `Mục tiêu: ${g.title}`,
       subjectName:
-        conceptNameById.get(typeof g.concept === 'string' ? g.concept : g.concept._id) ?? 'Môn học',
+        conceptNameById.get(toConceptId(g.concept) ?? '') ?? 'Môn học',
       due: new Date(g.deadline),
       dueLabel: new Date(g.deadline).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
     }));
@@ -654,8 +915,8 @@ export default function CoursesPage() {
     type Point = { at: number; score: number };
     const byConcept = new Map<string, Point[]>();
     (masteryReport ?? []).forEach((entry) => {
-      const conceptId = typeof entry.concept === 'string' ? entry.concept : entry.concept._id;
-      if (!enrolledConceptIds.has(conceptId)) return;
+      const conceptId = toConceptId(entry.concept);
+      if (!conceptId || !enrolledConceptIds.has(conceptId)) return;
       const points = entry.history
         .filter((h): h is typeof h & { at: string } => !!h.at)
         .map((h) => ({ at: new Date(h.at).getTime(), score: h.score }))
@@ -706,17 +967,37 @@ export default function CoursesPage() {
         navigate(PATHS.login);
       }}
     >
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Khoá học của tôi</h1>
+          <h1 className="text-xl font-bold text-foreground">Môn học của tôi</h1>
           <p className="text-sm text-muted-foreground">Theo dõi tiến độ và quản lý các môn học của bạn.</p>
         </div>
-        <AddSubjectMenu
-          label="Thêm môn"
-          onPickCatalog={() => setCatalogOpen(true)}
-          onPickCustom={() => setCustomOpen(true)}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" variant="ghost" size="sm" onClick={() => setTrashOpen(true)}>
+            <History className="h-4 w-4" /> Đã xóa gần đây
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => navigate(`${PATHS.student.planner}?openGoal=1`)}>
+            <Target className="h-4 w-4" /> Thiết lập mục tiêu ôn thi
+          </Button>
+          <AddSubjectMenu
+            label="Thêm môn"
+            onPickCatalog={() => setCatalogOpen(true)}
+            onPickCustom={() => setCustomOpen(true)}
+          />
+        </div>
       </div>
+
+      {openDraft && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-card border border-primary/30 bg-primary-soft p-3 text-sm">
+          <span className="text-foreground">
+            Nháp chưa hoàn tất: Mục tiêu "{openDraft.title || openDraft.examName || 'Chưa đặt tên'}" (đang
+            ở bước {Math.min(openDraft.wizardStep ?? 1, 6)}/6)
+          </span>
+          <Button type="button" size="sm" onClick={() => navigate(`${PATHS.student.planner}?openGoal=1`)}>
+            Tiếp tục thiết lập
+          </Button>
+        </div>
+      )}
 
       {allSubjects.length > 0 && (
         <div className="mb-4 grid gap-4 sm:grid-cols-3">
@@ -763,7 +1044,7 @@ export default function CoursesPage() {
                   onClick={() => setTab(t)}
                   className={cn(
                     'rounded-control px-3 py-1.5 text-sm font-medium transition-colors',
-                    tab === t ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted',
+                    tab === t ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
                   )}
                 >
                   {TAB_LABEL[t]} ({t === 'all' ? cards.length : t === 'active' ? activeCount : doneCount})
@@ -771,36 +1052,34 @@ export default function CoursesPage() {
               ))}
             </div>
 
-            <div className="flex items-center gap-2">
-              <label className="relative w-full max-w-[220px]">
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="relative w-full max-w-[200px]">
                 <span className="sr-only">Tìm môn học</span>
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Tìm môn học…"
-                  className="h-10 w-full rounded-control border border-input bg-card pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  placeholder="Tìm môn học..."
+                  className="h-9 w-full rounded-control border border-input bg-card pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
               </label>
+              <GlobalSubjectFilter compact />
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value as 'newest' | 'name')}
-                className="h-10 rounded-control border border-input bg-card px-2.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-9 rounded-control border border-input bg-card px-2.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <option value="newest">Mới nhất</option>
                 <option value="name">Tên A-Z</option>
               </select>
+              <button
+                type="button"
+                onClick={() => setViewAll((v) => !v)}
+                className="ml-1 text-sm font-medium text-primary hover:underline"
+              >
+                {viewAll ? 'Thu gọn' : 'Xem tất cả'} <span aria-hidden>→</span>
+              </button>
             </div>
-          </div>
-
-          <div className="mb-2 flex items-center justify-end">
-            <button
-              type="button"
-              onClick={() => setViewAll((v) => !v)}
-              className="text-sm font-medium text-primary hover:underline"
-            >
-              {viewAll ? 'Thu gọn' : 'Xem tất cả'} <span aria-hidden>→</span>
-            </button>
           </div>
 
           {filtered.length === 0 ? (
@@ -815,11 +1094,20 @@ export default function CoursesPage() {
                   data={c}
                   tone={toneForIndex(i)}
                   onCta={() =>
-                    c.status === 'upcoming' && c.goalCount === 0
+                    c.goalCount === 0
                       ? navigate(`${PATHS.student.planner}?concept=${c.conceptId}`)
-                      : navigate(PATHS.student.planner)
+                      : c.status === 'active'
+                        ? navigate(PATHS.student.today)
+                        : navigate(PATHS.student.planner)
                   }
+                  onViewRoadmap={() => navigate(PATHS.student.goalRoadmap)}
                   onRemove={() => setRemoving(c.subject)}
+                  onEdit={() => setEditing(c.subject)}
+                  onTogglePin={() => pinMutation.mutate({ id: c.subject._id, pinned: !c.subject.pinned })}
+                  onMoveUp={() => moveSubject(c.subject, -1)}
+                  onMoveDown={() => moveSubject(c.subject, 1)}
+                  canMoveUp={allSubjects.findIndex((s) => s._id === c.subject._id) > 0}
+                  canMoveDown={allSubjects.findIndex((s) => s._id === c.subject._id) < allSubjects.length - 1}
                 />
               ))}
             </div>
@@ -832,22 +1120,34 @@ export default function CoursesPage() {
                   data={c}
                   tone={toneForIndex(i)}
                   onCta={() =>
-                    c.status === 'upcoming' && c.goalCount === 0
+                    c.goalCount === 0
                       ? navigate(`${PATHS.student.planner}?concept=${c.conceptId}`)
-                      : navigate(PATHS.student.planner)
+                      : c.status === 'active'
+                        ? navigate(PATHS.student.today)
+                        : navigate(PATHS.student.planner)
                   }
+                  onViewRoadmap={() => navigate(PATHS.student.goalRoadmap)}
                   onRemove={() => setRemoving(c.subject)}
+                  onEdit={() => setEditing(c.subject)}
+                  onTogglePin={() => pinMutation.mutate({ id: c.subject._id, pinned: !c.subject.pinned })}
+                  onMoveUp={() => moveSubject(c.subject, -1)}
+                  onMoveDown={() => moveSubject(c.subject, 1)}
+                  canMoveUp={allSubjects.findIndex((s) => s._id === c.subject._id) > 0}
+                  canMoveDown={allSubjects.findIndex((s) => s._id === c.subject._id) < allSubjects.length - 1}
                 />
               )}
             />
           )}
 
-          <div className="mt-6 grid gap-4 lg:grid-cols-2">
-            <div className="rounded-card border border-border bg-card p-4 shadow-card">
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <h3 className="font-semibold text-foreground">Tiến độ học tập</h3>
+          <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_1.35fr]">
+            <div className="flex flex-col rounded-card border border-border bg-card p-5 shadow-card">
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <div>
+                  <h3 className="font-semibold text-foreground">Tiến độ học tập</h3>
+                  <p className="text-xs text-muted-foreground">Tỷ lệ hoàn thành trung bình theo thời gian</p>
+                </div>
                 <Select value={progressRange} onValueChange={(v) => setProgressRange(v as '7' | '30' | '90')}>
-                  <SelectTrigger className="h-8 w-[112px] text-xs">
+                  <SelectTrigger className="h-8 w-[104px] text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="tw-scope">
@@ -857,15 +1157,16 @@ export default function CoursesPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <span className="mb-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                <span className="h-2 w-2 rounded-full bg-primary" /> Tỷ lệ hoàn thành trung bình theo thời
-                gian
-              </span>
 
               {!progressSeries.hasHistory ? (
-                <p className="py-10 text-center text-sm text-muted-foreground">
-                  Chưa có lịch sử tiến độ học tập nào được ghi nhận trong khoảng thời gian này.
-                </p>
+                <div className="mt-3 flex flex-1 flex-col items-center justify-center gap-2 rounded-card border border-dashed border-border bg-muted/30 px-4 py-10 text-center">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                    <TrendingUp className="h-4 w-4" />
+                  </span>
+                  <p className="max-w-xs text-xs text-muted-foreground">
+                    Chưa có lịch sử tiến độ học tập nào được ghi nhận trong khoảng thời gian này.
+                  </p>
+                </div>
               ) : (
                 <div className="h-[200px]">
                   <ResponsiveContainer width="100%" height="100%">
@@ -912,13 +1213,16 @@ export default function CoursesPage() {
               )}
             </div>
 
-            <div className="rounded-card border border-border bg-card p-4 shadow-card">
-              <div className="mb-3 flex items-center gap-2">
-                <CalendarClock className="h-4 w-4 text-primary" />
-                <h3 className="font-semibold text-foreground">Việc cần làm sắp tới</h3>
+            <div className="rounded-card border border-border bg-card p-5 shadow-card">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <CalendarClock className="h-4 w-4 text-primary" />
+                  <h3 className="font-semibold text-foreground">Việc cần làm sắp tới</h3>
+                </div>
+                <span className="text-xs font-medium text-muted-foreground">{todos.length} đầu việc</span>
               </div>
               {todos.length === 0 ? (
-                <p className="py-4 text-center text-sm text-muted-foreground">
+                <p className="py-8 text-center text-sm text-muted-foreground">
                   Chưa có buổi học hay mục tiêu nào sắp tới.
                 </p>
               ) : (
@@ -926,13 +1230,15 @@ export default function CoursesPage() {
                   {todos.map((t) => (
                     <li
                       key={t.id}
-                      className="flex items-center justify-between gap-3 rounded-control border border-border p-2.5 text-sm"
+                      className="flex items-center justify-between gap-3 rounded-control bg-muted/40 px-3.5 py-2.5 text-sm"
                     >
                       <div className="min-w-0">
                         <p className="truncate font-medium text-foreground">{t.title}</p>
                         <p className="truncate text-xs text-muted-foreground">{t.subjectName}</p>
                       </div>
-                      <span className="shrink-0 text-xs font-semibold text-foreground">Hạn {t.dueLabel}</span>
+                      <span className="shrink-0 rounded-full border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground">
+                        Hạn {t.dueLabel}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -946,13 +1252,18 @@ export default function CoursesPage() {
         open={catalogOpen}
         onOpenChange={setCatalogOpen}
         excludeIds={allSubjects
-          .filter(
-            (s): s is StudentSubject & { concept: NonNullable<StudentSubject['concept']> } => !!s.concept,
-          )
-          .map((s) => (typeof s.concept === 'string' ? s.concept : s.concept._id))}
+          .map((s) => toConceptId(s.concept))
+          .filter((id): id is string => !!id)}
         onAdded={invalidate}
       />
       <CustomSubjectDialog open={customOpen} onOpenChange={setCustomOpen} onAdded={invalidate} />
+      <EditSubjectDialog
+        open={!!editing}
+        onOpenChange={(v) => !v && setEditing(null)}
+        subject={editing}
+        onSaved={invalidate}
+      />
+      <TrashDialog open={trashOpen} onOpenChange={setTrashOpen} />
       <ConfirmDialog
         open={!!removing}
         onOpenChange={(v) => !v && setRemoving(null)}

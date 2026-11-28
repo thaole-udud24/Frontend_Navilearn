@@ -1,21 +1,15 @@
 import { request } from '@/utils/request';
 import { ENDPOINTS } from '@/services/endpoints';
 import type { ApiSuccess } from '@/types/api.d';
-import type { CreateRiskItemInput, RiskItem, RiskItemFilters, RiskItemStatus } from './types';
+import type { DismissRiskWarningInput, RiskWarning } from './types';
 
-export async function listRiskItems(filters: RiskItemFilters): Promise<ApiSuccess<RiskItem[]>> {
-  const { data } = await request.get<ApiSuccess<RiskItem[]>>(ENDPOINTS.riskItems.list, { params: filters });
-  return data;
-}
-
-export async function createRiskItem(input: CreateRiskItemInput): Promise<RiskItem> {
-  const { data } = await request.post<ApiSuccess<RiskItem>>(ENDPOINTS.riskItems.create, input);
+// N9: danh sách cảnh báo rủi ro hệ thống tự sinh cho sinh viên hiện tại (BR-12/BR-13).
+export async function listRiskWarnings(): Promise<RiskWarning[]> {
+  const { data } = await request.get<ApiSuccess<RiskWarning[]>>(ENDPOINTS.riskItems.warnings);
   return data.data;
 }
 
-export async function updateRiskItemStatus(id: string, status: RiskItemStatus): Promise<RiskItem> {
-  const { data } = await request.patch<ApiSuccess<RiskItem>>(ENDPOINTS.riskItems.updateStatus(id), {
-    status,
-  });
-  return data.data;
+// "Giữ nguyên" hoặc "Nhắc tôi sau" cho một cảnh báo.
+export async function dismissRiskWarning(input: DismissRiskWarningInput): Promise<void> {
+  await request.post(ENDPOINTS.riskItems.dismiss, input);
 }

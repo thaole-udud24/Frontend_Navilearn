@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ChevronDown, GraduationCap, LogOut } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/hooks/useAuth';
+import { assetUrl } from '@/utils/assetUrl';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { MenuGroup, MenuItem } from './types';
@@ -69,11 +71,29 @@ function MenuLeaf({ item, collapsed, active }: { item: MenuItem; collapsed: bool
   );
 }
 
+const SIDEBAR_SCROLL_KEY = 'navilearn:sidebar-scroll';
+let savedSidebarScrollTop = (() => {
+  try {
+    return Number(sessionStorage.getItem(SIDEBAR_SCROLL_KEY) || 0) || 0;
+  } catch {
+    return 0;
+  }
+})();
+const savedMenuOpenState = new Map<string, boolean>();
+
 function MenuParent({ item, collapsed, pathname }: { item: MenuItem; collapsed: boolean; pathname: string }) {
-  const [open, setOpen] = useState(() => isActive(pathname, item));
-  const Icon = item.icon;
   const active = isActive(pathname, item);
+  const [open, setOpen] = useState(() => active || (savedMenuOpenState.get(item.label) ?? false));
+  const Icon = item.icon;
   const reduced = useReducedMotion();
+
+  const toggleOpen = () => {
+    setOpen((prev) => {
+      const next = !prev;
+      savedMenuOpenState.set(item.label, next);
+      return next;
+    });
+  };
 
   if (collapsed) {
     return (
@@ -113,7 +133,7 @@ function MenuParent({ item, collapsed, pathname }: { item: MenuItem; collapsed: 
     <div>
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggleOpen}
         aria-expanded={open}
         className={cn(
           'flex min-h-11 w-full items-center gap-3 rounded-control px-3 py-2 text-[15px] leading-snug transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
@@ -172,8 +192,29 @@ function SidebarBody({
   collapsed: boolean;
   pathname: string;
 }) {
+  const navRef = useRef<HTMLElement>(null);
+
+  useLayoutEffect(() => {
+    if (navRef.current && savedSidebarScrollTop > 0) {
+      navRef.current.scrollTop = savedSidebarScrollTop;
+    }
+  }, [pathname]);
+
+  const handleScroll = (e: React.UIEvent<HTMLElement>) => {
+    savedSidebarScrollTop = e.currentTarget.scrollTop;
+    try {
+      sessionStorage.setItem(SIDEBAR_SCROLL_KEY, String(savedSidebarScrollTop));
+    } catch {
+      /* ignore storage errors */
+    }
+  };
+
   return (
-    <nav className="min-h-0 flex-1 space-y-5 overflow-y-auto px-3 py-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-border">
+    <nav
+      ref={navRef}
+      onScroll={handleScroll}
+      className="min-h-0 flex-1 space-y-5 overflow-y-auto px-3 py-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-border"
+    >
       {groups.map((group, gi) => (
         <div key={group.label ?? gi} className={cn(gi > 0 && 'border-t border-border/70 pt-4')}>
           {group.label && !collapsed && (
@@ -212,13 +253,20 @@ function ProfileFooter({
   roleLabel: string;
   onLogout?: () => void;
 }) {
-  const initial = userName.trim().charAt(0).toUpperCase();
+  const user = useAuthStore((state) => state.user);
+  const avatar = assetUrl(user?.avatarUrl);
+  const displayName = user?.fullName || userName;
+  const initial = displayName.trim().charAt(0).toUpperCase();
 
   if (collapsed) {
     return (
       <div className="flex flex-col items-center gap-2 px-2 pb-3">
-        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-hover text-sm font-bold text-primary-foreground">
-          {initial}
+        <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-primary to-primary-hover text-sm font-bold text-primary-foreground">
+          {avatar ? (
+            <img src={avatar} alt={displayName} className="h-full w-full object-cover" />
+          ) : (
+            initial
+          )}
         </span>
         <button
           type="button"
@@ -234,12 +282,16 @@ function ProfileFooter({
 
   return (
     <div className="mx-2 mb-3 flex items-center gap-3 rounded-card border border-border bg-card p-3 shadow-card">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-hover text-sm font-bold text-primary-foreground">
-        {initial}
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-primary to-primary-hover text-sm font-bold text-primary-foreground">
+        {avatar ? (
+          <img src={avatar} alt={displayName} className="h-full w-full object-cover" />
+        ) : (
+          initial
+        )}
       </span>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-bold text-foreground" title={userName}>
-          {userName}
+        <div className="truncate text-sm font-bold text-foreground" title={displayName}>
+          {displayName}
         </div>
         <div className="truncate text-xs text-muted-foreground">{roleLabel}</div>
       </div>

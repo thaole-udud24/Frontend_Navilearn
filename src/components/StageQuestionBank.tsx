@@ -10,8 +10,8 @@ import { getQuestion } from '@/services/question-bank';
 import type { Question } from '@/services/question-bank/types';
 import { DIFFICULTY_LABEL_FRIENDLY, InlineQuestionForm } from './QuestionPicker';
 
-const conceptName = (c: Question['concept']) => (typeof c === 'string' ? c : c.name);
-const conceptId = (c: Question['concept']) => (typeof c === 'string' ? c : c._id);
+const conceptName = (c: Question['concept']) => (!c ? '' : typeof c === 'string' ? c : c.name);
+const conceptId = (c: Question['concept']) => (!c ? '' : typeof c === 'string' ? c : c._id);
 
 function correctAnswerLabel(q: Question) {
   if (q.type === 'essay') return 'Tự luận';

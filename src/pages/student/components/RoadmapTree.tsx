@@ -25,7 +25,7 @@ interface RoadmapTreeProps {
   onStartQuiz?: (sessionId: string) => void;
 }
 
-const STATUS_STYLE: Record<SessionStatus, { card: string; dot: string; icon: typeof Circle; label: string }> =
+export const STATUS_STYLE: Record<SessionStatus, { card: string; dot: string; icon: typeof Circle; label: string }> =
   {
     done: {
       card: 'border-success/40 bg-success/5',

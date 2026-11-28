@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { ColumnDef } from '@tanstack/react-table';
+import type { ApiError } from '@/services/apiError';
 import {
   Archive,
   Ban,
   BookMarked,
+  CheckCircle2,
   Copy,
   Eye,
   ListChecks,
@@ -16,6 +18,7 @@ import {
   Plus,
   Sparkles,
   Trash2,
+  XCircle,
 } from 'lucide-react';
 
 import { AppShell } from '@/layouts/AppShell';
@@ -50,8 +53,8 @@ import {
   confirmRegrade,
   updateQuestion,
 } from '@/services/question-bank';
-import { generateQuestionDraft } from '@/services/ai-assist';
-import type { DraftQuestion } from '@/services/ai-assist/types';
+import { generateQuestionDraft, listQuestionDrafts, rejectQuestionDraft } from '@/services/ai-assist';
+import type { DraftQuestion, QuestionDraftReviewItem } from '@/services/ai-assist/types';
 import type {
   Question,
   QuestionDifficulty,
@@ -85,7 +88,7 @@ const EMPTY_FORM: QuestionFormState = {
   points: 10,
 };
 
-function QuestionFormDialog({
+export function QuestionFormDialog({
   open,
   onClose,
   editing,
@@ -131,8 +134,8 @@ function QuestionFormDialog({
       toast(editing ? 'Đã cập nhật câu hỏi' : 'Đã tạo câu hỏi');
       onSaved();
       onClose();
-    } catch {
-      toast('Lưu câu hỏi thất bại, kiểm tra lại dữ liệu.');
+    } catch (err) {
+      toast((err as ApiError)?.message || 'Lưu câu hỏi thất bại, kiểm tra lại dữ liệu.');
     }
   };
 
@@ -343,19 +346,24 @@ function GenerateQuestionAiDialog({
   open,
   onClose,
   onSaved,
+  initialConcept,
 }: {
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
+  /** A2 "Sinh câu hỏi" from a source document's row: pre-fills the real concept that document is
+   * tagged to — this is a real link (AssetItem.concept), but generation still only uses the
+   * concept's name, never the document's own content, so this is not a document-grounded draft. */
+  initialConcept?: string;
 }) {
-  const [concept, setConcept] = useState('');
+  const [concept, setConcept] = useState(initialConcept ?? '');
   const [difficulty, setDifficulty] = useState<QuestionDifficulty>('medium');
   const [draft, setDraft] = useState<DraftQuestion | null>(null);
   const [generating, setGenerating] = useState(false);
   const [approving, setApproving] = useState(false);
 
   const reset = () => {
-    setConcept('');
+    setConcept(initialConcept ?? '');
     setDifficulty('medium');
     setDraft(null);
   };
@@ -366,8 +374,8 @@ function GenerateQuestionAiDialog({
       const result = await generateQuestionDraft({ concept, difficulty });
       setDraft(result);
       if (!result.valid) toast('AI trả về không đúng định dạng — kiểm tra lại nội dung trước khi duyệt.');
-    } catch {
-      toast('Sinh câu hỏi bằng AI thất bại.');
+    } catch (err) {
+      toast((err as ApiError)?.message || 'Sinh câu hỏi bằng AI thất bại.');
     } finally {
       setGenerating(false);
     }
@@ -388,8 +396,8 @@ function GenerateQuestionAiDialog({
       onSaved();
       onClose();
       reset();
-    } catch {
-      toast('Duyệt thất bại — kiểm tra lại nội dung câu hỏi.');
+    } catch (err) {
+      toast((err as ApiError)?.message || 'Duyệt thất bại — kiểm tra lại nội dung câu hỏi.');
     } finally {
       setApproving(false);
     }
@@ -553,16 +561,128 @@ function QualityStatsPanel() {
   );
 }
 
+/** A5 "Review Workspace": just-generated drafts pending approval, each with its real flags —
+ * `valid` (format check) and `possibleDuplicate` (live exact-text match against the active bank for
+ * the same concept). No fabricated duplicate %, no stored NO_SOURCE/ANSWER_MISMATCH flags exist for
+ * this pipeline today, so only these two real signals are shown. */
+function ReviewWorkspacePanel({ refreshKey }: { refreshKey: number }) {
+  const [drafts, setDrafts] = useState<QuestionDraftReviewItem[] | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const load = () => {
+    listQuestionDrafts().then(setDrafts);
+  };
+
+  useEffect(load, [refreshKey]);
+
+  const approve = async (draft: QuestionDraftReviewItem) => {
+    if (!draft.concept) {
+      toast('Thiếu kiến thức gắn với câu hỏi này — không thể duyệt.');
+      return;
+    }
+    setBusyId(draft.aiAssistLogId);
+    try {
+      await approveFromAiDraft({
+        aiAssistLogId: draft.aiAssistLogId,
+        concept: draft.concept._id,
+        text: draft.text,
+        options: draft.options,
+      });
+      toast('Đã duyệt câu hỏi vào ngân hàng chung');
+      load();
+    } catch (err) {
+      toast((err as ApiError)?.message || 'Duyệt thất bại');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const reject = async (draft: QuestionDraftReviewItem) => {
+    setBusyId(draft.aiAssistLogId);
+    try {
+      await rejectQuestionDraft(draft.aiAssistLogId);
+      toast('Đã loại bỏ câu hỏi dự thảo');
+      load();
+    } catch (err) {
+      toast((err as ApiError)?.message || 'Thao tác thất bại');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  if (drafts === null) return <p className="text-sm text-muted-foreground">Đang tải…</p>;
+  if (drafts.length === 0) return <p className="text-sm text-muted-foreground">Không có câu hỏi dự thảo đang chờ duyệt</p>;
+
+  return (
+    <div className="flex flex-col gap-3">
+      {drafts.map((draft) => (
+        <div key={draft.aiAssistLogId} className="rounded-card border border-border bg-card p-4">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            {draft.valid ? (
+              <StatusBadge variant="success">Định dạng hợp lệ</StatusBadge>
+            ) : (
+              <StatusBadge variant="danger">Sai định dạng</StatusBadge>
+            )}
+            {draft.possibleDuplicate && <StatusBadge variant="warning">Có thể trùng câu hỏi đã có</StatusBadge>}
+            <span className="text-xs text-muted-foreground">
+              {draft.concept?.name ?? '(không có kiến thức)'} · {draft.owner?.fullName ?? draft.owner?.email ?? ''}
+            </span>
+          </div>
+          <p className="mb-2 text-sm text-foreground">{draft.text || '(AI không trả về nội dung hợp lệ)'}</p>
+          <ul className="mb-3 flex flex-col gap-1">
+            {draft.options.map((o, i) => (
+              <li key={i} className={o.isCorrect ? 'text-sm font-medium text-success' : 'text-sm text-muted-foreground'}>
+                {o.isCorrect ? '✓ ' : '• '}
+                {o.text}
+              </li>
+            ))}
+          </ul>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              disabled={busyId === draft.aiAssistLogId || !draft.valid}
+              onClick={() => approve(draft)}
+            >
+              <CheckCircle2 className="h-4 w-4" /> Duyệt
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={busyId === draft.aiAssistLogId}
+              onClick={() => reject(draft)}
+            >
+              <XCircle className="h-4 w-4" /> Loại bỏ
+            </Button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function QuestionBankAdmin() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
   const [tableKey, setTableKey] = useState(0);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Question | null>(null);
-  const [aiDraftOpen, setAiDraftOpen] = useState(false);
+  // A2 "Sinh câu hỏi" from a source document's row navigates here with ?genConcept=<conceptId>.
+  const initialGenConcept = searchParams.get('genConcept') ?? undefined;
+  const [aiDraftOpen, setAiDraftOpen] = useState(!!initialGenConcept);
   const [viewing, setViewing] = useState<Question | null>(null);
   const [stats, setStats] = useState({ total: 0, mcq: 0, essay: 0, archived: 0 });
+
+  useEffect(() => {
+    if (initialGenConcept) {
+      searchParams.delete('genConcept');
+      setSearchParams(searchParams, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const reload = () => setTableKey((k) => k + 1);
 
@@ -647,6 +767,7 @@ export default function QuestionBankAdmin() {
       <Tabs defaultValue="list">
         <TabsList className="mb-4">
           <TabsTrigger value="list">Câu hỏi</TabsTrigger>
+          <TabsTrigger value="review">Review Workspace (AI)</TabsTrigger>
           <TabsTrigger value="duplicates">Trùng lặp</TabsTrigger>
           <TabsTrigger value="quality">Thống kê chất lượng</TabsTrigger>
         </TabsList>
@@ -710,8 +831,8 @@ export default function QuestionBankAdmin() {
                     const res = await importQuestions(items);
                     toast(`Đã nhập ${res.createdCount} câu hỏi, ${res.errorCount} lỗi`);
                     reload();
-                  } catch {
-                    toast('JSON không hợp lệ');
+                  } catch (err) {
+                    toast.error((err as ApiError)?.message || 'JSON không hợp lệ hoặc nhập câu hỏi thất bại');
                   }
                 },
               },
@@ -795,6 +916,10 @@ export default function QuestionBankAdmin() {
           />
         </TabsContent>
 
+        <TabsContent value="review">
+          <ReviewWorkspacePanel refreshKey={tableKey} />
+        </TabsContent>
+
         <TabsContent value="duplicates">
           <DuplicatesPanel />
         </TabsContent>
@@ -810,7 +935,12 @@ export default function QuestionBankAdmin() {
         editing={editing}
         onSaved={reload}
       />
-      <GenerateQuestionAiDialog open={aiDraftOpen} onClose={() => setAiDraftOpen(false)} onSaved={reload} />
+      <GenerateQuestionAiDialog
+        open={aiDraftOpen}
+        onClose={() => setAiDraftOpen(false)}
+        onSaved={reload}
+        initialConcept={initialGenConcept}
+      />
       <ViewQuestionDialog question={viewing} onClose={() => setViewing(null)} />
     </AppShell>
   );

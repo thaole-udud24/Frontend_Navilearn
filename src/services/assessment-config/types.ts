@@ -57,6 +57,7 @@ export interface AssessmentConfigFilters {
   page?: number;
   limit?: number;
   concept?: string;
+  subjectId?: string;
   kind?: AssessmentConfigKind;
   status?: AssessmentConfigStatus;
 }
@@ -79,7 +80,8 @@ export interface UpdatePolicyInput {
 
 export interface RubricCriterion {
   name: string;
-  maxPoints: number;
+  /** % of the rubric's totalPoints this criterion is worth; all criteria must sum to 100. */
+  weightPct: number;
   description?: string;
 }
 
@@ -87,6 +89,8 @@ export interface Rubric {
   _id: string;
   title: string;
   concept: string;
+  /** The point scale weightPct applies to (e.g. 100 => a criterion with weightPct 30 is worth 30 points). */
+  totalPoints: number;
   criteria: RubricCriterion[];
   status: AssessmentConfigStatus;
   source?: RecordSource;
@@ -104,10 +108,11 @@ export interface RubricFilters {
 export interface CreateRubricInput {
   title: string;
   concept: string;
+  totalPoints: number;
   criteria: RubricCriterion[];
 }
 
-export type UpdateRubricInput = Partial<Pick<CreateRubricInput, 'title' | 'criteria'>>;
+export type UpdateRubricInput = Partial<Pick<CreateRubricInput, 'title' | 'totalPoints' | 'criteria'>>;
 
 export interface ImportRowResult {
   createdCount: number;

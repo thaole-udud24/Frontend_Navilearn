@@ -1,6 +1,7 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { STORAGE_KEYS } from '@/constants/storageKeys';
 import { ENDPOINTS } from '@/services/endpoints';
+import { toApiError } from '@/services/apiError';
 
 const baseURL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000/api/v1';
 
@@ -45,9 +46,9 @@ request.interceptors.response.use(
         localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
         localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
         window.location.href = '/login';
-        return Promise.reject(refreshError);
+        return Promise.reject(toApiError(refreshError));
       }
     }
-    return Promise.reject(error);
+    return Promise.reject(toApiError(error));
   },
 );

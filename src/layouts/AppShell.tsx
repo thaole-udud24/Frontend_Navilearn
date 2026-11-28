@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Wrench, HelpCircle, Bug, BookOpen } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -51,6 +51,7 @@ export function AppShell({
 }: AppShellProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const reduced = useReducedMotion();
   // Same sidebar, every student page — previously only Dashboard passed `tagline`, so its sidebar
   // looked taller/different from every other menu. Defaulting it here means no page can forget it.
   const resolvedTagline = tagline ?? (area === 'student' ? 'Explore. Learn. Master.' : undefined);
@@ -91,7 +92,13 @@ export function AppShell({
             !compactHeader && '-mt-10 rounded-card bg-card shadow-card',
           )}
         >
-          {children}
+          <motion.div
+            initial={reduced ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+          >
+            {children}
+          </motion.div>
         </main>
 
         <footer className="px-4 pb-24 pt-6 text-center text-xs text-muted-foreground sm:px-6">

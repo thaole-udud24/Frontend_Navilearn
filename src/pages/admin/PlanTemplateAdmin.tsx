@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { ColumnDef } from '@tanstack/react-table';
+import type { ApiError } from '@/services/apiError';
 import {
   ArrowLeft,
   BookOpen,
@@ -44,12 +45,17 @@ import {
   listPlanTemplates,
   publishPlanTemplate,
   removePlanTemplate,
+  syncPlanTemplateStepLesson,
   updatePlanTemplate,
 } from '@/services/plan-template';
 import type { PlanTemplate, PlanTemplateStatus, PlanTemplateStep } from '@/services/plan-template/types';
 import { listQuestions } from '@/services/question-bank';
+import { listLessons } from '@/services/lesson';
+import type { Lesson } from '@/services/lesson/types';
 import { generateTemplateDraft } from '@/services/ai-assist';
 import { ConceptSelect } from '@/components/ConceptSelect';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RefreshCw } from 'lucide-react';
 import { TheoryBlockEditor } from '@/components/TheoryBlockEditor';
 import { TheoryBlockViewer } from '@/components/TheoryBlockViewer';
 import { StageQuestionBank } from '@/components/StageQuestionBank';
@@ -241,6 +247,39 @@ function PublishChangeLogDialog({
   );
 }
 
+/** Lets Admin pick a published Thư viện bài học lesson to reuse for a step instead of retyping
+ * objectives/theoryContent/questions by hand (fix for the lesson/plan-template content duplication).
+ * Picking a lesson snapshots its content into the step right away; the server re-snapshots at save
+ * time regardless, this just previews it immediately in the builder. */
+function LessonPicker({
+  lessons,
+  lessonId,
+  onPick,
+}: {
+  lessons: Lesson[];
+  lessonId?: string | null;
+  onPick: (lesson: Lesson | null) => void;
+}) {
+  return (
+    <Select
+      value={lessonId || '__none__'}
+      onValueChange={(v) => onPick(v === '__none__' ? null : lessons.find((l) => l._id === v) || null)}
+    >
+      <SelectTrigger>
+        <SelectValue placeholder="Chọn từ thư viện bài học" />
+      </SelectTrigger>
+      <SelectContent className="tw-scope">
+        <SelectItem value="__none__">— Tự soạn nội dung —</SelectItem>
+        {lessons.map((l) => (
+          <SelectItem key={l._id} value={l._id}>
+            {l.title}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
 function emptyStep(): PlanTemplateStep {
   return {
     dayOffset: 1,
@@ -301,6 +340,31 @@ function TemplateFormDialog({
   const [removingStepIndex, setRemovingStepIndex] = useState<number | null>(null);
   const totalMinutes = steps.reduce((sum, s) => sum + (s.durationMin || 0), 0);
   const totalQuestions = steps.reduce((sum, s) => sum + (s.questions?.length ?? 0), 0);
+
+  // Thư viện bài học available to link a step to — published lessons for the template's concept
+  // (or the whole library when no concept is set yet).
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [syncingStep, setSyncingStep] = useState(false);
+  useEffect(() => {
+    listLessons({ concept: concept || undefined, status: 'published', limit: 200 }).then((res) =>
+      setLessons(res.data),
+    );
+  }, [concept]);
+
+  const syncStepFromLesson = async (i: number) => {
+    if (!existing) return;
+    setSyncingStep(true);
+    try {
+      const updated = await syncPlanTemplateStepLesson(existing._id, i);
+      const synced = updated.steps[i];
+      if (synced) updateStep(i, synced);
+      toast.success('Đã đồng bộ lại nội dung từ bài học');
+    } catch (err) {
+      toast.error((err as ApiError)?.message || 'Đồng bộ thất bại');
+    } finally {
+      setSyncingStep(false);
+    }
+  };
 
   const goToStage = (i: number, tab: 'theory' | 'exercise') => {
     setSelectedStepIndex(i);
@@ -400,8 +464,8 @@ function TemplateFormDialog({
       toast.success(isNew ? 'Đã lưu nháp lộ trình mẫu' : 'Đã cập nhật lộ trình mẫu');
       onSaved();
       onClose();
-    } catch {
-      toast.error('Lưu lộ trình mẫu thất bại');
+    } catch (err) {
+      toast.error((err as ApiError)?.message || 'Lưu lộ trình mẫu thất bại');
     } finally {
       setSaving(false);
     }
@@ -416,8 +480,8 @@ function TemplateFormDialog({
       setPublishPrompt(null);
       onSaved();
       onClose();
-    } catch {
-      toast.error('Xuất bản thất bại — lộ trình vẫn đang ở dạng nháp');
+    } catch (err) {
+      toast.error((err as ApiError)?.message || 'Xuất bản thất bại — lộ trình vẫn đang ở dạng nháp');
     } finally {
       setPublishing(false);
     }
@@ -625,24 +689,70 @@ function TemplateFormDialog({
                             </Button>
                           </div>
 
-                          <FormField label="Mục tiêu đầu ra của giai đoạn">
-                            <textarea
-                              value={currentStep.objectives?.[0] ?? ''}
-                              onChange={(e) =>
-                                updateStep(selectedStepIndex, {
-                                  objectives: e.target.value ? [e.target.value] : [],
-                                })
+                          <FormField label="Bài học trong thư viện (tuỳ chọn — dùng lại thay vì tự soạn)">
+                            <LessonPicker
+                              lessons={lessons}
+                              lessonId={currentStep.lessonId}
+                              onPick={(lesson) =>
+                                updateStep(selectedStepIndex, lesson
+                                  ? {
+                                      lessonId: lesson._id,
+                                      objectives: lesson.objectives,
+                                      theoryContent: lesson.theoryContent,
+                                      questions: lesson.questions,
+                                    }
+                                  : { lessonId: null })
                               }
-                              placeholder='Ví dụ: "Nắm được định nghĩa vật chất của Lênin và quan hệ vật chất – ý thức."'
-                              rows={2}
-                              className="w-full rounded-control border border-input bg-card px-2.5 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             />
                           </FormField>
 
-                          <TheoryBlockEditor
-                            value={currentStep.theoryContent}
-                            onChange={(theoryContent) => updateStep(selectedStepIndex, { theoryContent })}
-                          />
+                          {currentStep.lessonId ? (
+                            <div className="flex items-center justify-between gap-2 rounded-control border border-info/30 bg-info/5 p-2.5 text-xs text-info">
+                              <span>
+                                Đồng bộ từ bài học:{' '}
+                                <strong>
+                                  {lessons.find((l) => l._id === currentStep.lessonId)?.title ??
+                                    currentStep.lessonId}
+                                </strong>
+                              </span>
+                              {existing && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={syncingStep}
+                                  onClick={() => syncStepFromLesson(selectedStepIndex)}
+                                >
+                                  <RefreshCw className="h-3.5 w-3.5" /> Đồng bộ lại
+                                </Button>
+                              )}
+                            </div>
+                          ) : (
+                            <FormField label="Mục tiêu đầu ra của giai đoạn">
+                              <textarea
+                                value={currentStep.objectives?.[0] ?? ''}
+                                onChange={(e) =>
+                                  updateStep(selectedStepIndex, {
+                                    objectives: e.target.value ? [e.target.value] : [],
+                                  })
+                                }
+                                placeholder='Ví dụ: "Nắm được định nghĩa vật chất của Lênin và quan hệ vật chất – ý thức."'
+                                rows={2}
+                                className="w-full rounded-control border border-input bg-card px-2.5 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              />
+                            </FormField>
+                          )}
+
+                          {currentStep.lessonId ? (
+                            <div className="rounded-card border border-border bg-muted/30 p-3">
+                              <TheoryBlockViewer raw={currentStep.theoryContent} />
+                            </div>
+                          ) : (
+                            <TheoryBlockEditor
+                              value={currentStep.theoryContent}
+                              onChange={(theoryContent) => updateStep(selectedStepIndex, { theoryContent })}
+                            />
+                          )}
 
                           <button
                             type="button"
@@ -693,9 +803,16 @@ function TemplateFormDialog({
                               ← Về lý thuyết giai đoạn này
                             </Button>
                           </div>
+                          {currentStep.lessonId && (
+                            <p className="text-xs text-info">
+                              Câu hỏi được đồng bộ từ bài học trong thư viện — dùng &quot;Đồng bộ lại&quot;
+                              ở tab Lý thuyết nếu bài học đã thay đổi.
+                            </p>
+                          )}
                           <StageQuestionBank
                             selected={currentStep.questions ?? []}
                             onChange={(questions) => updateStep(selectedStepIndex, { questions })}
+                            readOnly={!!currentStep.lessonId}
                           />
                         </div>
                       )}
@@ -983,8 +1100,8 @@ function AiGenerateDialog({
       onOpenChange(false);
       setConcept('');
       setTopic('');
-    } catch {
-      toast.error('Tạo lộ trình bằng AI thất bại');
+    } catch (err) {
+      toast.error((err as ApiError)?.message || 'Tạo lộ trình bằng AI thất bại');
     } finally {
       setGenerating(false);
     }
@@ -1057,8 +1174,8 @@ export default function PlanTemplateAdmin() {
       await removePlanTemplate(deleting._id);
       toast.success(`Đã xoá lộ trình mẫu "${deleting.title}"`);
       reload();
-    } catch {
-      toast.error('Xoá lộ trình mẫu thất bại');
+    } catch (err) {
+      toast.error((err as ApiError)?.message || 'Xoá lộ trình mẫu thất bại');
     } finally {
       setDeleting(null);
     }
@@ -1072,8 +1189,8 @@ export default function PlanTemplateAdmin() {
       toast.success(`Đã xuất bản "${publishing.title}"`);
       setPublishing(null);
       reload();
-    } catch {
-      toast.error('Xuất bản thất bại');
+    } catch (err) {
+      toast.error((err as ApiError)?.message || 'Xuất bản thất bại');
     } finally {
       setPublishSubmitting(false);
     }
@@ -1084,8 +1201,8 @@ export default function PlanTemplateAdmin() {
       await archivePlanTemplate(row._id);
       toast.success(`Đã lưu trữ "${row.title}"`);
       reload();
-    } catch {
-      toast.error('Lưu trữ thất bại');
+    } catch (err) {
+      toast.error((err as ApiError)?.message || 'Lưu trữ thất bại');
     }
   };
 
@@ -1175,8 +1292,8 @@ export default function PlanTemplateAdmin() {
                 const res = await importPlanTemplates(items);
                 toast(`Đã nhập ${res.createdCount} lộ trình mẫu, ${res.errorCount} lỗi`);
                 reload();
-              } catch {
-                toast('JSON không hợp lệ');
+              } catch (err) {
+                toast.error((err as ApiError)?.message || 'JSON không hợp lệ hoặc nhập lộ trình thất bại');
               }
             },
           },

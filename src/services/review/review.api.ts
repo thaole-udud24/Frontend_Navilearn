@@ -1,7 +1,13 @@
 import { request } from '@/utils/request';
 import { ENDPOINTS } from '@/services/endpoints';
 import type { ApiSuccess } from '@/types/api.d';
-import type { CreateReviewItemInput, ReviewItem, ReviewItemFilters, ReviewItemStatus } from './types';
+import type {
+  CreateReviewItemInput,
+  ReviewItem,
+  ReviewItemFilters,
+  ReviewItemStatus,
+  ReviewStats,
+} from './types';
 
 export async function listReviewItems(filters: ReviewItemFilters): Promise<ApiSuccess<ReviewItem[]>> {
   const { data } = await request.get<ApiSuccess<ReviewItem[]>>(ENDPOINTS.reviewItems.list, {
@@ -19,5 +25,11 @@ export async function updateReviewItemStatus(id: string, status: ReviewItemStatu
   const { data } = await request.patch<ApiSuccess<ReviewItem>>(ENDPOINTS.reviewItems.updateStatus(id), {
     status,
   });
+  return data.data;
+}
+
+// B11: real aggregate stats for the admin tiles.
+export async function getReviewStats(): Promise<ReviewStats> {
+  const { data } = await request.get<ApiSuccess<ReviewStats>>(ENDPOINTS.reviewItems.stats);
   return data.data;
 }

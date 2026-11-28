@@ -16,6 +16,7 @@ export interface DeckFilters {
   page?: number;
   limit?: number;
   concept?: string;
+  subjectId?: string;
   status?: FlashcardStatus;
 }
 

@@ -2,6 +2,7 @@ import { request } from '@/utils/request';
 import { ENDPOINTS } from '@/services/endpoints';
 import type { ApiSuccess } from '@/types/api.d';
 import type {
+  AiAssistAdminOverview,
   AiAssistFilters,
   AiAssistItem,
   AiAssistItemFilters,
@@ -14,8 +15,30 @@ import type {
   ExplainWrongInput,
   GeneratedStudyPlan,
   GenerateQuestionInput,
+  QuestionDraftReviewItem,
   TemplateDraft,
 } from './types';
+
+// B6 "Giám sát" (admin-only): recent ai_request-style logs + DB health + rate-limit policy.
+export async function getAiAssistAdminOverview(): Promise<AiAssistAdminOverview> {
+  const { data } = await request.get<ApiSuccess<AiAssistAdminOverview>>(
+    ENDPOINTS.aiAssistItems.adminOverview,
+  );
+  return data.data;
+}
+
+// A5 "Review Workspace".
+export async function listQuestionDrafts(limit = 50): Promise<QuestionDraftReviewItem[]> {
+  const { data } = await request.get<ApiSuccess<QuestionDraftReviewItem[]>>(
+    ENDPOINTS.aiAssistItems.questionDrafts,
+    { params: { limit } },
+  );
+  return data.data;
+}
+
+export async function rejectQuestionDraft(aiAssistLogId: string): Promise<void> {
+  await request.post(ENDPOINTS.aiAssistItems.rejectQuestionDraft(aiAssistLogId));
+}
 
 export async function listAiAssistItems(filters: AiAssistItemFilters): Promise<ApiSuccess<AiAssistItem[]>> {
   const { data } = await request.get<ApiSuccess<AiAssistItem[]>>(ENDPOINTS.aiAssistItems.list, {

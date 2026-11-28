@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { motion, useReducedMotion } from 'framer-motion';
 import type { ColumnDef } from '@tanstack/react-table';
+import type { ApiError } from '@/services/apiError';
 import {
   Archive,
   ArchiveRestore,
@@ -91,7 +92,8 @@ function DeckFormDialog({
       onSaved();
       onClose();
     },
-    onError: () => toast.error(isNew ? 'Tạo bộ thẻ thất bại' : 'Cập nhật bộ thẻ thất bại'),
+    onError: (err) =>
+      toast.error((err as ApiError)?.message || (isNew ? 'Tạo bộ thẻ thất bại' : 'Cập nhật bộ thẻ thất bại')),
   });
 
   return (
@@ -179,7 +181,7 @@ function CardFormDialog({
       onSaved();
       onClose();
     },
-    onError: () => toast.error('Lưu thẻ thất bại'),
+    onError: (err) => toast.error((err as ApiError)?.message || 'Lưu thẻ thất bại'),
   });
 
   return (
@@ -436,8 +438,8 @@ export default function FlashcardAdmin() {
       await (deck.status === 'archived' ? activateDeck(deck._id) : archiveDeck(deck._id));
       toast.success(deck.status === 'archived' ? 'Đã khôi phục bộ thẻ' : 'Đã lưu trữ bộ thẻ');
       invalidateDecks();
-    } catch {
-      toast.error('Không cập nhật được trạng thái bộ thẻ');
+    } catch (err) {
+      toast.error((err as ApiError)?.message || 'Không cập nhật được trạng thái bộ thẻ');
     }
   };
 
@@ -448,8 +450,8 @@ export default function FlashcardAdmin() {
       toast.success(`Đã xoá bộ thẻ "${deletingDeck.title}"`);
       if (selectedDeckId === deletingDeck._id) setSelectedDeckId(null);
       invalidateDecks();
-    } catch {
-      toast.error('Không xoá được — bộ thẻ còn thẻ bên trong, xoá hết thẻ trước');
+    } catch (err) {
+      toast.error((err as ApiError)?.message || 'Không xoá được — bộ thẻ còn thẻ bên trong, xoá hết thẻ trước');
     } finally {
       setDeletingDeck(null);
     }
@@ -462,8 +464,8 @@ export default function FlashcardAdmin() {
       toast.success('Đã xoá thẻ');
       refetchCards();
       invalidateDecks();
-    } catch {
-      toast.error('Xoá thẻ thất bại');
+    } catch (err) {
+      toast.error((err as ApiError)?.message || 'Xoá thẻ thất bại');
     } finally {
       setDeletingCard(null);
     }

@@ -4,13 +4,17 @@ import { Pencil, Plus } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { FormDialogFooter, FormDialogTitle, FormField } from '@/components/DialogForm';
-import type { Subject, SubjectInput } from '@/services/subject/types';
+
+export interface SubjectInput {
+  name: string;
+  description?: string;
+}
 
 interface SubjectFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Subject being edited; omit to create. */
-  subject?: Subject | null;
+  /** Item being edited (a personal Subject or a root Concept); omit to create. */
+  subject?: { name: string; description: string } | null;
   /** Noun used in the title, e.g. "môn học" or "môn học chung". */
   noun?: string;
   submitting?: boolean;

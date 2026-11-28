@@ -1,10 +1,27 @@
 import { request } from '@/utils/request';
 import { ENDPOINTS } from '@/services/endpoints';
 import type { ApiSuccess } from '@/types/api.d';
-import type { ChangePasswordInput, LoginSession, Profile, UpdateProfileInput } from './account.profile.types';
+import type {
+  BadgesResponse,
+  ChangePasswordInput,
+  LoginSession,
+  Profile,
+  StudyStreak,
+  UpdateProfileInput,
+} from './account.profile.types';
 
 export async function getProfile(): Promise<Profile> {
   const { data } = await request.get<ApiSuccess<Profile>>(ENDPOINTS.me.profile);
+  return data.data;
+}
+
+export async function getStreak(): Promise<StudyStreak> {
+  const { data } = await request.get<ApiSuccess<StudyStreak>>(ENDPOINTS.me.streak);
+  return data.data;
+}
+
+export async function getBadges(): Promise<BadgesResponse> {
+  const { data } = await request.get<ApiSuccess<BadgesResponse>>(ENDPOINTS.me.badges);
   return data.data;
 }
 

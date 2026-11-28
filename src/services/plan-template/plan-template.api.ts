@@ -60,6 +60,15 @@ export async function applyPlanTemplate(id: string, goalId?: string): Promise<Pl
   return data.data;
 }
 
+// "Đồng bộ lại" — re-copies the current published lesson content into a step already linked to it.
+export async function syncPlanTemplateStepLesson(id: string, stepIndex: number): Promise<PlanTemplate> {
+  const { data } = await request.post<ApiSuccess<PlanTemplate>>(
+    ENDPOINTS.planTemplateItems.syncStepLesson(id, stepIndex),
+    {},
+  );
+  return data.data;
+}
+
 export async function exportPlanTemplates(): Promise<PlanTemplate[]> {
   const { data } = await request.get<ApiSuccess<PlanTemplate[]>>(ENDPOINTS.planTemplateItems.export);
   return data.data;

@@ -36,6 +36,7 @@ export interface MasteryFilters {
   page?: number;
   limit?: number;
   concept?: string;
+  subjectId?: string;
   level?: MasteryLevel;
 }
 

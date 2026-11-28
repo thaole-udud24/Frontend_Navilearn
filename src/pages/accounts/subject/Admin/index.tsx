@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import type { ColumnDef } from '@tanstack/react-table';
-import { ArchiveRestore, Ban, Download, FileText, Pencil, Plus } from 'lucide-react';
+import { ArchiveRestore, Ban, Pencil, Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -10,15 +10,21 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { DataTablePage } from '@/components/DataTablePage';
 import type { RowAction } from '@/components/DataTablePage/types';
 import { StatusBadge } from '@/components/StatusBadge';
-import { PATHS } from '@/routes/paths';
 import { toApiError } from '@/services/apiError';
-import { exportCatalog, listCatalog, type Subject } from '@/services/subject';
+import {
+  createConcept,
+  knowledgeKeys,
+  listConcepts,
+  updateConcept,
+  updateConceptStatus,
+  type Concept,
+  type ConceptStatus,
+} from '@/services/knowledge';
 import { SubjectFormDialog } from '../shared/SubjectFormDialog';
-import { useCatalogActions } from './hooks/useSharedLibrary';
 
-type StatusFilter = 'all' | 'active' | 'inactive';
+type StatusFilter = 'all' | ConceptStatus;
 
-const columns: ColumnDef<Subject>[] = [
+const columns: ColumnDef<Concept>[] = [
   {
     accessorKey: 'name',
     header: 'Môn học',
@@ -33,7 +39,6 @@ const columns: ColumnDef<Subject>[] = [
       <span className="line-clamp-2 text-muted-foreground">{getValue<string>() || '—'}</span>
     ),
   },
-  { accessorKey: 'documentCount', header: 'Số tài liệu', size: 120 },
   {
     accessorKey: 'status',
     header: 'Trạng thái',
@@ -53,23 +58,52 @@ const columns: ColumnDef<Subject>[] = [
   },
 ];
 
-/** FE-ADM-16/17/18: shared subject catalog — add, edit, stop using, restore, export. */
+/** Danh mục môn học chung: now backed by root Concept docs (parentConcept: null), not the
+ * retired Subject-catalog module — see knowledge.service.js. Add/edit/stop-using/restore. */
 export default function AdminSubjectCatalogPage() {
-  const navigate = useNavigate();
   const [status, setStatus] = useState<StatusFilter>('all');
   const [tableKey, setTableKey] = useState(0);
   const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<Subject | null>(null);
-  const [deactivating, setDeactivating] = useState<Subject | null>(null);
+  const [editing, setEditing] = useState<Concept | null>(null);
+  const [deactivating, setDeactivating] = useState<Concept | null>(null);
 
-  const actions = useCatalogActions(() => setTableKey((k) => k + 1));
+  const queryClient = useQueryClient();
+  const onDone = () => setTableKey((k) => k + 1);
+  const options = (successMessage: string) => ({
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: knowledgeKeys.lists() });
+      toast.success(successMessage);
+      onDone();
+    },
+    onError: (error: unknown) => toast.error(toApiError(error).message),
+  });
+  const actions = {
+    create: useMutation({
+      mutationFn: (input: { name: string; description?: string }) =>
+        createConcept({ ...input, parentConcept: null }),
+      ...options('Đã thêm môn học vào danh mục chung'),
+    }),
+    update: useMutation({
+      mutationFn: ({ id, input }: { id: string; input: { name: string; description?: string } }) =>
+        updateConcept(id, input),
+      ...options('Đã cập nhật môn học'),
+    }),
+    deactivate: useMutation({
+      mutationFn: (id: string) => updateConceptStatus(id, 'archived'),
+      ...options('Đã ngừng sử dụng môn học'),
+    }),
+    restore: useMutation({
+      mutationFn: (id: string) => updateConceptStatus(id, 'active'),
+      ...options('Đã khôi phục môn học'),
+    }),
+  };
 
   const openCreate = () => {
     setEditing(null);
     setFormOpen(true);
   };
 
-  const rowActions: RowAction<Subject>[] = [
+  const rowActions: RowAction<Concept>[] = [
     {
       key: 'edit',
       label: 'Chỉnh sửa',
@@ -78,12 +112,6 @@ export default function AdminSubjectCatalogPage() {
         setEditing(subject);
         setFormOpen(true);
       },
-    },
-    {
-      key: 'documents',
-      label: 'Xem tài liệu',
-      icon: <FileText />,
-      onSelect: (subject) => navigate(`${PATHS.admin.sharedDocuments}?subjectId=${subject.id}`),
     },
     {
       key: 'deactivate',
@@ -98,7 +126,7 @@ export default function AdminSubjectCatalogPage() {
       label: 'Khôi phục',
       icon: <ArchiveRestore />,
       hidden: (subject) => subject.status === 'active',
-      onSelect: (subject) => actions.restore.mutate(subject.id),
+      onSelect: (subject) => actions.restore.mutate(subject._id),
     },
   ];
 
@@ -119,16 +147,9 @@ export default function AdminSubjectCatalogPage() {
             <SelectContent>
               <SelectItem value="all">Tất cả trạng thái</SelectItem>
               <SelectItem value="active">Đang sử dụng</SelectItem>
-              <SelectItem value="inactive">Ngừng sử dụng</SelectItem>
+              <SelectItem value="archived">Ngừng sử dụng</SelectItem>
             </SelectContent>
           </Select>
-          <Button
-            variant="outline"
-            onClick={() => void exportCatalog().catch((e: unknown) => toast.error(toApiError(e).message))}
-          >
-            <Download />
-            Xuất danh mục
-          </Button>
           <Button onClick={openCreate}>
             <Plus />
             Thêm môn học
@@ -136,15 +157,16 @@ export default function AdminSubjectCatalogPage() {
         </div>
       </div>
 
-      <DataTablePage<Subject>
+      <DataTablePage<Concept>
         key={`${tableKey}-${status}`}
         columns={columns}
-        getRowId={(subject) => subject.id}
+        getRowId={(subject) => subject._id}
         rowActions={rowActions}
         searchPlaceholder="Tìm theo tên môn học…"
         emptyLabel="Chưa có môn học nào trong danh mục"
         fetcher={async ({ page, pageSize, search }) => {
-          const res = await listCatalog({
+          const res = await listConcepts({
+            parentConcept: 'null',
             page,
             limit: pageSize,
             q: search || undefined,
@@ -162,7 +184,7 @@ export default function AdminSubjectCatalogPage() {
         submitting={actions.create.isPending || actions.update.isPending}
         onSubmit={(input) => {
           const done = { onSuccess: () => setFormOpen(false) };
-          if (editing) actions.update.mutate({ id: editing.id, input }, done);
+          if (editing) actions.update.mutate({ id: editing._id, input }, done);
           else actions.create.mutate(input, done);
         }}
       />
@@ -173,7 +195,7 @@ export default function AdminSubjectCatalogPage() {
         title="Ngừng sử dụng môn học?"
         description={`Môn "${deactivating?.name ?? ''}" sẽ không còn xuất hiện trong danh mục cho sinh viên. Môn học sinh viên đã thêm trước đó được giữ nguyên.`}
         confirmLabel="Ngừng sử dụng"
-        onConfirm={() => deactivating && actions.deactivate.mutate(deactivating.id)}
+        onConfirm={() => deactivating && actions.deactivate.mutate(deactivating._id)}
       />
     </div>
   );

@@ -52,6 +52,7 @@ export interface QuestionFilters {
   page?: number;
   limit?: number;
   concept?: string;
+  subjectId?: string;
   type?: QuestionType;
   difficulty?: QuestionDifficulty;
   status?: QuestionStatus;
@@ -98,6 +99,9 @@ export interface QuestionIssueReport {
   resolution?: string;
   resolvedBy?: string | null;
   resolvedAt?: string | null;
+  reply?: string;
+  repliedBy?: string | null;
+  repliedAt?: string | null;
   createdAt: string;
 }
 

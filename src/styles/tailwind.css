@@ -280,3 +280,13 @@
 input:-webkit-autofill {
   animation-name: onAutoFillStart;
 }
+
+/* React Flow edges container is 0x0 with overflow: visible; Tailwind's `max-width: 100%` on
+   `.tw-scope svg` collapses every child `<svg>` inside `.react-flow__edges` to 0px width
+   unless explicitly overridden here. */
+.tw-scope .react-flow__edges,
+.tw-scope .react-flow__edges svg,
+.tw-scope .react-flow__edge-labels {
+  overflow: visible !important;
+  max-width: none !important;
+}

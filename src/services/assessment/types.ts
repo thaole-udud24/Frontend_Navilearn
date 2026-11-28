@@ -22,6 +22,9 @@ export interface AssessmentAnswer {
   /** Only present on a submitted attempt returned by GET /:id (enriched server-side). */
   questionText?: string;
   correctAnswer?: string;
+  /** This question's own (leaf) concept — only present on a submitted attempt from GET /:id. */
+  conceptId?: string;
+  conceptName?: string;
 }
 
 export interface Assessment {
@@ -37,6 +40,9 @@ export interface Assessment {
   submittedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /** S12 "Mastery (đo được)" before→after — set by submit(), null until this attempt is graded. */
+  masteryBefore?: number | null;
+  masteryAfter?: number | null;
 }
 
 export interface AssessmentItemFilters {
@@ -50,6 +56,7 @@ export interface AssessmentFilters {
   limit?: number;
   status?: AssessmentStatus;
   concept?: string;
+  subjectId?: string;
 }
 
 export interface SubmitAssessmentInput {

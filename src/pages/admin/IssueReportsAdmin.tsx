@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { ColumnDef } from '@tanstack/react-table';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, MessageSquareReply, Pencil, XCircle } from 'lucide-react';
 
 import { AppShell } from '@/layouts/AppShell';
 import { useAuthStore } from '@/hooks/useAuth';
@@ -10,8 +10,12 @@ import { PATHS } from '@/routes/paths';
 import { adminMenu } from '@/config/menu.admin';
 import { DataTablePage } from '@/components/DataTablePage';
 import { StatusBadge } from '@/components/StatusBadge';
-import { listIssueReports, resolveIssueReport } from '@/services/question-bank';
-import type { QuestionIssueReport } from '@/services/question-bank/types';
+import { getQuestion, listIssueReports, replyIssueReport, resolveIssueReport } from '@/services/question-bank';
+import type { Question, QuestionIssueReport } from '@/services/question-bank/types';
+import type { ApiError } from '@/services/apiError';
+// B2 "Sửa câu hỏi ngay tại chỗ": reuse the exact same edit dialog/mutation QuestionBankAdmin uses —
+// no parallel editor.
+import { QuestionFormDialog } from './QuestionBankAdmin';
 
 const REASON_LABEL: Record<string, string> = {
   wrong_answer: 'Đáp án sai',
@@ -26,6 +30,7 @@ export default function IssueReportsAdmin() {
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
   const [tableKey, setTableKey] = useState(0);
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
 
   const columns: ColumnDef<QuestionIssueReport>[] = [
     {
@@ -33,7 +38,7 @@ export default function IssueReportsAdmin() {
       header: 'Câu hỏi',
       cell: ({ getValue }) => {
         const q = getValue<QuestionIssueReport['question']>();
-        return typeof q === 'string' ? q : q.text;
+        return typeof q === 'string' ? q : q?.text ?? '(Câu hỏi đã bị xoá)';
       },
     },
     {
@@ -51,6 +56,11 @@ export default function IssueReportsAdmin() {
         if (v === 'resolved') return <StatusBadge variant="success">Đã xử lý</StatusBadge>;
         return <StatusBadge variant="neutral">Đã bỏ qua</StatusBadge>;
       },
+    },
+    {
+      accessorKey: 'reply',
+      header: 'Phản hồi SV',
+      cell: ({ getValue }) => getValue<string>() || '—',
     },
   ];
 
@@ -81,6 +91,37 @@ export default function IssueReportsAdmin() {
         }}
         rowActions={[
           {
+            key: 'edit-question',
+            label: 'Sửa câu hỏi ngay tại chỗ',
+            icon: <Pencil />,
+            hidden: (row) => typeof row.question === 'string' || !row.question,
+            onSelect: async (row) => {
+              const questionId = typeof row.question === 'string' ? row.question : row.question._id;
+              try {
+                const full = await getQuestion(questionId);
+                setEditingQuestion(full);
+              } catch (err) {
+                toast((err as ApiError)?.message || 'Không tải được câu hỏi');
+              }
+            },
+          },
+          {
+            key: 'reply',
+            label: 'Gửi phản hồi SV',
+            icon: <MessageSquareReply />,
+            onSelect: async (row) => {
+              const message = window.prompt('Nội dung phản hồi gửi cho sinh viên đã báo lỗi:', row.reply ?? '');
+              if (!message) return;
+              try {
+                await replyIssueReport(row._id, message);
+                toast('Đã gửi phản hồi cho sinh viên');
+                setTableKey((k) => k + 1);
+              } catch (err) {
+                toast((err as ApiError)?.message || 'Gửi phản hồi thất bại');
+              }
+            },
+          },
+          {
             key: 'fix',
             label: 'Đánh dấu đã xử lý',
             icon: <CheckCircle2 />,
@@ -105,6 +146,12 @@ export default function IssueReportsAdmin() {
             },
           },
         ]}
+      />
+      <QuestionFormDialog
+        open={!!editingQuestion}
+        onClose={() => setEditingQuestion(null)}
+        editing={editingQuestion}
+        onSaved={() => setTableKey((k) => k + 1)}
       />
     </AppShell>
   );

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { ColumnDef } from '@tanstack/react-table';
+import type { ApiError } from '@/services/apiError';
 import { Ban, Eye, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react';
 
 import { AppShell } from '@/layouts/AppShell';
@@ -38,24 +39,33 @@ function RubricFormDialog({
 }) {
   const [title, setTitle] = useState('');
   const [concept, setConcept] = useState('');
-  const [criteria, setCriteria] = useState<RubricCriterion[]>([{ name: '', maxPoints: 10 }]);
+  const [totalPoints, setTotalPoints] = useState(100);
+  const [criteria, setCriteria] = useState<RubricCriterion[]>([{ name: '', weightPct: 100 }]);
 
   const load = (r: Rubric | null) => {
     setTitle(r?.title ?? '');
     setConcept(r?.concept ?? '');
-    setCriteria(r?.criteria.length ? r.criteria : [{ name: '', maxPoints: 10 }]);
+    setTotalPoints(r?.totalPoints ?? 100);
+    setCriteria(r?.criteria.length ? r.criteria : [{ name: '', weightPct: 100 }]);
   };
 
+  const cleanCriteria = criteria.filter((c) => c.name);
+  const weightSum = cleanCriteria.reduce((s, c) => s + (Number(c.weightPct) || 0), 0);
+  const weightOk = cleanCriteria.length > 0 && Math.abs(weightSum - 100) <= 0.01;
+
   const submit = async () => {
-    const cleanCriteria = criteria.filter((c) => c.name);
+    if (!weightOk) {
+      toast('Tổng % trọng số các tiêu chí phải bằng 100%.');
+      return;
+    }
     try {
-      if (editing) await updateRubric(editing._id, { title, criteria: cleanCriteria });
-      else await createRubric({ title, concept, criteria: cleanCriteria });
+      if (editing) await updateRubric(editing._id, { title, totalPoints, criteria: cleanCriteria });
+      else await createRubric({ title, concept, totalPoints, criteria: cleanCriteria });
       toast(editing ? 'Đã cập nhật rubric' : 'Đã tạo rubric mới');
       onSaved();
       onClose();
-    } catch {
-      toast('Lưu rubric thất bại.');
+    } catch (err) {
+      toast((err as ApiError)?.message || 'Lưu rubric thất bại.');
     }
   };
 
@@ -90,7 +100,19 @@ function RubricFormDialog({
               />
             </FormField>
           )}
-          <p className="text-sm font-medium text-foreground">Tiêu chí chấm</p>
+          <FormField label="Tổng điểm (thang điểm chấm)" required>
+            <Input
+              type="number"
+              min={1}
+              max={1000}
+              value={totalPoints}
+              onChange={(e) => setTotalPoints(Number(e.target.value))}
+              className="w-28"
+            />
+          </FormField>
+          <p className="text-sm font-medium text-foreground">
+            Tiêu chí chấm (% trọng số, tổng phải bằng 100%)
+          </p>
           {criteria.map((c, i) => (
             <div key={i} className="flex items-center gap-2">
               <Input
@@ -103,17 +125,21 @@ function RubricFormDialog({
               />
               <Input
                 type="number"
-                min={1}
+                min={0.01}
                 max={100}
-                value={c.maxPoints}
+                step={0.01}
+                value={c.weightPct}
                 onChange={(e) =>
                   setCriteria(
-                    criteria.map((x, idx) => (idx === i ? { ...x, maxPoints: Number(e.target.value) } : x)),
+                    criteria.map((x, idx) => (idx === i ? { ...x, weightPct: Number(e.target.value) } : x)),
                   )
                 }
-                placeholder="Điểm tối đa"
+                placeholder="% trọng số"
                 className="w-28"
               />
+              <span className="w-20 shrink-0 text-xs text-muted-foreground">
+                {totalPoints && c.weightPct ? ((c.weightPct / 100) * totalPoints).toFixed(1) : 0} điểm
+              </span>
               <button type="button" onClick={() => setCriteria(criteria.filter((_, idx) => idx !== i))}>
                 <Trash2 className="h-4 w-4 text-muted-foreground hover:text-danger" />
               </button>
@@ -123,15 +149,19 @@ function RubricFormDialog({
             variant="outline"
             size="sm"
             className="self-start"
-            onClick={() => setCriteria([...criteria, { name: '', maxPoints: 10 }])}
+            onClick={() => setCriteria([...criteria, { name: '', weightPct: 0 }])}
           >
             Thêm tiêu chí
           </AddButton>
+          <p className={`text-sm ${weightOk ? 'text-muted-foreground' : 'font-medium text-danger'}`}>
+            Tổng trọng số: {weightSum}% {weightOk ? '' : '(phải bằng 100%)'}
+          </p>
         </div>
         <FormDialogFooter
           onCancel={onClose}
           submitLabel={editing ? 'Lưu lại' : 'Thêm mới'}
           onSubmit={submit}
+          disabled={!weightOk}
         />
       </DialogContent>
     </Dialog>
@@ -153,13 +183,16 @@ function ViewRubricDialog({ rubric, onClose }: { rubric: Rubric | null; onClose:
               <div className="flex flex-col gap-1">
                 {rubric.criteria.map((c, i) => (
                   <span key={i}>
-                    • {c.name} — <span className="font-medium">{c.maxPoints} điểm</span>
+                    • {c.name} —{' '}
+                    <span className="font-medium">
+                      {c.weightPct}% ({((c.weightPct / 100) * rubric.totalPoints).toFixed(1)} điểm)
+                    </span>
                     {c.description ? ` (${c.description})` : ''}
                   </span>
                 ))}
               </div>
             </DetailRow>
-            <DetailRow label="Tổng điểm">{rubric.criteria.reduce((s, c) => s + c.maxPoints, 0)}</DetailRow>
+            <DetailRow label="Tổng điểm">{rubric.totalPoints}</DetailRow>
           </div>
         )}
       </DialogContent>
@@ -181,11 +214,7 @@ export default function RubricAdmin() {
   const columns: ColumnDef<Rubric>[] = [
     { accessorKey: 'title', header: 'Tên rubric', meta: { enableColumnSearch: true } },
     { id: 'criteriaCount', header: 'Số tiêu chí', cell: ({ row }) => row.original.criteria.length },
-    {
-      id: 'totalPoints',
-      header: 'Tổng điểm',
-      cell: ({ row }) => row.original.criteria.reduce((sum, c) => sum + c.maxPoints, 0),
-    },
+    { id: 'totalPoints', header: 'Tổng điểm', cell: ({ row }) => row.original.totalPoints },
     {
       accessorKey: 'status',
       header: 'Trạng thái',
@@ -277,8 +306,8 @@ export default function RubricAdmin() {
                 const res = await importRubrics(items);
                 toast(`Đã nhập ${res.createdCount} rubric, ${res.errorCount} lỗi`);
                 reload();
-              } catch {
-                toast('JSON không hợp lệ');
+              } catch (err) {
+                toast.error((err as ApiError)?.message || 'JSON không hợp lệ hoặc nhập rubric thất bại');
               }
             },
           },

@@ -25,4 +25,7 @@ export type CreateStudentSubjectInput =
 export interface UpdateStudentSubjectInput {
   pinned?: boolean;
   displayOrder?: number;
+  customTitle?: string;
+  customDescription?: string;
+  customColor?: string;
 }

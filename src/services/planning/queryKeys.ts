@@ -5,4 +5,5 @@ export const planningKeys = {
   plans: (filters: PlanFilters = {}) => [...planningKeys.all, 'plans', filters] as const,
   plan: (id: string) => [...planningKeys.all, 'plan', id] as const,
   goals: (filters: GoalFilters = {}) => [...planningKeys.all, 'goals', filters] as const,
+  daily: (date?: string) => [...planningKeys.all, 'daily', date ?? 'today'] as const,
 };
