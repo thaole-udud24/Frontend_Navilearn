@@ -145,6 +145,15 @@ export async function resolveIssueReport(
   return data.data;
 }
 
+// B2 "Gửi phản hồi SV".
+export async function replyIssueReport(id: string, message: string): Promise<QuestionIssueReport> {
+  const { data } = await request.patch<ApiSuccess<QuestionIssueReport>>(
+    ENDPOINTS.questionBankItems.issueReportReply(id),
+    { message },
+  );
+  return data.data;
+}
+
 export async function previewRegradeImpact(
   id: string,
 ): Promise<{ questionId: string; affectedAttemptsCount: number }> {

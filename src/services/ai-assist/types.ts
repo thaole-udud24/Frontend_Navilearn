@@ -14,6 +14,7 @@ export interface AiAssistItemFilters {
   page?: number;
   limit?: number;
   status?: AiAssistItemStatus;
+  subjectId?: string;
 }
 
 export interface CreateAiAssistItemInput {
@@ -84,6 +85,7 @@ export interface AiAssistFilters {
   page?: number;
   limit?: number;
   kind?: AiAssistKind;
+  subjectId?: string;
 }
 
 export interface AskInput {
@@ -110,4 +112,40 @@ export interface EssayFeedbackInput {
 export interface GeneratedStudyPlan {
   plan: import('@/services/planning/types').Plan;
   valid: boolean;
+}
+
+// B6 "Giám sát" (admin) — real operational data only: no invented queue depth/latency/load chart.
+export interface AiAssistOverviewRecentItem {
+  _id: string;
+  kind: AiAssistKind | string;
+  valid: boolean;
+  reported: boolean;
+  createdAt: string;
+  owner?: { _id: string; fullName?: string; email?: string } | null;
+  concept?: { _id: string; name: string } | null;
+}
+
+export interface AiAssistAdminOverview {
+  health: { dbConnected: boolean; dbState: string; uptimeSec: number };
+  rateLimit: { scope: string; windowMs: number; max: number };
+  aiRequests: {
+    totalLast24h: number;
+    invalidLast24h: number;
+    reportedLast24h: number;
+    recent: AiAssistOverviewRecentItem[];
+  };
+}
+
+// A5 "Review Workspace" — a pending AI-generated question draft with only real flags: `valid` is
+// the actual format check, `possibleDuplicate` a live exact-text match against the active bank for
+// the same concept. No fabricated duplicate percentage.
+export interface QuestionDraftReviewItem {
+  aiAssistLogId: string;
+  owner?: { _id: string; fullName?: string; email?: string } | null;
+  concept?: { _id: string; name: string } | null;
+  createdAt: string;
+  valid: boolean;
+  possibleDuplicate: boolean;
+  text: string;
+  options: { text: string; isCorrect?: boolean }[];
 }

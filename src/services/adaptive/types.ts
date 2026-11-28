@@ -9,6 +9,11 @@ export interface NextBestAction {
   reason: string;
 }
 
+export interface PriorityQueueItem extends NextBestAction {
+  masteryScore: number;
+  learningState: string;
+}
+
 export interface AdaptiveActivity {
   _id: string;
   owner: string;

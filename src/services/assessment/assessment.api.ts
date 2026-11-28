@@ -99,3 +99,27 @@ export async function startIndependentCheck(concept: string): Promise<Assessment
   });
   return data.data;
 }
+
+// B5 (doc v2.1): baseline/"bài đầu vào" — optional diagnostic attempt for a concept with no Mastery yet.
+export async function startPlacementCheck(concept: string): Promise<Assessment> {
+  const { data } = await request.post<ApiSuccess<Assessment>>(ENDPOINTS.assessmentItems.startPlacement, {
+    concept,
+  });
+  return data.data;
+}
+
+export async function startQuickQuiz(input: { concept?: string; count?: number } = {}): Promise<Assessment> {
+  const { data } = await request.post<ApiSuccess<Assessment>>(ENDPOINTS.assessmentItems.quickQuiz, input);
+  return data.data;
+}
+
+// Sổ câu sai: starts a practice attempt scoped to the student's open wrong items for a concept.
+// Pass wrongItemIds (N2) to retry only the rows the student checked in the table instead of every
+// open item for the concept; concept is then optional (the backend derives it from the selection).
+export async function startRetryWrongItems(concept?: string, wrongItemIds?: string[]): Promise<Assessment> {
+  const { data } = await request.post<ApiSuccess<Assessment>>(ENDPOINTS.assessmentItems.retryWrongItems, {
+    concept,
+    wrongItemIds,
+  });
+  return data.data;
+}

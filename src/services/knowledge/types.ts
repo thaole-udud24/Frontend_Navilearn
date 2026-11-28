@@ -14,6 +14,7 @@ export interface Concept {
   description: string;
   order: number;
   status: ConceptStatus;
+  examFocus?: boolean;
   source?: RecordSource;
   parentConcept?: ConceptRef | string | null;
   prerequisites?: ConceptRef[] | string[];

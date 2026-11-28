@@ -15,6 +15,10 @@ export interface PlanTemplateStep {
   theoryContent?: string;
   /** Question ids from the question bank — answering them is required before the session can be done. */
   questions?: string[];
+  /** Optional link to a Thư viện bài học lesson this step was authored from — when set, objectives/
+   * theoryContent/questions above are a snapshot copied from that lesson (server-maintained); use
+   * the sync-lesson endpoint to re-copy after the lesson is edited. */
+  lessonId?: string | null;
 }
 
 export type PlanTemplateStatus = 'draft' | 'published' | 'archived';
@@ -41,6 +45,7 @@ export interface PlanTemplateFilters {
   limit?: number;
   status?: PlanTemplateStatus;
   concept?: string;
+  subjectId?: string;
 }
 
 export interface CreatePlanTemplateInput {
