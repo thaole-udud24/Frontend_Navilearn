@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -6,6 +6,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  LabelList,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -13,17 +14,23 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { Download, LineChart as LineChartIcon, Target } from 'lucide-react';
+import { Download, FileCheck, LineChart as LineChartIcon, Route, Target, TrendingUp } from 'lucide-react';
 
 import { AppShell } from '@/layouts/AppShell';
+import { SubjectFilterPill } from '@/components/GlobalSubjectFilter';
 import { useAuthStore } from '@/hooks/useAuth';
+import { useSelectedSubject } from '@/hooks/useSubjectStore';
 import { PATHS } from '@/routes/paths';
 import { studentMenu } from '@/config/menu.student';
 import { Button } from '@/components/ui/button';
+import { CardGridSkeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 import { exportMasteryReport, getMasteryTrend, listMasteries, setMasteryGoal } from '@/services/mastery';
 import type { Mastery } from '@/services/mastery/types';
+import { listGoals } from '@/services/planning';
+import { useExamReadiness } from './components/ExamReadinessCard';
 
 const LEVEL_LABEL: Record<Mastery['level'], string> = {
   novice: 'Mới bắt đầu',
@@ -33,20 +40,26 @@ const LEVEL_LABEL: Record<Mastery['level'], string> = {
 };
 
 const LEVEL_TONE: Record<Mastery['level'], string> = {
-  novice: 'bg-muted-foreground/10 text-muted-foreground',
-  developing: 'bg-warning/10 text-warning',
-  proficient: 'bg-info/10 text-info',
-  mastered: 'bg-success/10 text-success',
+  novice: 'bg-muted text-muted-foreground',
+  developing: 'bg-primary-soft text-primary',
+  proficient: 'bg-info/15 text-info',
+  mastered: 'bg-primary text-primary-foreground',
 };
 
 function conceptName(concept: Mastery['concept']) {
+  if (!concept) return 'Kiến thức đã xoá';
   return typeof concept === 'string' ? concept : concept.name;
+}
+
+function shortConceptName(name: string) {
+  return name.length > 18 ? `${name.slice(0, 16)}…` : name;
 }
 
 export default function MasteryPage() {
   const navigate = useNavigate();
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
+  const { selectedSubjectId } = useSelectedSubject();
   const [goalTarget, setGoalTarget] = useState<Mastery | null>(null);
   const [goalValue, setGoalValue] = useState('');
   const [trendTarget, setTrendTarget] = useState<Mastery | null>(null);
@@ -58,12 +71,32 @@ export default function MasteryPage() {
   });
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['mastery-list'],
-    queryFn: () => listMasteries({ page: 1, limit: 50 }),
+    queryKey: ['mastery-list', selectedSubjectId ?? 'all'],
+    queryFn: () => listMasteries({ page: 1, limit: 50, subjectId: selectedSubjectId ?? undefined }),
   });
 
-  const items = data?.data ?? [];
-  const chartData = items.map((m) => ({ name: conceptName(m.concept), score: m.score }));
+  const { data: goalsRes } = useQuery({
+    queryKey: ['mastery-goals', selectedSubjectId ?? 'all'],
+    queryFn: () => listGoals({ limit: 50, subjectId: selectedSubjectId ?? undefined }),
+  });
+  const activeGoals = (goalsRes?.data ?? []).filter((g) => g.status === 'active');
+  const primaryGoal = activeGoals[0] ?? null;
+  const readiness = useExamReadiness(primaryGoal?._id);
+
+  const items = useMemo(() => data?.data ?? [], [data]);
+  const avgMastery = useMemo(() => {
+    if (items.length === 0) return readiness.overallMastery ?? 0;
+    return Math.round(items.reduce((sum, m) => sum + m.score, 0) / items.length);
+  }, [items, readiness.overallMastery]);
+
+  const chartData = useMemo(
+    () =>
+      items.map((m) => {
+        const fullName = conceptName(m.concept);
+        return { name: shortConceptName(fullName), fullName, score: m.score };
+      }),
+    [items],
+  );
 
   const submitGoal = async () => {
     if (!goalTarget) return;
@@ -93,7 +126,7 @@ export default function MasteryPage() {
     <AppShell
       menu={studentMenu}
       title="Mức độ thành thạo"
-      breadcrumb={['Trang chủ', 'Mastery']}
+      breadcrumb={['Trang chủ', 'Mức độ thành thạo']}
       userName={user?.fullName ?? ''}
       roleLabel="Sinh viên"
       compactHeader
@@ -102,72 +135,180 @@ export default function MasteryPage() {
         navigate(PATHS.login);
       }}
     >
-      <h1 className="mb-4 text-xl font-bold text-foreground">Mức độ thành thạo</h1>
-      <div className="flex flex-col gap-5">
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-foreground">Tiến độ theo kiến thức</h3>
-          <Button type="button" variant="outline" size="sm" onClick={handleExport}>
+      {/* Header row with compact subject filter & export button */}
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-foreground">Mức độ thành thạo</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {primaryGoal
+              ? `Mục tiêu: ${primaryGoal.title}${primaryGoal.examName ? ` — ${primaryGoal.examName}` : ''}.`
+              : 'Theo dõi mức độ nắm vững kiến thức và độ sẵn sàng cho kỳ thi theo từng môn học.'}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <SubjectFilterPill />
+          <Button type="button" variant="outline" onClick={handleExport} className="bg-card">
             <Download className="h-4 w-4" /> Xuất báo cáo
           </Button>
         </div>
+      </div>
 
-        <div className="h-72 rounded-card border border-border bg-card p-4 shadow-card">
-          <ResponsiveContainer>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-              <YAxis domain={[0, 100]} />
-              <Tooltip />
-              <Bar dataKey="score" radius={[6, 6, 0, 0]} fill="var(--color-primary, #2563eb)" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {isLoading && <p className="text-sm text-muted-foreground">Đang tải…</p>}
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((m) => (
-            <div
-              key={m._id}
-              className="flex flex-col gap-2 rounded-card border border-border bg-card p-4 shadow-card"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-foreground">{conceptName(m.concept)}</span>
-                <span className={`rounded-badge px-2 py-1 text-xs font-semibold ${LEVEL_TONE[m.level]}`}>
-                  {LEVEL_LABEL[m.level]}
-                </span>
+      <div className="flex flex-col gap-5">
+        {/* Mức sẵn sàng thi */}
+        <section className="rounded-card border border-border bg-card p-5 shadow-card">
+          <div className="mb-3.5 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-base font-semibold text-foreground">Mức sẵn sàng thi</h2>
+            <p className="text-xs text-muted-foreground">
+              Ba chỉ số riêng biệt — không phải điểm dự đoán kết quả thi thật.
+            </p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="flex items-center justify-between rounded-xl border border-border bg-muted/20 px-4 py-3.5">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Tiến độ lộ trình</p>
+                <p className="mt-1 text-2xl font-bold text-foreground">
+                  {readiness.progressPercent != null ? `${readiness.progressPercent}%` : '0%'}
+                </p>
               </div>
-              <div className="text-2xl font-bold text-foreground">{m.score}%</div>
-              <div className="text-xs text-muted-foreground">
-                {m.attemptsCount} lần làm • {m.correctCount} lần đúng
-                {m.goalScore != null && ` • Mục tiêu: ${m.goalScore}%`}
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="self-start"
-                  onClick={() => {
-                    setGoalTarget(m);
-                    setGoalValue(String(m.goalScore ?? 80));
-                  }}
-                >
-                  <Target className="h-3.5 w-3.5" /> Đặt mục tiêu
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="self-start"
-                  onClick={() => setTrendTarget(m)}
-                >
-                  <LineChartIcon className="h-3.5 w-3.5" /> Xu hướng
-                </Button>
-              </div>
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                <Route className="h-4 w-4" />
+              </span>
             </div>
-          ))}
-        </div>
+
+            <div className="flex items-center justify-between rounded-xl border border-primary/40 bg-primary-soft/25 px-4 py-3.5">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Thành thạo (Mastery)</p>
+                <p className="mt-1 text-2xl font-bold text-primary">
+                  {avgMastery}%
+                </p>
+              </div>
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-soft text-primary">
+                <TrendingUp className="h-4 w-4" />
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between rounded-xl border border-border bg-muted/20 px-4 py-3.5">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Kết quả thi thử</p>
+                <p className="mt-1 text-2xl font-bold text-foreground">
+                  {readiness.latestMockScore != null ? `${readiness.latestMockScore}%` : 'Chưa có'}
+                </p>
+              </div>
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                <FileCheck className="h-4 w-4" />
+              </span>
+            </div>
+          </div>
+        </section>
+
+        {/* Tiến độ theo kiến thức */}
+        <section className="rounded-card border border-border bg-card p-5 shadow-card">
+          <div className="mb-3.5 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-base font-semibold text-foreground">Tiến độ theo kiến thức</h2>
+            <span className="text-xs font-medium text-muted-foreground">
+              {items.length} chủ đề · Trung bình {avgMastery}%
+            </span>
+          </div>
+          {chartData.length > 0 ? (
+            <div className="h-72 rounded-xl border border-border/60 bg-muted/20 p-4">
+              <ResponsiveContainer>
+                <BarChart data={chartData} margin={{ top: 20, right: 12, left: -12, bottom: 4 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                  <XAxis
+                    dataKey="name"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: '#64748b' }}
+                  />
+                  <YAxis hide domain={[0, 105]} />
+                  <Tooltip
+                    formatter={(val) => [`${val ?? 0}%`, 'Thành thạo']}
+                    labelFormatter={(_, payload) => payload?.[0]?.payload?.fullName ?? ''}
+                  />
+                  <Bar
+                    dataKey="score"
+                    radius={[8, 8, 0, 0]}
+                    maxBarSize={48}
+                    fill="var(--color-primary, #1d57bd)"
+                  >
+                    <LabelList
+                      dataKey="score"
+                      position="top"
+                      formatter={(v) => `${v ?? 0}%`}
+                      style={{ fontSize: 12, fill: '#475569', fontWeight: 600 }}
+                    />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="flex h-44 items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
+              Chưa có dữ liệu thành thạo cho môn học này.
+            </div>
+          )}
+        </section>
+
+        {isLoading && <CardGridSkeleton count={6} />}
+
+        {/* Grid thẻ chi tiết kiến thức */}
+        {!isLoading && items.length > 0 && (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {items.map((m) => (
+              <div
+                key={m._id}
+                className="flex flex-col gap-2.5 rounded-card border border-border bg-card p-4 shadow-card transition-shadow hover:shadow-md"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span className="line-clamp-1 font-semibold text-foreground">
+                    {conceptName(m.concept)}
+                  </span>
+                  <span
+                    className={cn(
+                      'shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold',
+                      LEVEL_TONE[m.level],
+                    )}
+                  >
+                    {LEVEL_LABEL[m.level]}
+                  </span>
+                </div>
+
+                <div
+                  className={cn(
+                    'text-2xl font-bold',
+                    m.score >= 60 ? 'text-primary' : 'text-foreground',
+                  )}
+                >
+                  {m.score}%
+                </div>
+
+                <div className="text-xs text-muted-foreground">
+                  {m.attemptsCount} lần làm · {m.correctCount} lần đúng
+                  {m.goalScore != null && ` · Mục tiêu: ${m.goalScore}%`}
+                </div>
+
+                <div className="mt-1 flex items-center gap-3 border-t border-border/60 pt-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setGoalTarget(m);
+                      setGoalValue(String(m.goalScore ?? 80));
+                    }}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-foreground hover:text-primary"
+                  >
+                    <Target className="h-3.5 w-3.5 text-primary" /> Đặt mục tiêu
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTrendTarget(m)}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                  >
+                    <LineChartIcon className="h-3.5 w-3.5" /> Xu hướng
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <Dialog open={!!goalTarget} onOpenChange={(v) => !v && setGoalTarget(null)}>
