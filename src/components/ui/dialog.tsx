@@ -36,13 +36,12 @@ const DIALOG_SIZE_CLASS: Record<Exclude<DialogSize, 'full'>, string> = {
 };
 
 const FULLSCREEN_CLASS =
-  'inset-4 h-[calc(100%-2rem)] w-[calc(100%-2rem)] max-w-none translate-x-0 translate-y-0 overflow-y-auto';
+  'inset-4 left-4 top-4 translate-x-0 translate-y-0 h-[calc(100%-2rem)] w-[calc(100%-2rem)] max-w-none max-h-none overflow-y-auto';
 
-/** What the "mở rộng" toggle always expands *to* — true edge-to-edge fullscreen, distinct from
- * `size="full"` (which still keeps a small inset) so the button stays meaningful even on an
- * already-full-size dialog. */
+/** What the "mở rộng" toggle always expands *to* — true edge-to-edge fullscreen, using `!`
+ * overrides so caller classes like `max-h-[85vh]` never cap the fullscreen height or width. */
 const TRUE_FULLSCREEN_CLASS =
-  'inset-0 h-full w-full max-w-none translate-x-0 translate-y-0 overflow-y-auto rounded-none border-0';
+  '!fixed !inset-0 !left-0 !top-0 !translate-x-0 !translate-y-0 !h-screen !w-screen !max-h-none !max-w-none overflow-y-auto !rounded-none !border-0';
 
 interface DialogContentProps extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> {
   size?: DialogSize;
@@ -63,10 +62,15 @@ const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.C
         <DialogPrimitive.Content
           ref={ref}
           className={cn(
-            'fixed left-[50%] top-[50%] z-50 grid w-full translate-x-[-50%] translate-y-[-50%] gap-4 border border-border bg-card p-6 shadow-card duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 rounded-card',
-            size === 'full' ? FULLSCREEN_CLASS : DIALOG_SIZE_CLASS[size],
-            expanded && TRUE_FULLSCREEN_CLASS,
+            'fixed z-50 grid gap-4 border border-border bg-card p-6 shadow-card duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 rounded-card',
+            size === 'full'
+              ? FULLSCREEN_CLASS
+              : cn(
+                  'left-[50%] top-[50%] w-[calc(100%-2rem)] max-h-[90vh] translate-x-[-50%] translate-y-[-50%]',
+                  DIALOG_SIZE_CLASS[size],
+                ),
             className,
+            expanded && TRUE_FULLSCREEN_CLASS,
           )}
           {...props}
         >
