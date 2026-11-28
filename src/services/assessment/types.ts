@@ -43,6 +43,9 @@ export interface Assessment {
   /** S12 "Mastery (đo được)" before→after — set by submit(), null until this attempt is graded. */
   masteryBefore?: number | null;
   masteryAfter?: number | null;
+  independentCheck?: boolean;
+  aiHelpLevel?: number;
+  aiHelpCount?: number;
 }
 
 export interface AssessmentItemFilters {

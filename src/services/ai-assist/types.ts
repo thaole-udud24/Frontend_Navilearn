@@ -30,7 +30,6 @@ export interface DraftQuestion {
   text: string;
   options: { text: string; isCorrect?: boolean }[];
 }
-
 export interface ConceptDraft {
   aiAssistLogId: string;
   topic: string;
@@ -91,6 +90,7 @@ export interface AiAssistFilters {
 export interface AskInput {
   question: string;
   concept?: string;
+  assessmentItemId?: string;
 }
 
 export interface ExplainWrongInput {
@@ -101,12 +101,14 @@ export interface ExplainWrongInput {
 export interface GenerateQuestionInput {
   concept: string;
   difficulty?: string;
+  assessmentItemId?: string;
 }
 
 export interface EssayFeedbackInput {
   conceptId?: string;
   questionText: string;
   answerText: string;
+  assessmentItemId?: string;
 }
 
 export interface GeneratedStudyPlan {
