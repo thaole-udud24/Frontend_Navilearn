@@ -6,6 +6,7 @@ import {
   Circle,
   Clock,
   Flag,
+  GitBranch,
   ListChecks,
   Lock,
   PlayCircle,
@@ -15,6 +16,7 @@ import {
 
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { TheoryBlockViewer } from '@/components/TheoryBlockViewer';
 import { cn } from '@/lib/utils';
 import { getQuestion } from '@/services/question-bank';
@@ -22,6 +24,7 @@ import { getConcept } from '@/services/knowledge';
 import { listMasteries } from '@/services/mastery';
 import type { Plan, PlanSession } from '@/services/planning/types';
 import type { Goal } from '@/services/planning/types';
+import { RoadmapTree } from './RoadmapTree';
 
 // Sessions created before `chapterTitle` existed (or a manually-built plan with no template
 // behind it) fall into one unlabeled group instead of showing an empty/fake chapter header.
@@ -40,7 +43,11 @@ function StageContentTab({ session }: { session: PlanSession }) {
   });
   const conceptIds = useMemo(
     () => [
-      ...new Set((questions ?? []).map((q) => (typeof q.concept === 'string' ? q.concept : q.concept._id))),
+      ...new Set(
+        (questions ?? [])
+          .map((q) => (!q.concept ? null : typeof q.concept === 'string' ? q.concept : q.concept._id))
+          .filter((id): id is string => !!id),
+      ),
     ],
     [questions],
   );
@@ -59,7 +66,9 @@ function StageContentTab({ session }: { session: PlanSession }) {
     const set = new Set<string>();
     (masteryRes?.data ?? []).forEach((m) => {
       if (m.learningState === 'UNDERSTOOD' || m.learningState === 'APPLIED') {
+      if (m.concept) {
         set.add(typeof m.concept === 'string' ? m.concept : m.concept._id);
+      }
       }
     });
     return set;
@@ -70,8 +79,8 @@ function StageContentTab({ session }: { session: PlanSession }) {
     const map = new Map<string, string>();
     (concepts ?? []).forEach((c) => {
       [...(c.prerequisites ?? []), ...(c.related ?? [])].forEach((r) => {
-        const rId = typeof r === 'string' ? r : r._id;
-        const rName = typeof r === 'string' ? r : r.name;
+        const rId = !r ? '' : typeof r === 'string' ? r : r._id;
+        const rName = !r ? '' : typeof r === 'string' ? r : r.name;
         if (!ownIds.has(rId)) map.set(rId, rName);
       });
     });
@@ -101,7 +110,7 @@ function StageContentTab({ session }: { session: PlanSession }) {
               <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />
             )}
             <span className="min-w-0 flex-1 truncate font-medium text-foreground">
-              {typeof q.concept === 'string' ? q.concept : q.concept.name}
+              {!q.concept ? '—' : typeof q.concept === 'string' ? q.concept : q.concept.name}
             </span>
           </li>
         ))}
@@ -234,6 +243,7 @@ export function LearningPathOverview({
     [plan],
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [roadmapTreeOpen, setRoadmapTreeOpen] = useState(false);
   const selected = ordered.find((s) => s._id === selectedId) ?? null;
   const chapters = useMemo(() => {
     const groups: { title: string; sessions: PlanSession[] }[] = [];
@@ -262,35 +272,63 @@ export function LearningPathOverview({
   const totalMin = ordered.reduce((sum, s) => sum + s.durationMin, 0);
   const doneMin = ordered.filter((s) => s.status === 'done').reduce((sum, s) => sum + s.durationMin, 0);
   const nextSession = ordered.find((s) => s.status === 'planned' && s.stageStatus !== 'locked');
+  // Color-codes by completion so the card reads at a glance instead of plain text (danger < 50%,
+  // warning 50-79%, success ≥ 80% — matches the goal's own "Mục tiêu: ≥80%" convention).
+  const percentTone = percent >= 80 ? 'success' : percent >= 50 ? 'warning' : 'danger';
+  const subjectLabel = goal && goal.concept ? (typeof goal.concept === 'string' ? goal.concept : goal.concept.name) : plan.title;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-4 rounded-card border border-border bg-card p-4 shadow-card">
-        <div className="flex min-w-[160px] flex-1 items-center gap-3">
-          <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-            <div className="h-full rounded-full bg-primary" style={{ width: `${percent}%` }} />
-          </div>
-          <span className="shrink-0 text-sm font-bold text-foreground">{percent}%</span>
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 rounded-card border border-border bg-card p-3.5 shadow-card">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="flex items-center gap-1.5 rounded-full bg-primary-soft px-2.5 py-1 text-xs font-semibold text-primary">
+            <BookOpen className="h-3.5 w-3.5" /> {subjectLabel}
+          </span>
+          <Button type="button" variant="outline" size="sm" onClick={() => setRoadmapTreeOpen(true)}>
+            <GitBranch className="h-3.5 w-3.5" /> Xem sơ đồ cây lộ trình
+          </Button>
         </div>
-        <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-          <ListChecks className="h-4 w-4 text-primary" />
-          {doneCount}/{ordered.length} chặng
-        </span>
-        <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-          <Clock className="h-4 w-4 text-amber-foreground" />
-          {Math.round((doneMin / 60) * 10) / 10}h / {Math.round((totalMin / 60) * 10) / 10}h
-        </span>
-        {goal && (
-          <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-            <Flag className="h-4 w-4 text-danger" /> Hạn:{' '}
-            {new Date(goal.deadline).toLocaleDateString('vi-VN')}
+
+        <div className="flex min-w-[160px] items-center gap-3">
+          <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+            <div
+              className={cn(
+                'h-full rounded-full',
+                percentTone === 'success' ? 'bg-success' : percentTone === 'warning' ? 'bg-warning' : 'bg-danger',
+              )}
+              style={{ width: `${percent}%` }}
+            />
+          </div>
+          <span
+            className={cn(
+              'shrink-0 text-sm font-bold',
+              percentTone === 'success' ? 'text-success' : percentTone === 'warning' ? 'text-warning' : 'text-danger',
+            )}
+          >
+            {percent}%
           </span>
-        )}
-        {goal?.targetScore != null && (
-          <span className="flex items-center gap-1.5 rounded-full border border-amber/60 bg-amber/20 px-2.5 py-1 text-xs font-semibold text-amber-foreground">
-            <Star className="h-3.5 w-3.5" /> Mục tiêu: ≥ {goal.targetScore}%
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <span className="flex items-center gap-1.5 rounded-control bg-primary/10 px-2 py-1.5 text-xs font-medium text-primary">
+            <ListChecks className="h-3.5 w-3.5" />
+            {doneCount}/{ordered.length} chặng
           </span>
-        )}
+          <span className="flex items-center gap-1.5 rounded-control bg-amber/20 px-2 py-1.5 text-xs font-medium text-amber-foreground">
+            <Clock className="h-3.5 w-3.5" />
+            {Math.round((doneMin / 60) * 10) / 10}h / {Math.round((totalMin / 60) * 10) / 10}h
+          </span>
+          {goal && (
+            <span className="flex items-center gap-1.5 rounded-control bg-danger/10 px-2 py-1.5 text-xs font-medium text-danger">
+              <Flag className="h-3.5 w-3.5" /> Hạn: {new Date(goal.deadline).toLocaleDateString('vi-VN')}
+            </span>
+          )}
+          {goal?.targetScore != null && (
+            <span className="flex items-center gap-1.5 rounded-control bg-amber/20 px-2 py-1.5 text-xs font-semibold text-amber-foreground">
+              <Star className="h-3.5 w-3.5" /> Mục tiêu: ≥ {goal.targetScore} điểm
+            </span>
+          )}
+        </div>
       </div>
 
       {nextSession && (
@@ -395,6 +433,18 @@ export function LearningPathOverview({
 
         {selected && <StageInspector session={selected} onStartQuiz={onStartQuiz} />}
       </div>
+
+      {/* Same zigzag chặng diagram as Admin's "Bản đồ lộ trình" / the "Kế hoạch học tập" tab's own
+       * proposed-plan preview — ported from the now-removed standalone "Lộ trình học tập" page so
+       * this tab keeps that view instead of losing it. */}
+      <Dialog open={roadmapTreeOpen} onOpenChange={setRoadmapTreeOpen}>
+        <DialogContent size="xl" className="max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Sơ đồ cây lộ trình</DialogTitle>
+          </DialogHeader>
+          <RoadmapTree sessions={plan.sessions} readOnly />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
