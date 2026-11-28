@@ -26,6 +26,7 @@ import type { Assessment } from '@/services/assessment/types';
 import { getAssessmentConfig, listRubrics } from '@/services/assessment-config';
 import { getQuestion } from '@/services/question-bank';
 import type { Question } from '@/services/question-bank/types';
+import { askAi } from '@/services/ai-assist';
 import { ReportQuestionIssueButton } from './ReportQuestionIssueButton';
 
 interface AnswerDraft {
@@ -47,6 +48,7 @@ export function AssessmentDialog({
   const [drafts, setDrafts] = useState<Record<string, AnswerDraft>>({});
   const [flags, setFlags] = useState<Record<string, boolean>>({});
   const [result, setResult] = useState<Assessment | null>(null);
+  const [aiAnswers, setAiAnswers] = useState<Record<string, string>>({});
 
   const { data: attempt, isLoading: loadingAttempt } = useQuery({
     queryKey: ['assessment-detail', assessmentId],
@@ -92,6 +94,7 @@ export function AssessmentDialog({
     setDrafts(seedDrafts);
     setFlags(seedFlags);
     setResult(null);
+    setAiAnswers({});
   }, [attempt]);
 
   const saveDraftMutation = useMutation({
@@ -128,6 +131,18 @@ export function AssessmentDialog({
 
   const view = result ?? (attempt?.status === 'submitted' ? attempt : null);
 
+  const aiHelpMutation = useMutation({
+    mutationFn: ({ text }: { questionId: string; text: string }) =>
+      askAi({
+        question: text,
+        concept: attempt!.concept,
+        assessmentItemId: attempt!._id,
+      }),
+    onSuccess: ({ answer }, { questionId }) => {
+      setAiAnswers((current) => ({ ...current, [questionId]: answer }));
+    },
+    onError: () => toast.error('Không thể nhận hỗ trợ AI cho bài làm này'),
+  });
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent expandable size="lg" className="tw-scope flex max-h-[85vh] flex-col">
@@ -166,7 +181,11 @@ export function AssessmentDialog({
                   Xem kết quả chi tiết
                 </Button>
               </div>
-
+              <div className="text-xs text-muted-foreground">
+                Mức hỗ trợ AI: {view.aiHelpLevel ?? 0}/4
+                {' · '}
+                Số lượt hỗ trợ: {view.aiHelpCount ?? 0}
+              </div>
               {view.answers.map((a) => (
                 <div key={a.question} className="rounded-card border border-border p-4">
                   <div className="mb-1 flex items-center justify-between gap-2">
@@ -246,6 +265,30 @@ export function AssessmentDialog({
                               </li>
                             ))}
                           </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {!attempt?.independentCheck && config?.kind !== 'placement' && (
+                    <div className="mt-3 space-y-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={aiHelpMutation.isPending}
+                        onClick={() =>
+                          aiHelpMutation.mutate({
+                            questionId: q._id,
+                            text: `Hãy gợi ý cách giải câu hỏi này, không làm hộ toàn bộ bài: ${q.text}`,
+                          })
+                        }
+                      >
+                        {aiHelpMutation.isPending ? 'Đang hỏi AI…' : 'Hỏi AI'}
+                      </Button>
+
+                      {aiAnswers[q._id] && (
+                        <div className="rounded-control border border-border bg-muted/40 p-3 text-sm">
+                          {aiAnswers[q._id]}
                         </div>
                       )}
                     </div>
