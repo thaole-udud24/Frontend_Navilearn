@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { ColumnDef } from '@tanstack/react-table';
+import type { ApiError } from '@/services/apiError';
 import { Braces, Eye, History, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react';
 
 import { AppShell } from '@/layouts/AppShell';
@@ -73,8 +74,8 @@ function EditRuleDialog({
       toast.success(`Đã cập nhật quy tắc ${rule.ruleCode}`);
       onSaved();
       onClose();
-    } catch {
-      toast.error('Cập nhật quy tắc thất bại');
+    } catch (err) {
+      toast.error((err as ApiError)?.message || 'Cập nhật quy tắc thất bại');
     }
   };
 
@@ -139,8 +140,8 @@ function ResetRuleDialog({
       toast.success(`Đã khôi phục quy tắc ${rule.ruleCode} về mặc định`);
       onSaved();
       onClose();
-    } catch {
-      toast.error('Khôi phục thất bại');
+    } catch (err) {
+      toast.error((err as ApiError)?.message || 'Khôi phục thất bại');
     }
   };
 
@@ -187,8 +188,8 @@ function HistoryDialog({ rule, onClose }: { rule: BusinessRule | null; onClose: 
     setLoading(true);
     try {
       setList(await getBusinessRuleHistory(r._id));
-    } catch {
-      toast.error('Không thể lấy lịch sử thay đổi');
+    } catch (err) {
+      toast.error((err as ApiError)?.message || 'Không thể lấy lịch sử thay đổi');
     } finally {
       setLoading(false);
     }
@@ -304,8 +305,8 @@ function CreateRuleDialog({
       onSaved();
       onClose();
       reset();
-    } catch {
-      toast.error('Tạo quy tắc thất bại — kiểm tra lại mã quy tắc có bị trùng không');
+    } catch (err) {
+      toast.error((err as ApiError)?.message || 'Tạo quy tắc thất bại — kiểm tra lại mã quy tắc có bị trùng không');
     }
   };
 
@@ -440,8 +441,8 @@ export default function BusinessRuleAdmin() {
       link.click();
       URL.revokeObjectURL(url);
       toast.success('Đã xuất danh mục quy tắc thành công');
-    } catch {
-      toast.error('Xuất danh mục quy tắc thất bại');
+    } catch (err) {
+      toast.error((err as ApiError)?.message || 'Xuất danh mục quy tắc thất bại');
     }
   };
 
@@ -451,8 +452,8 @@ export default function BusinessRuleAdmin() {
       await removeBusinessRule(deletingRule._id);
       toast.success(`Đã xoá quy tắc ${deletingRule.ruleCode}`);
       reload();
-    } catch {
-      toast.error('Xoá quy tắc thất bại');
+    } catch (err) {
+      toast.error((err as ApiError)?.message || 'Xoá quy tắc thất bại');
     } finally {
       setDeletingRule(null);
     }

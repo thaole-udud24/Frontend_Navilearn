@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { ColumnDef } from '@tanstack/react-table';
+import type { ApiError } from '@/services/apiError';
 import { Archive, Eye, Pencil, Plus, Sparkles, Trash2 } from 'lucide-react';
 
 import { AppShell } from '@/layouts/AppShell';
@@ -102,8 +103,8 @@ function LessonFormDialog({
       toast.success(isNew ? 'Đã tạo bài học' : 'Đã cập nhật bài học');
       onSaved();
       onClose();
-    } catch {
-      toast.error('Lưu bài học thất bại');
+    } catch (err) {
+      toast.error((err as ApiError)?.message || 'Lưu bài học thất bại');
     } finally {
       setSaving(false);
     }
@@ -212,8 +213,8 @@ export default function LessonAdmin() {
       await removeLesson(deleting._id);
       toast.success(`Đã xoá bài học "${deleting.title}"`);
       reload();
-    } catch {
-      toast.error('Xoá bài học thất bại');
+    } catch (err) {
+      toast.error((err as ApiError)?.message || 'Xoá bài học thất bại');
     } finally {
       setDeleting(null);
     }

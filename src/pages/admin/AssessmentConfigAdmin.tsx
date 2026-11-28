@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { ColumnDef } from '@tanstack/react-table';
+import type { ApiError } from '@/services/apiError';
 import { Ban, Copy, Eye, Pencil, Plus, Repeat, RotateCcw, Settings2, Trash2 } from 'lucide-react';
 
 import { AppShell } from '@/layouts/AppShell';
@@ -9,6 +10,7 @@ import { useAuthStore } from '@/hooks/useAuth';
 import { PATHS } from '@/routes/paths';
 import { adminMenu } from '@/config/menu.admin';
 import { AddButton } from '@/components/ui/add-button';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
@@ -17,6 +19,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { DataTablePage } from '@/components/DataTablePage';
 import { StatusBadge } from '@/components/StatusBadge';
 import { SourceBadge } from '@/components/SourceBadge';
+import { ConceptSelect } from '@/components/ConceptSelect';
 import {
   archiveAssessmentConfig,
   createAssessmentConfig,
@@ -34,6 +37,73 @@ import type {
   AssessmentConfigKind,
   ShowAnswersPolicy,
 } from '@/services/assessment-config/types';
+import { getQuestion } from '@/services/question-bank';
+import type { Question, QuestionDifficulty } from '@/services/question-bank/types';
+
+const DIFFICULTY_LABEL: Record<QuestionDifficulty, string> = { easy: 'Dễ', medium: 'TB', hard: 'Khó' };
+
+/** Real, read-only difficulty mix among the questions the admin actually picked for this config —
+ * not a selection-by-percentage mechanic, which nothing on this screen's backend model supports
+ * (AssessmentConfigItem just stores a `questions[]` id list; `difficulty_mix` as a generation input
+ * belongs to the AI question-bank generator, a different flow — see question-bank.model.js). */
+function QuestionPreviewPanel({ questions }: { questions: Question[] }) {
+  if (!questions.length) return null;
+  const counts: Record<QuestionDifficulty, number> = { easy: 0, medium: 0, hard: 0 };
+  questions.forEach((q) => { counts[q.difficulty] += 1; });
+  const total = questions.length;
+  return (
+    <p className="text-xs text-muted-foreground">
+      Phân bổ độ khó trong {total} câu đã chọn:{' '}
+      {(['easy', 'medium', 'hard'] as const)
+        .map((d) => `${DIFFICULTY_LABEL[d]} ${Math.round((counts[d] / total) * 100)}%`)
+        .join(' · ')}
+    </p>
+  );
+}
+
+function PreviewQuestionsDialog({
+  open,
+  onClose,
+  questions,
+}: {
+  open: boolean;
+  onClose: () => void;
+  questions: Question[];
+}) {
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent size="md" className="tw-scope">
+        <DialogHeader>
+          <FormDialogTitle icon={Eye}>Xem thử đề bài ({questions.length} câu)</FormDialogTitle>
+        </DialogHeader>
+        <div className="flex max-h-[60vh] flex-col gap-3 overflow-y-auto py-2">
+          {questions.length === 0 && (
+            <p className="text-sm text-muted-foreground">Chưa có câu hỏi hợp lệ nào trong danh sách.</p>
+          )}
+          {questions.map((q, idx) => (
+            <div key={q._id} className="rounded-control border border-border p-3">
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <p className="text-sm font-medium text-foreground">
+                  Câu {idx + 1}. {q.text}
+                </p>
+                <StatusBadge variant="neutral">{DIFFICULTY_LABEL[q.difficulty]}</StatusBadge>
+              </div>
+              {q.type !== 'essay' && (
+                <ul className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+                  {q.options.map((opt, oi) => (
+                    <li key={oi}>
+                      • {opt.text} {opt.isCorrect && <span className="text-success">(đúng)</span>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 const KIND_LABEL: Record<AssessmentConfigKind, string> = {
   placement: 'Bài kiểm tra đầu vào',
@@ -60,6 +130,8 @@ function ConfigFormDialog({
   const [kind, setKind] = useState<AssessmentConfigKind>('chapter_test');
   const [passScore, setPassScore] = useState(50);
   const [timeLimitMinutes, setTimeLimitMinutes] = useState(0);
+  const [selectedQuestions, setSelectedQuestions] = useState<Question[]>([]);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const load = (c: AssessmentConfig | null) => {
     setTitle(c?.title ?? '');
@@ -68,7 +140,28 @@ function ConfigFormDialog({
     setKind(c?.kind ?? 'chapter_test');
     setPassScore(c?.passScore ?? 50);
     setTimeLimitMinutes(c?.timeLimitMinutes ?? 0);
+    setSelectedQuestions([]);
   };
+
+  // Resolve the typed/pasted question ids to their real records so the difficulty-mix summary and
+  // "Xem thử" preview reflect what's actually in the bank, not just the id text.
+  useEffect(() => {
+    const ids = questionsCsv
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (!ids.length) {
+      setSelectedQuestions([]);
+      return;
+    }
+    let cancelled = false;
+    Promise.all(ids.map((id) => getQuestion(id).catch(() => null))).then((qs) => {
+      if (!cancelled) setSelectedQuestions(qs.filter((q): q is Question => !!q));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [questionsCsv]);
 
   const submit = async () => {
     const questions = questionsCsv
@@ -84,19 +177,20 @@ function ConfigFormDialog({
       toast(editing ? 'Đã cập nhật đề bài' : 'Đã tạo đề bài mới');
       onSaved();
       onClose();
-    } catch {
-      toast('Lưu đề bài thất bại — kiểm tra lại mã kiến thức/câu hỏi.');
+    } catch (err) {
+      toast((err as ApiError)?.message || 'Lưu đề bài thất bại — kiểm tra lại mã kiến thức/câu hỏi.');
     }
   };
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(v) => {
-        if (v) load(editing);
-        if (!v) onClose();
-      }}
-    >
+    <>
+      <Dialog
+        open={open}
+        onOpenChange={(v) => {
+          if (v) load(editing);
+          if (!v) onClose();
+        }}
+      >
       <DialogContent size="md" className="tw-scope">
         <DialogHeader>
           <FormDialogTitle icon={editing ? Pencil : Plus}>
@@ -113,11 +207,7 @@ function ConfigFormDialog({
           </FormField>
           {!editing && (
             <FormField label="Kiến thức" required>
-              <Input
-                value={concept}
-                onChange={(e) => setConcept(e.target.value)}
-                placeholder="Mã kiến thức (concept id)"
-              />
+              <ConceptSelect value={concept} onChange={setConcept} />
             </FormField>
           )}
           <FormField label="Câu hỏi">
@@ -128,6 +218,18 @@ function ConfigFormDialog({
               rows={2}
               className="w-full rounded-control border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <QuestionPreviewPanel questions={selectedQuestions} />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={!selectedQuestions.length}
+                onClick={() => setPreviewOpen(true)}
+              >
+                Xem thử
+              </Button>
+            </div>
           </FormField>
           <div className="flex gap-2">
             <Select value={kind} onValueChange={(v) => setKind(v as AssessmentConfigKind)}>
@@ -168,6 +270,12 @@ function ConfigFormDialog({
         />
       </DialogContent>
     </Dialog>
+    <PreviewQuestionsDialog
+      open={previewOpen}
+      onClose={() => setPreviewOpen(false)}
+      questions={selectedQuestions}
+    />
+    </>
   );
 }
 
@@ -314,8 +422,8 @@ export default function AssessmentConfigAdmin() {
       await removeAssessmentConfig(deleting._id);
       toast.success(`Đã xoá cấu hình "${deleting.title}"`);
       reload();
-    } catch {
-      toast.error('Xoá cấu hình thất bại');
+    } catch (err) {
+      toast.error((err as ApiError)?.message || 'Xoá cấu hình thất bại');
     } finally {
       setDeleting(null);
     }
@@ -421,8 +529,8 @@ export default function AssessmentConfigAdmin() {
                 const res = await importAssessmentConfigs(items);
                 toast(`Đã nhập ${res.createdCount} cấu hình, ${res.errorCount} lỗi`);
                 reload();
-              } catch {
-                toast('JSON không hợp lệ');
+              } catch (err) {
+                toast.error((err as ApiError)?.message || 'JSON không hợp lệ hoặc nhập cấu hình thất bại');
               }
             },
           },
