@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { CheckCircle2, Flag, XCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { PATHS } from '@/routes/paths';
 import {
   Dialog,
   DialogBody,
@@ -21,7 +23,7 @@ import {
 } from '@/services/assessment';
 import { assessmentKeys } from '@/services/assessment/queryKeys';
 import type { Assessment } from '@/services/assessment/types';
-import { getAssessmentConfig } from '@/services/assessment-config';
+import { getAssessmentConfig, listRubrics } from '@/services/assessment-config';
 import { getQuestion } from '@/services/question-bank';
 import type { Question } from '@/services/question-bank/types';
 import { ReportQuestionIssueButton } from './ReportQuestionIssueButton';
@@ -41,6 +43,7 @@ export function AssessmentDialog({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [drafts, setDrafts] = useState<Record<string, AnswerDraft>>({});
   const [flags, setFlags] = useState<Record<string, boolean>>({});
   const [result, setResult] = useState<Assessment | null>(null);
@@ -69,6 +72,14 @@ export function AssessmentDialog({
     queryFn: () => Promise.all(questionIds.map((qId) => getQuestion(qId))),
     enabled: open && isTaking && questionIds.length > 0,
   });
+
+  const hasEssayQuestion = useMemo(() => (questions ?? []).some((q) => q.type === 'essay'), [questions]);
+  const { data: rubricsRes } = useQuery({
+    queryKey: ['assessment-rubrics', attempt?.concept],
+    queryFn: () => listRubrics({ concept: attempt!.concept, status: 'active', limit: 5 }),
+    enabled: open && isTaking && hasEssayQuestion && !!attempt?.concept,
+  });
+  const activeRubric = rubricsRes?.data?.[0];
 
   useEffect(() => {
     if (!attempt) return;
@@ -140,10 +151,20 @@ export function AssessmentDialog({
                 ) : (
                   <XCircle className="h-6 w-6 text-danger" />
                 )}
-                <div>
+                <div className="min-w-0 flex-1">
                   <div className="text-lg font-bold text-foreground">{view.score}%</div>
                   <div className="text-sm text-muted-foreground">{view.passed ? 'Đạt' : 'Chưa đạt'}</div>
                 </div>
+                {/* S12: dedicated results screen (stat breakdown theo chủ đề, Mức sẵn sàng thi…) —
+                    opt-in from here so the inline summary/existing E2E assertions stay unchanged. */}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigate(PATHS.student.practiceResult(view._id))}
+                >
+                  Xem kết quả chi tiết
+                </Button>
               </div>
 
               {view.answers.map((a) => (
@@ -204,13 +225,30 @@ export function AssessmentDialog({
                       ))}
                     </div>
                   ) : (
-                    <textarea
-                      value={drafts[q._id]?.essayText ?? ''}
-                      onChange={(e) => setDrafts((d) => ({ ...d, [q._id]: { essayText: e.target.value } }))}
-                      rows={4}
-                      placeholder="Nhập câu trả lời của bạn…"
-                      className="w-full rounded-control border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    />
+                    <div className="flex flex-col gap-2">
+                      <textarea
+                        value={drafts[q._id]?.essayText ?? ''}
+                        onChange={(e) => setDrafts((d) => ({ ...d, [q._id]: { essayText: e.target.value } }))}
+                        rows={4}
+                        placeholder="Nhập câu trả lời tự luận của bạn…"
+                        className="w-full rounded-control border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      />
+                      {activeRubric && (
+                        <div className="rounded-lg border border-primary/20 bg-primary/5 p-2.5 text-xs">
+                          <p className="mb-1 font-semibold text-primary">
+                            Tiêu chí chấm điểm ({activeRubric.title} · {activeRubric.totalPoints} điểm):
+                          </p>
+                          <ul className="flex flex-col gap-0.5 text-muted-foreground">
+                            {activeRubric.criteria.map((c, ci) => (
+                              <li key={ci}>
+                                • <strong className="text-foreground">{c.name}</strong> ({c.weightPct}%)
+                                {c.description ? `: ${c.description}` : ''}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
                   )}
                   <ReportQuestionIssueButton questionId={q._id} />
                 </div>
