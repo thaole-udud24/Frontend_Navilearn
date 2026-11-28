@@ -34,7 +34,6 @@ interface ProfileSectionProps {
 /** FE-STU-73/74/75 and FE-ADM-85: view and edit the signed-in user's profile and avatar. */
 export function ProfileSection({ variant }: ProfileSectionProps) {
   const queryClient = useQueryClient();
-  const authUser = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
   const fileInput = useRef<HTMLInputElement>(null);
   const isStudent = variant === 'student';
@@ -57,12 +56,27 @@ export function ProfileSection({ variant }: ProfileSectionProps) {
     setLocale(profile.locale);
     setTimezone(profile.timezone);
     setAvailability(profile.availability);
-  }, [profile]);
+    const current = useAuthStore.getState().user;
+    if (current && (current.avatarUrl !== profile.avatarUrl || current.fullName !== profile.fullName)) {
+      setUser({ ...current, fullName: profile.fullName, avatarUrl: profile.avatarUrl });
+    }
+  }, [profile, setUser]);
 
-  // Keep the header (name + avatar) in step with what was just saved.
+  // Keep the header & sidebar (name + avatar) in step with what was just saved or loaded.
   const syncAuthUser = (next: Profile) => {
     queryClient.setQueryData(accountKeys.profile, next);
-    if (authUser) setUser({ ...authUser, fullName: next.fullName, avatarUrl: next.avatarUrl });
+    const current = useAuthStore.getState().user;
+    if (current) {
+      setUser({ ...current, fullName: next.fullName, avatarUrl: next.avatarUrl });
+    } else {
+      setUser({
+        id: next.id,
+        email: next.email,
+        fullName: next.fullName,
+        role: variant,
+        avatarUrl: next.avatarUrl,
+      });
+    }
   };
 
   const saveMutation = useMutation({

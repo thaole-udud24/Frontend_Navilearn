@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
@@ -19,6 +19,9 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ onSubmit, onForgotPassword, onSwitchToRegister }: LoginFormProps) {
+  // The desktop/mobile layouts both mount this form at once (one hidden via CSS, not unmounted —
+  // see AuthPage.tsx), so hardcoded ids collided; useId keeps each mounted instance unique.
+  const uid = useId();
   const [status, setStatus] = useState<SubmitStatus>('idle');
   const [shake, setShake] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -77,7 +80,7 @@ export function LoginForm({ onSubmit, onForgotPassword, onSwitchToRegister }: Lo
               identifierField.ref(el);
               firstFieldRef.current = el;
             }}
-            id="login-identifier"
+            id={`${uid}-identifier`}
             label="Email hoặc Mã sinh viên"
             icon={AtSign}
             autoComplete="username"
@@ -89,7 +92,7 @@ export function LoginForm({ onSubmit, onForgotPassword, onSwitchToRegister }: Lo
         <motion.div variants={fieldSlideUp}>
           <FloatingInput
             {...register('password')}
-            id="login-password"
+            id={`${uid}-password`}
             label="Mật khẩu"
             icon={Lock}
             type={showPassword ? 'text' : 'password'}
@@ -110,12 +113,12 @@ export function LoginForm({ onSubmit, onForgotPassword, onSwitchToRegister }: Lo
         </motion.div>
 
         <motion.div variants={fieldSlideUp} className="flex items-center justify-between text-sm">
-          <label className="flex items-center gap-2 text-muted-foreground" htmlFor="login-remember">
+          <label className="flex items-center gap-2 text-muted-foreground" htmlFor={`${uid}-remember`}>
             <Controller
               name="remember"
               control={control}
               render={({ field }) => (
-                <Checkbox id="login-remember" checked={field.value} onCheckedChange={field.onChange} />
+                <Checkbox id={`${uid}-remember`} checked={field.value} onCheckedChange={field.onChange} />
               )}
             />
             Ghi nhớ đăng nhập
