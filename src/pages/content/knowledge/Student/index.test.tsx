@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 import type { KnowledgeNode } from '@/services/knowledge/types';
 
 // Radix components expect a few browser APIs jsdom lacks.
@@ -65,7 +66,9 @@ function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <StudentKnowledgeStructurePage />
+      <MemoryRouter>
+        <StudentKnowledgeStructurePage />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
