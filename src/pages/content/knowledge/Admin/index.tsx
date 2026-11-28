@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Ban, Copy, Eye, Pencil, Plus, RotateCcw, ShieldCheck, Sparkles, Trash2 } from 'lucide-react';
+import { Ban, Copy, Eye, Pencil, Plus, RotateCcw, ShieldCheck, Sparkles, Trash2, X } from 'lucide-react';
 
 import { AppShell } from '@/layouts/AppShell';
 import { useAuthStore } from '@/hooks/useAuth';
@@ -17,6 +17,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { DataTablePage, ClampLine } from '@/components/DataTablePage';
 import { StatusBadge } from '@/components/StatusBadge';
 import { SourceBadge } from '@/components/SourceBadge';
+import { ConceptSelect } from '@/components/ConceptSelect';
 import {
   createConcept,
   deactivateStructure,
@@ -35,13 +36,40 @@ import { CopyStructureDialog } from './components/CopyStructureDialog';
 import { ValidateStructureDialog } from './components/ValidateStructureDialog';
 import type { ConceptDraft } from '@/services/ai-assist/types';
 
-const csvToIds = (csv: string) =>
-  csv
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
 const refId = (r: ConceptRef | string | null | undefined) => (!r ? '' : typeof r === 'string' ? r : r._id);
 const refName = (r: ConceptRef | string | null | undefined) => (!r ? '' : typeof r === 'string' ? r : r.name);
+
+/** Picks several concepts by name (tiên quyết/liên quan) — `ConceptSelect` has no multi-select mode
+ * and no reusable multi-concept picker exists elsewhere in this codebase, so this just stacks one
+ * `ConceptSelect` row per id with add/remove, instead of building a new combobox from scratch. */
+function ConceptListPicker({ ids, onChange }: { ids: string[]; onChange: (ids: string[]) => void }) {
+  return (
+    <div className="flex flex-col gap-2">
+      {ids.map((id, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <div className="flex-1">
+            <ConceptSelect
+              value={id}
+              onChange={(v) => onChange(ids.map((cur, idx) => (idx === i ? v : cur)))}
+            />
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Bỏ kiến thức này"
+            onClick={() => onChange(ids.filter((_, idx) => idx !== i))}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      ))}
+      <Button type="button" variant="outline" size="sm" onClick={() => onChange([...ids, ''])}>
+        <Plus className="mr-1 h-4 w-4" /> Thêm kiến thức
+      </Button>
+    </div>
+  );
+}
 
 function CreateConceptDialog({
   open,
@@ -55,8 +83,8 @@ function CreateConceptDialog({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [parentConcept, setParentConcept] = useState('');
-  const [prerequisitesCsv, setPrerequisitesCsv] = useState('');
-  const [relatedCsv, setRelatedCsv] = useState('');
+  const [prerequisites, setPrerequisites] = useState<string[]>([]);
+  const [related, setRelated] = useState<string[]>([]);
 
   const submit = async () => {
     if (!name.trim()) {
@@ -67,20 +95,20 @@ function CreateConceptDialog({
       await createConcept({
         name: name.trim(),
         description: description.trim() || undefined,
-        parentConcept: parentConcept.trim() || undefined,
-        prerequisites: csvToIds(prerequisitesCsv),
-        related: csvToIds(relatedCsv),
+        parentConcept: parentConcept || undefined,
+        prerequisites: prerequisites.filter(Boolean),
+        related: related.filter(Boolean),
       });
       toast.success('Đã tạo kiến thức mới');
       setName('');
       setDescription('');
       setParentConcept('');
-      setPrerequisitesCsv('');
-      setRelatedCsv('');
+      setPrerequisites([]);
+      setRelated([]);
       onSaved();
       onClose();
     } catch {
-      toast.error('Tạo kiến thức thất bại — kiểm tra lại mã kiến thức cha/tiên quyết/liên quan.');
+      toast.error('Tạo kiến thức thất bại — kiểm tra lại kiến thức cha/tiên quyết/liên quan.');
     }
   };
 
@@ -101,27 +129,18 @@ function CreateConceptDialog({
               placeholder="Mô tả ngắn gọn (không bắt buộc)"
             />
           </FormField>
-          {/* shortcut: raw concept id, no concept picker UI yet — mirrors other admin forms in this codebase */}
           <FormField label="Kiến thức cha" className="text-muted-foreground">
-            <Input
+            <ConceptSelect
               value={parentConcept}
-              onChange={(e) => setParentConcept(e.target.value)}
-              placeholder="Mã kiến thức cha (không bắt buộc — phân cấp chương/chủ đề)"
+              onChange={setParentConcept}
+              placeholder="Không bắt buộc — để trống nếu đây là kiến thức gốc (môn học)"
             />
           </FormField>
           <FormField label="Kiến thức tiên quyết" className="text-muted-foreground">
-            <Input
-              value={prerequisitesCsv}
-              onChange={(e) => setPrerequisitesCsv(e.target.value)}
-              placeholder="Mã kiến thức, phân tách bằng dấu phẩy (không bắt buộc)"
-            />
+            <ConceptListPicker ids={prerequisites} onChange={setPrerequisites} />
           </FormField>
           <FormField label="Kiến thức liên quan" className="text-muted-foreground">
-            <Input
-              value={relatedCsv}
-              onChange={(e) => setRelatedCsv(e.target.value)}
-              placeholder="Mã kiến thức, phân tách bằng dấu phẩy (không bắt buộc)"
-            />
+            <ConceptListPicker ids={related} onChange={setRelated} />
           </FormField>
         </div>
         <FormDialogFooter onCancel={onClose} submitLabel="Thêm mới" onSubmit={submit} />
@@ -142,21 +161,21 @@ function EditConceptDialog({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [parentConcept, setParentConcept] = useState('');
-  const [prerequisitesCsv, setPrerequisitesCsv] = useState('');
-  const [relatedCsv, setRelatedCsv] = useState('');
+  const [prerequisites, setPrerequisites] = useState<string[]>([]);
+  const [related, setRelated] = useState<string[]>([]);
 
   const load = async (c: Concept | null) => {
     setName(c?.name ?? '');
     setDescription(c?.description ?? '');
     setParentConcept('');
-    setPrerequisitesCsv('');
-    setRelatedCsv('');
+    setPrerequisites([]);
+    setRelated([]);
     if (!c) return;
     // The row from the table list doesn't carry prerequisites/related — fetch the full record.
     const full = await getConcept(c._id);
     setParentConcept(refId(full.parentConcept));
-    setPrerequisitesCsv((full.prerequisites ?? []).map(refId).join(', '));
-    setRelatedCsv((full.related ?? []).map(refId).join(', '));
+    setPrerequisites((full.prerequisites ?? []).map(refId));
+    setRelated((full.related ?? []).map(refId));
   };
 
   const submit = async () => {
@@ -169,15 +188,15 @@ function EditConceptDialog({
       await updateConcept(concept._id, {
         name: name.trim(),
         description: description.trim() || undefined,
-        parentConcept: parentConcept.trim() || null,
-        prerequisites: csvToIds(prerequisitesCsv),
-        related: csvToIds(relatedCsv),
+        parentConcept: parentConcept || null,
+        prerequisites: prerequisites.filter(Boolean),
+        related: related.filter(Boolean),
       });
       toast.success('Đã cập nhật kiến thức');
       onSaved();
       onClose();
     } catch {
-      toast.error('Cập nhật kiến thức thất bại — kiểm tra lại mã kiến thức cha/tiên quyết/liên quan.');
+      toast.error('Cập nhật kiến thức thất bại — kiểm tra lại kiến thức cha/tiên quyết/liên quan.');
     }
   };
 
@@ -205,25 +224,13 @@ function EditConceptDialog({
             />
           </FormField>
           <FormField label="Kiến thức cha" className="text-muted-foreground">
-            <Input
-              value={parentConcept}
-              onChange={(e) => setParentConcept(e.target.value)}
-              placeholder="Mã kiến thức cha (để trống nếu là gốc)"
-            />
+            <ConceptSelect value={parentConcept} onChange={setParentConcept} placeholder="Để trống nếu là gốc" />
           </FormField>
           <FormField label="Kiến thức tiên quyết" className="text-muted-foreground">
-            <Input
-              value={prerequisitesCsv}
-              onChange={(e) => setPrerequisitesCsv(e.target.value)}
-              placeholder="Mã kiến thức, phân tách bằng dấu phẩy"
-            />
+            <ConceptListPicker ids={prerequisites} onChange={setPrerequisites} />
           </FormField>
           <FormField label="Kiến thức liên quan" className="text-muted-foreground">
-            <Input
-              value={relatedCsv}
-              onChange={(e) => setRelatedCsv(e.target.value)}
-              placeholder="Mã kiến thức, phân tách bằng dấu phẩy"
-            />
+            <ConceptListPicker ids={related} onChange={setRelated} />
           </FormField>
         </div>
         <FormDialogFooter onCancel={onClose} submitLabel="Lưu lại" onSubmit={submit} />
