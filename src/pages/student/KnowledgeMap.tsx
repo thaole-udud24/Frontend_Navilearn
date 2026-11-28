@@ -1,35 +1,38 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Network, Percent, TrendingUp, X } from 'lucide-react';
+import { FileText, Network, Play, TreePine, X } from 'lucide-react';
 
 import { AppShell } from '@/layouts/AppShell';
+import { GlobalSubjectFilter } from '@/components/GlobalSubjectFilter';
 import { useAuthStore } from '@/hooks/useAuth';
+import { useSelectedSubject } from '@/hooks/useSubjectStore';
+import { getSubjectId, getSubjectLabel } from '@/lib/subjectUtils';
 import { PATHS } from '@/routes/paths';
 import { studentMenu } from '@/config/menu.student';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { listConcepts } from '@/services/knowledge';
 import { getSubjectGraph } from '@/services/knowledge';
 import { listMasteries } from '@/services/mastery';
+import { listGoals } from '@/services/planning';
 import type { Concept } from '@/services/knowledge/types';
 import type { Mastery } from '@/services/mastery/types';
 import { deriveNodeStates, KnowledgeTree, stateMeta, type NodeState } from './components/KnowledgeTree';
+import StudentKnowledgeStructurePage from '@/pages/content/knowledge/Student';
 
 const PILL_STATES: NodeState[] = ['completed', 'learning', 'decay', 'available', 'locked'];
 
-/** Zone C — read-only Concept Inspector. Shows the selected concept's real description, mastery,
- * and its direct prerequisite/dependent neighbours (derived from the same edges the canvas draws —
- * never a separate, possibly-inconsistent computation). It never edits the graph. */
+/** Zone C — read-only Concept Inspector matching Ảnh 1. */
 function InspectorPanel({
   concept,
+  subjectName,
   state,
   neighbours,
   onClose,
   onSelectNeighbour,
 }: {
   concept: Concept;
+  subjectName: string;
   state: NodeState;
   neighbours: {
     prerequisites: { concept: Concept; state: NodeState }[];
@@ -45,117 +48,90 @@ function InspectorPanel({
   });
   const mastery = masteryRes?.data?.[0] ?? null;
   const meta = stateMeta(state);
-  const Icon = meta.icon;
+  const parentName =
+    concept.parentConcept && typeof concept.parentConcept === 'object' ? concept.parentConcept.name : null;
+  const score = mastery?.score ?? 0;
 
   return (
-    <aside className="flex h-full w-[340px] shrink-0 flex-col gap-4 overflow-y-auto rounded-card border border-border bg-card p-5 shadow-card">
+    <aside className="flex h-full w-full shrink-0 flex-col gap-4 overflow-y-auto rounded-card border border-border bg-card p-5 shadow-card lg:w-[340px]">
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2.5">
-          <span
-            className={cn(
-              'flex h-9 w-9 shrink-0 items-center justify-center rounded-control text-white',
-              meta.dot,
-            )}
-          >
-            <Icon className="h-4.5 w-4.5" />
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+            {meta.label}
           </span>
-          <div>
-            <h2 className="text-base font-bold leading-tight text-foreground">{concept.name}</h2>
-            <span className="text-xs font-medium text-muted-foreground">{meta.label}</span>
-          </div>
+          {concept.examFocus && (
+            <span className="rounded-full border border-border bg-muted/60 px-2.5 py-0.5 text-xs font-medium text-foreground">
+              Trọng tâm kỳ thi
+            </span>
+          )}
         </div>
         <button
           type="button"
           aria-label="Đóng"
           onClick={onClose}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control text-muted-foreground hover:bg-muted"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-control text-muted-foreground hover:bg-muted"
         >
           <X className="h-4 w-4" />
         </button>
       </div>
 
-      {concept.description && <p className="text-sm text-muted-foreground">{concept.description}</p>}
-
-      {mastery ? (
-        <div className="flex flex-col gap-2 rounded-control border border-border bg-muted/30 p-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Điểm thành thạo</span>
-            <span className="font-semibold text-foreground">{mastery.score}%</span>
-          </div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-            <div className="h-full rounded-full bg-primary" style={{ width: `${mastery.score}%` }} />
-          </div>
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Số lần luyện tập</span>
-            <span>{mastery.attemptsCount}</span>
-          </div>
-        </div>
-      ) : (
-        <p className="rounded-control border border-dashed border-border p-3 text-sm text-muted-foreground">
-          Chưa có dữ liệu học tập cho kiến thức này.
+      <div>
+        <h2 className="text-lg font-bold leading-snug text-foreground">{concept.name}</h2>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {parentName ? `${parentName} · ${subjectName}` : subjectName}
         </p>
+      </div>
+
+      <div className="rounded-xl border border-border bg-muted/30 p-3.5">
+        <div className="mb-2 flex items-center justify-between text-xs">
+          <span className="font-medium text-muted-foreground">Mức độ thành thạo</span>
+          <span className="font-bold text-primary">{score}%</span>
+        </div>
+        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${score}%` }} />
+        </div>
+      </div>
+
+      {concept.description && (
+        <p className="text-sm leading-relaxed text-muted-foreground">{concept.description}</p>
       )}
 
       {neighbours.prerequisites.length > 0 && (
         <div>
-          <h3 className="mb-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-            Tiên quyết
+          <h3 className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+            Kiến thức tiên quyết
           </h3>
-          <div className="flex flex-col gap-1.5">
-            {neighbours.prerequisites.map(({ concept: p, state: pState }) => {
-              const pMeta = stateMeta(pState);
-              const PIcon = pMeta.icon;
-              return (
-                <button
-                  key={p._id}
-                  type="button"
-                  onClick={() => onSelectNeighbour(p)}
-                  className="flex items-center gap-2 rounded-control border border-border px-2.5 py-1.5 text-left text-sm hover:bg-muted"
-                >
-                  <span
-                    className={cn(
-                      'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-white',
-                      pMeta.dot,
-                    )}
-                  >
-                    <PIcon className="h-3 w-3" />
-                  </span>
-                  <span className="line-clamp-1 flex-1 text-foreground">{p.name}</span>
-                </button>
-              );
-            })}
+          <div className="flex flex-col gap-1">
+            {neighbours.prerequisites.map(({ concept: p }) => (
+              <button
+                key={p._id}
+                type="button"
+                onClick={() => onSelectNeighbour(p)}
+                className="rounded-control px-2 py-1 text-left text-sm font-medium text-foreground transition-colors hover:bg-muted"
+              >
+                {p.name}
+              </button>
+            ))}
           </div>
         </div>
       )}
 
       {neighbours.dependents.length > 0 && (
         <div>
-          <h3 className="mb-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-            Học tiếp theo
+          <h3 className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+            Khái niệm tiếp theo
           </h3>
-          <div className="flex flex-col gap-1.5">
-            {neighbours.dependents.map(({ concept: d, state: dState }) => {
-              const dMeta = stateMeta(dState);
-              const DIcon = dMeta.icon;
-              return (
-                <button
-                  key={d._id}
-                  type="button"
-                  onClick={() => onSelectNeighbour(d)}
-                  className="flex items-center gap-2 rounded-control border border-border px-2.5 py-1.5 text-left text-sm hover:bg-muted"
-                >
-                  <span
-                    className={cn(
-                      'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-white',
-                      dMeta.dot,
-                    )}
-                  >
-                    <DIcon className="h-3 w-3" />
-                  </span>
-                  <span className="line-clamp-1 flex-1 text-foreground">{d.name}</span>
-                </button>
-              );
-            })}
+          <div className="flex flex-col gap-1">
+            {neighbours.dependents.map(({ concept: d }) => (
+              <button
+                key={d._id}
+                type="button"
+                onClick={() => onSelectNeighbour(d)}
+                className="rounded-control px-2 py-1 text-left text-sm font-medium text-foreground transition-colors hover:bg-muted"
+              >
+                {d.name}
+              </button>
+            ))}
           </div>
         </div>
       )}
@@ -163,13 +139,18 @@ function InspectorPanel({
       <div className="mt-auto flex flex-col gap-2 pt-2">
         <Button
           type="button"
-          variant="outline"
+          className="w-full"
           onClick={() => navigate(`${PATHS.student.practice}?concept=${concept._id}`)}
         >
-          <Percent className="h-4 w-4" /> Luyện tập kiến thức này
+          <Play className="h-4 w-4" /> Ôn tập khái niệm
         </Button>
-        <Button type="button" variant="outline" onClick={() => navigate(PATHS.student.mastery)}>
-          <TrendingUp className="h-4 w-4" /> Xem mức độ thành thạo
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          onClick={() => navigate(PATHS.student.resources)}
+        >
+          <FileText className="h-4 w-4" /> Xem tài liệu liên quan
         </Button>
       </div>
     </aside>
@@ -184,18 +165,39 @@ export default function KnowledgeMapPage() {
   const navigate = useNavigate();
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  // "Bản đồ"/"Cây" toggle (merges the old separate "Cấu trúc kiến thức" page in here, same
+  // underlying data — view vs edit mode). Subject context is kept independently per mode: the map
+  // uses a Concept id (?subject=), the tree uses its own enrollment-based subject state, and the
+  // two don't share an id space, so reconciling them would need a lookup this phase doesn't need.
+  const mode = searchParams.get('mode') === 'tree' ? 'tree' : 'map';
+  const setMode = (m: 'map' | 'tree') => {
+    searchParams.set('mode', m);
+    setSearchParams(searchParams, { replace: true });
+  };
 
-  const { data: subjectsRes } = useQuery({
-    queryKey: ['knowledge-map-subjects'],
-    queryFn: () => listConcepts({ limit: 100, parentConcept: 'null' }),
+  const { selectedSubjectId, catalogSubjects } = useSelectedSubject();
+
+  const { data: activeGoalsRes } = useQuery({
+    queryKey: ['knowledge-map-active-goals'],
+    queryFn: () => listGoals({ limit: 50 }),
   });
-  const subjects = useMemo(() => subjectsRes?.data ?? [], [subjectsRes]);
+  const defaultSubjectId = useMemo(() => {
+    const goalSubjectIds = new Set(
+      (activeGoalsRes?.data ?? [])
+        .filter((g) => g.status === 'active')
+        .map((g) => (typeof g.concept === 'string' ? g.concept : g.concept?._id))
+        .filter((id): id is string => typeof id === 'string' && id.length > 0),
+    );
+    const preferred = catalogSubjects.find((s) => {
+      const id = getSubjectId(s);
+      return id ? goalSubjectIds.has(id) : false;
+    });
+    return (preferred ? getSubjectId(preferred) : null) ?? (catalogSubjects[0] ? getSubjectId(catalogSubjects[0]) : null);
+  }, [activeGoalsRes, catalogSubjects]);
 
-  const [subjectId, setSubjectId] = useState<string | null>(null);
-  // Deep-link from other pages (e.g. "Xem sơ đồ cây lộ trình" on Lộ trình học tập) — real query
-  // param, not just a cosmetic default; falls back to the first subject when absent/unknown.
-  const effectiveSubjectId = subjectId ?? searchParams.get('subject') ?? subjects[0]?._id ?? null;
+  // Global filter takes precedence once user picks a subject; deep-link ?subject=... or active-goal default otherwise.
+  const effectiveSubjectId = selectedSubjectId ?? searchParams.get('subject') ?? defaultSubjectId;
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<NodeState | null>(null);
@@ -211,14 +213,15 @@ export default function KnowledgeMapPage() {
   const nodes = useMemo(() => data?.data ?? [], [data]);
 
   const { data: masteryRes } = useQuery({
-    queryKey: ['knowledge-map-mastery'],
-    queryFn: () => listMasteries({ limit: 200 }),
+    queryKey: ['knowledge-map-mastery', effectiveSubjectId ?? 'all'],
+    queryFn: () => listMasteries({ limit: 200, subjectId: effectiveSubjectId ?? undefined }),
   });
   const masteryByConcept = useMemo(() => {
     const map = new Map<string, Mastery>();
-    (masteryRes?.data ?? []).forEach((m) =>
-      map.set(typeof m.concept === 'string' ? m.concept : m.concept._id, m),
-    );
+    (masteryRes?.data ?? []).forEach((m) => {
+      const id = !m.concept ? null : typeof m.concept === 'string' ? m.concept : m.concept._id;
+      if (id) map.set(id, m);
+    });
     return map;
   }, [masteryRes]);
 
@@ -255,12 +258,14 @@ export default function KnowledgeMapPage() {
   }, [selected, byId, nodes, states]);
 
   const selectConcept = (c: Concept) => setSelectedId(c._id);
+  const currentSubjectObj = catalogSubjects.find((s) => getSubjectId(s) === effectiveSubjectId) ?? null;
+  const currentSubjectName = currentSubjectObj ? getSubjectLabel(currentSubjectObj) : 'Môn học';
 
   return (
     <AppShell
       menu={studentMenu}
-      title="Bản đồ tri thức"
-      breadcrumb={['Trang chủ', 'Bản đồ tri thức']}
+      title={mode === 'tree' ? 'Cấu trúc kiến thức' : 'Bản đồ tri thức'}
+      breadcrumb={['Trang chủ', mode === 'tree' ? 'Cấu trúc kiến thức' : 'Bản đồ tri thức']}
       userName={user?.fullName ?? ''}
       roleLabel="Sinh viên"
       compactHeader
@@ -269,46 +274,63 @@ export default function KnowledgeMapPage() {
         navigate(PATHS.login);
       }}
     >
-      {/* Compact header — no hero banner, no large stat cards, so the canvas gets the room. */}
-      <div className="mb-4 flex items-start gap-3">
-        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[16px] bg-lavender text-lavender-foreground">
-          <Network className="h-6 w-6" />
-        </span>
+      {/* Shared Header matching Ảnh 1 & Ảnh 2 */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-[28px] font-bold leading-tight text-foreground">Bản đồ tri thức</h1>
-          <p className="text-sm text-muted-foreground">
-            Khám phá cấu trúc kiến thức, quan hệ tiên quyết và mức độ thành thạo của bạn.
+          <h1 className="text-xl font-bold text-foreground">
+            {mode === 'tree' ? 'Cấu trúc kiến thức' : 'Bản đồ tri thức'}
+          </h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {mode === 'tree'
+              ? 'Quản lý chương, chủ đề trọng tâm và khái niệm theo từng môn học.'
+              : 'Theo dõi mối liên hệ khái niệm và cấu trúc kiến thức theo từng môn học.'}
           </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2.5 rounded-card border border-border bg-card px-3 py-1.5 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground">Môn học:</span>
+            <GlobalSubjectFilter
+              compact
+              allowAll={false}
+              value={effectiveSubjectId}
+              onChange={() => setSelectedId(null)}
+            />
+          </div>
+          <div className="flex items-center gap-1 rounded-control bg-muted/60 p-0.5">
+            <button
+              type="button"
+              onClick={() => setMode('map')}
+              className={cn(
+                'flex items-center gap-1.5 rounded-[6px] px-3 py-1.5 text-xs font-semibold transition-all',
+                mode === 'map'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              <Network className="h-3.5 w-3.5" /> Bản đồ
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('tree')}
+              className={cn(
+                'flex items-center gap-1.5 rounded-[6px] px-3 py-1.5 text-xs font-semibold transition-all',
+                mode === 'tree'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              <TreePine className="h-3.5 w-3.5" /> Cây
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Compact Knowledge Control Bar — subject scope on the left, real mastery summary on the
-       * right; clicking a status pill highlights those nodes on the canvas instead of removing them. */}
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-card p-3 shadow-card">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-muted-foreground">Môn học</span>
-          <Select
-            value={effectiveSubjectId ?? undefined}
-            onValueChange={(v) => {
-              setSubjectId(v);
-              setSelectedId(null);
-            }}
-            disabled={subjects.length === 0}
-          >
-            <SelectTrigger className="h-9 w-[200px] text-sm">
-              <SelectValue placeholder="Chọn môn học" />
-            </SelectTrigger>
-            <SelectContent className="tw-scope">
-              {subjects.map((s) => (
-                <SelectItem key={s._id} value={s._id}>
-                  {s.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-1.5">
+      {mode === 'tree' && <StudentKnowledgeStructurePage embeddedSubjectId={effectiveSubjectId} />}
+      {mode === 'map' && (
+      <>
+      {/* Status Summary Bar */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-card px-4 py-2.5 shadow-card">
+        <div className="flex flex-wrap items-center gap-2">
           {PILL_STATES.map((key) => {
             const meta = stateMeta(key);
             const Icon = meta.icon;
@@ -319,14 +341,17 @@ export default function KnowledgeMapPage() {
                 type="button"
                 onClick={() => setActiveFilter((f) => (f === key ? null : key))}
                 className={cn(
-                  'flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors',
+                  'flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-colors',
                   active
-                    ? 'border-primary bg-primary/10 text-foreground'
-                    : 'border-border text-muted-foreground hover:bg-muted',
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : 'border-border bg-muted/40 text-foreground hover:bg-muted',
                 )}
               >
                 <span
-                  className={cn('flex h-4 w-4 items-center justify-center rounded-full text-white', meta.dot)}
+                  className={cn(
+                    'flex h-4 w-4 items-center justify-center rounded-full text-white',
+                    active ? 'bg-white/20' : meta.dot,
+                  )}
                 >
                   <Icon className="h-2.5 w-2.5" />
                 </span>
@@ -338,13 +363,13 @@ export default function KnowledgeMapPage() {
       </div>
 
       {isLoading && (
-        <div className="flex min-h-[40vh] items-center justify-center">
-          <p className="text-sm text-muted-foreground">Đang tải…</p>
+        <div className="flex min-h-[40vh] items-center justify-center rounded-card border border-border bg-card">
+          <p className="text-sm text-muted-foreground">Đang tải bản đồ tri thức…</p>
         </div>
       )}
 
       {!isLoading && effectiveSubjectId && nodes.length === 0 && (
-        <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 rounded-card border border-dashed border-border text-center">
+        <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 rounded-card border border-dashed border-border bg-card text-center">
           <span className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-soft text-primary">
             <Network className="h-8 w-8" />
           </span>
@@ -353,28 +378,47 @@ export default function KnowledgeMapPage() {
       )}
 
       {!isLoading && nodes.length > 0 && (
-        <div className="flex items-stretch gap-4">
-          <div className="min-w-0 flex-1">
-            <KnowledgeTree
-              nodes={nodes}
-              states={states}
-              masteryByConcept={masteryByConcept}
-              selectedId={selectedId}
-              activeFilter={activeFilter}
-              onSelect={selectConcept}
-              persistKey={`${user?.id ?? 'anon'}:${effectiveSubjectId ?? 'none'}`}
-            />
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_340px]">
+          <div className="flex min-w-0 flex-col overflow-hidden rounded-card border border-border bg-card shadow-card">
+            <div className="flex items-center justify-between border-b border-border px-4 py-2.5 text-xs">
+              <span className="font-semibold text-foreground">
+                {currentSubjectName} · {nodes.length} khái niệm
+              </span>
+              <span className="text-muted-foreground">Nhấp vào khái niệm để xem chi tiết</span>
+            </div>
+            <div className="min-h-[520px] flex-1">
+              <KnowledgeTree
+                nodes={nodes}
+                states={states}
+                masteryByConcept={masteryByConcept}
+                selectedId={selectedId}
+                activeFilter={activeFilter}
+                onSelect={selectConcept}
+                persistKey={`${user?.id ?? 'anon'}:${effectiveSubjectId ?? 'none'}`}
+              />
+            </div>
           </div>
-          {selected && (
+          {selected ? (
             <InspectorPanel
               concept={selected}
+              subjectName={currentSubjectName}
               state={states.get(selected._id) ?? 'locked'}
               neighbours={selectedNeighbours}
               onClose={() => setSelectedId(null)}
               onSelectNeighbour={selectConcept}
             />
+          ) : (
+            <aside className="hidden flex-col items-center justify-center rounded-card border border-dashed border-border bg-card p-6 text-center lg:flex">
+              <Network className="mb-2 h-8 w-8 text-muted-foreground" />
+              <p className="text-sm font-medium text-foreground">Chi tiết khái niệm</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Nhấp vào một khái niệm trên bản đồ để xem mức độ thành thạo và lộ trình liên quan.
+              </p>
+            </aside>
           )}
         </div>
+      )}
+      </>
       )}
     </AppShell>
   );

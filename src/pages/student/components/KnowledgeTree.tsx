@@ -205,7 +205,7 @@ function ConceptNodeView({ data, selected }: NodeProps<ConceptFlowNode>) {
       <TooltipTrigger asChild>
         <div
           className={cn(
-            'nodrag flex flex-col gap-1.5 rounded-[14px] p-4 text-left shadow-sm transition-all duration-200',
+            'nodrag relative flex flex-col gap-1.5 rounded-[14px] p-4 text-left shadow-sm transition-all duration-200',
             dimmed && 'opacity-40',
           )}
           style={{
@@ -332,12 +332,24 @@ function KnowledgeTreeCanvas({
   const byId = useMemo(() => new Map(layout.map((l) => [l.concept._id, l])), [layout]);
 
   const edgeDefs = useMemo(() => {
-    const list: { from: LayoutNode; to: LayoutNode; unlocked: boolean }[] = [];
+    const list: { from: LayoutNode; to: LayoutNode; unlocked: boolean; kind: 'prereq' | 'related' }[] = [];
+    const seen = new Set<string>();
     for (const to of layout) {
       const prereqIds = (to.concept.prerequisites ?? []).map((p) => (typeof p === 'string' ? p : p._id));
       for (const pid of prereqIds) {
         const from = byId.get(pid);
-        if (from) list.push({ from, to, unlocked: states.get(from.concept._id) === 'completed' });
+        if (from) {
+          seen.add(`${from.concept._id}->${to.concept._id}`);
+          list.push({ from, to, unlocked: states.get(from.concept._id) === 'completed', kind: 'prereq' });
+        }
+      }
+      const relatedIds = (to.concept.related ?? []).map((r) => (typeof r === 'string' ? r : r._id));
+      for (const rid of relatedIds) {
+        const from = byId.get(rid);
+        if (from && !seen.has(`${from.concept._id}->${to.concept._id}`) && !seen.has(`${to.concept._id}->${from.concept._id}`)) {
+          seen.add(`${from.concept._id}->${to.concept._id}`);
+          list.push({ from, to, unlocked: false, kind: 'related' });
+        }
       }
     }
     return list;
@@ -392,26 +404,34 @@ function KnowledgeTreeCanvas({
 
   const flowEdges = useMemo<Edge[]>(
     () =>
-      edgeDefs.map(({ from, to, unlocked }) => {
+      edgeDefs.map(({ from, to, unlocked, kind }) => {
         const isActive =
           !!relatedToSelected &&
           relatedToSelected.has(from.concept._id) &&
           relatedToSelected.has(to.concept._id);
         const dimmed = !!relatedToSelected && !isActive;
-        // 'default' = React Flow's bezier curve — the soft diagonal S-curve the earlier hand-rolled
-        // SVG canvas drew; 'smoothstep' reads as a technical flowchart, not the atlas look wanted.
-        // Stroke width is an SVG-unit value, not a screen pixel one — React Flow's own zoom-out
-        // shrinks it along with everything else, so a graph with 25+ concepts (fitView lands well
-        // under 50% zoom to show them all) needs a visibly thicker, more saturated base color or
-        // the edges read as "gone" even though they're really just sub-pixel thin on screen.
-        const color = isActive ? '#3E63C9' : unlocked ? '#2FA87A' : '#6B84B8';
+        const color =
+          kind === 'related'
+            ? isActive
+              ? '#64748B'
+              : '#94A3B8'
+            : isActive
+              ? '#2563EB'
+              : unlocked
+                ? '#16A34A'
+                : '#4F6EC9';
         return {
-          id: `${from.concept._id}-${to.concept._id}`,
+          id: `${kind}-${from.concept._id}-${to.concept._id}`,
           source: from.concept._id,
           target: to.concept._id,
           type: 'default',
-          style: { stroke: color, strokeWidth: isActive ? 4 : 3, opacity: dimmed ? 0.3 : 1 },
-          markerEnd: { type: MarkerType.ArrowClosed, color, width: 20, height: 20 },
+          style: {
+            stroke: color,
+            strokeWidth: isActive ? 4.5 : kind === 'related' ? 2.5 : 3.5,
+            strokeDasharray: kind === 'related' ? '6 5' : undefined,
+            opacity: dimmed ? 0.25 : 1,
+          },
+          markerEnd: { type: MarkerType.ArrowClosed, color, width: 18, height: 18 },
         };
       }),
     [edgeDefs, relatedToSelected],
